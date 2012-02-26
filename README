@@ -11,6 +11,11 @@ anything. By default, it'll compile to liback.a for use in other
 programs. This code is currently undocumented, except in Lary's 
 book.
 
+Most of his code I've (so far) left unchanged; I'm responsible for
+ACKRtnRecode.c/h, and various tweaks and fixes scattered through
+the other files. I've included all necessary files, whether I've 
+changed them or not, for completeness' sake.
+
 Lary Myers originally released this as an open-source engine in 
 1993. I couldn't find any copyright details, so I decided it would
 be best to release this under the zlib/libpng license; see the 
