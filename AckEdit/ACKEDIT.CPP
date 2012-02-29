@@ -1,0 +1,2811 @@
+// ACKEDIT.CPP - Map Editor for ACK-3D Windows
+
+#define  STRICT
+#include <windows.h>
+#pragma hdrstop
+#include <stdlib.h>
+#include <string.h>
+//#include "wing.h"
+//#include "wingdll.h"
+#include "ackwin.h"
+
+//extern "C" {
+#include "keys.h"
+#include "ack3d.h"
+
+//MEH Include this for reading in pallette
+#include <fstream>
+
+extern              short   rsHandle;
+extern              ULONG   *rbaTable;
+extern              short   Resolution;
+extern              UCHAR   colordat[];
+extern              UCHAR   *BackArray[];
+extern  unsigned    short   FloorMap[];
+extern  unsigned    short   CeilMap[];
+extern  unsigned    short   *ObjGrid;
+extern              long    *SinTable;
+extern              long    *CosTable;
+extern              long    AckMemUsed;
+//};
+
+extern              char    LineBuffer[];
+
+#include "ackedit.h"
+#include "ackres.h"
+
+// Some globals to use
+    ACKENG      *ae = 0;        // Interface structure
+    short       nMoveSpeed;
+    short       nTurnSpeed;
+    short       nOperation;     // Current operation being performed
+    HINSTANCE   hInstGlobal;
+    HWND        hWndMap;
+    BOOL        bNoShow;        // Do not display if TRUE
+    BOOL        bTrackPlayer;   // On if map tracks player position
+    short       nViewType;      // Current view in grid window
+    short       nEditType;      // Editing walls or objects
+    WORD        nWallFlags;
+    WORD        nObjFlags;
+    UCHAR       **pBitmaps;     // Current bitmap array
+    short       GridSize;
+    short       GridWidth;
+    short       GridHeight;
+    short       nBackColor;
+    short       xCurrent,yCurrent;
+    short       CurrentTopBitmap;
+    short       CurrentBitmap;
+    short       BitmapSelectX1;
+    short       BitmapSelectY1;
+    short       BitmapSelectX2;
+    short       BitmapSelectY2;
+    HWND        hwndApp;
+    COLORREF    rgbSelectColor;
+    UCHAR       kbPressed[128];
+    char        ResFileName[128];
+
+//    WinGdll     WinG;
+
+    header      BufferHeader;
+    long        Orientation = 0;
+    void        *pBuffer = 0;
+    HDC         Buffer = 0;
+
+    void        *pAckBuffer = 0;
+    HDC         AckBuffer = 0;
+
+    void        *pMapBuffer = 0;
+    HDC         MapBuffer = 0;
+
+    HPALETTE    hpalApp;
+
+    BOOL        bMapBitmapInitialized = FALSE;
+    BOOL        bShowRendering;
+    BOOL        bWTinitialized = FALSE;
+    RGBQUAD     ColorTable[256];
+
+    pal         LogicalPalette = {0x300,256};
+
+    HBITMAP     gbmOldMonoBitmap = 0;
+
+    int         StretchFactor = 1;
+    int         nBitmapW;
+    int         nBitmapH;       //WinG bitmap dimensions.
+    BOOL        bModified;
+    BOOL        bShowCoords;
+    char        MainWindow::szClassName[] = "Map Editor";
+    char        szCurPath[130];
+    char        *bMapFiles[MAX_WALLBMPS];
+    char        *oMapFiles[MAX_OBJBMPS];
+    short       bMapIndex[MAX_WALLBMPS];
+    short       oMapIndex[MAX_OBJBMPS];
+    short       bMapType[MAX_WALLBMPS];
+    short       oMapType[MAX_OBJBMPS];
+
+    char        BackGndFile[128];
+
+
+ColorRange  ranges[64] = {
+        {16,15},
+        {32,16},
+        {48,16},
+        {64,16},
+        {80,16},
+        {96,8},
+        {104,8},
+        {112,8},
+        {120,8},
+        {128,8},
+        {136,8},
+        {144,8},
+        {152,8},
+        {160,8},
+        {168,8},
+        {176,8},
+        {184,16},
+        {200,16},
+        {216,16},
+        {232,16},
+        {248,16},
+        {0,0}
+        };
+
+    extern  int LineNumber; // In ACKSUP.CPP
+
+
+    //MEH buffer for holding our pallette data. Read in from "pallette.txt"
+  PalletteSlot pallette[256];
+  //MEH function for reading in our pallette
+void ReadInPallette(void);
+
+//MEH 24-bit screen buffer, for Win32 reasons
+   unsigned char OffscreenBuffer[4*320*200]; //4 chars per pixel (rgba), 320 pixels by 200 pixels
+
+HDC hOffscreenDC = 0;
+HBITMAP hOffscreenBitmap;
+
+//MEH Buffer for holding a bitmaps' data before we draw it
+unsigned char GenericUseBitmapBuffer[4*64*64];   //4 chars per pixel (rgba), 64x64 pixels
+//MEH Offscreen buffer and HDC for child (bitmaps and objects) window
+HDC hChildOffscreenDC = 0;
+HBITMAP hChildOffscreenBitmap;
+
+
+//****************************************************************************
+// Prototypes
+//****************************************************************************
+void AckReset(void);
+void gkScaleBitmap(short bmWt,short bmHt,short DstWt,short DstHt,UCHAR *bm,
+                   UCHAR *DstBuffer);
+int DoOptionsDlg(HINSTANCE hInst,HWND hWnd);
+int DoGlobalDlg(HINSTANCE hInst,HWND hWnd);
+int DoInfoDlg(HINSTANCE hInst,HWND hWnd);
+short SaveResource(HWND hWnd,char *szName);
+void EditInfoFile(HWND hWnd);
+
+//****************************************************************************
+//
+//****************************************************************************
+void MainWindow::Register( void )
+{
+    WNDCLASS wndclass;   // Structure used to register Windows class.
+
+wndclass.style         = CS_HREDRAW | CS_VREDRAW;
+wndclass.lpfnWndProc   = ::WndProc;
+wndclass.cbClsExtra    = 0;
+wndclass.cbWndExtra    = sizeof( MainWindow * );
+wndclass.hInstance     = Main::hInstance;
+wndclass.hIcon         = LoadIcon( Main::hInstance, "ackicon" );
+wndclass.hCursor       = NULL; //LoadCursor( NULL, IDC_ARROW );
+wndclass.hbrBackground = (HBRUSH)GetStockObject( WHITE_BRUSH );
+wndclass.lpszMenuName  = "ACKMENU";
+wndclass.lpszClassName = szClassName;
+
+if ( ! RegisterClass( &wndclass ) )
+    exit( FALSE );
+
+wndclass.style         = CS_HREDRAW | CS_VREDRAW;
+wndclass.lpfnWndProc   = ::ChildWndProc;
+wndclass.cbClsExtra    = 0;
+wndclass.cbWndExtra    = 0;
+wndclass.hInstance     = Main::hInstance;
+wndclass.hIcon         = LoadIcon( Main::hInstance, "ackicon" );
+wndclass.hCursor       = NULL; //LoadCursor( NULL, IDC_ARROW );
+wndclass.hbrBackground = (HBRUSH)GetStockObject( WHITE_BRUSH );
+wndclass.lpszMenuName  = NULL;
+wndclass.lpszClassName = "ACKBitmaps";
+
+if ( ! RegisterClass( &wndclass ) )
+    exit( FALSE );
+
+wndclass.style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
+wndclass.lpfnWndProc   = ::AckWndProc;
+wndclass.cbClsExtra    = 0;
+wndclass.cbWndExtra    = 0;
+wndclass.hInstance     = Main::hInstance;
+wndclass.hIcon         = LoadIcon( Main::hInstance, "ackicon" );
+wndclass.hCursor       = NULL; //LoadCursor( NULL, IDC_ARROW );
+wndclass.hbrBackground = (HBRUSH)GetStockObject( WHITE_BRUSH );
+wndclass.lpszMenuName  = NULL;
+wndclass.lpszClassName = "ACK3DVIEW";
+
+if ( ! RegisterClass( &wndclass ) )
+    exit( FALSE );
+
+}
+
+//****************************************************************************
+//
+//****************************************************************************
+MainWindow::MainWindow( void )
+{
+/*
+if (!WinG.Load())
+    {
+    MessageBox(0,"Can't find WING32.DLL","ACK Error!",MB_OK);
+    exit(FALSE);
+    }*/
+
+}
+
+//****************************************************************************
+//
+//****************************************************************************
+void MainWindow::CreateAll( void )
+{
+    RECT    rect;
+    short   xPos;
+    int     windx,windy;
+    HBITMAP hbm;
+    int     Counter;
+
+
+GridSize = 32;
+xCurrent = yCurrent = 0;
+CurrentTopBitmap = 1;
+CurrentBitmap = 1;
+rgbSelectColor = RGB(255,0,0);
+
+hWnd = CreateWindow( szClassName,
+            "Map Editor - Walls",
+            WS_OVERLAPPEDWINDOW|WS_VSCROLL|WS_HSCROLL,
+            0,
+            0,
+            480,
+            520,
+            NULL,
+            NULL,
+            Main::hInstance,
+            (LPSTR)this);
+
+if (!hWnd)
+    exit(FALSE);
+
+hWndMap = hWnd;
+Show( Main::nCmdShow );
+Update();
+
+GetWindowRect(hWnd,&rect);
+
+hWndChild = CreateWindow( "ACKBitmaps",
+                "Wall: 1",
+                WS_POPUP|WS_BORDER|WS_CAPTION|WS_VISIBLE|WS_VSCROLL,
+                rect.right,
+                0,
+                90,
+                298,
+                hWnd,
+                NULL,
+                Main::hInstance,
+                (LPSTR)NULL);
+
+if (!hWndChild)
+    {
+    MessageBox(NULL,"Unable to create bitmap window","ERROR",MB_OK);
+    exit(FALSE);
+    }
+
+ShowWindow(hWndChild,SW_NORMAL);
+xPos = (short)rect.right;
+
+GetWindowRect(hWndChild,&rect);
+
+nBitmapW = 319;         //default size (window client size to use).
+nBitmapH = 199;
+
+
+windx = windy = GetSystemMetrics(SM_CXBORDER) * 2;
+windx += nBitmapW;
+windy += nBitmapH + GetSystemMetrics(SM_CYCAPTION) - 1;
+
+hwndApp = CreateWindow ("ACK3DVIEW",    // Class name
+                "3D View",              // Caption
+                WS_POPUP|WS_BORDER|WS_CAPTION|WS_VISIBLE,
+                xPos,                   // Position
+                rect.bottom,
+                windx,windy,            // Size
+                (HWND)hWnd,             // Parent window
+                (HMENU)NULL,            // use class menu
+                Main::hInstance,        // handle to window instance
+               (LPSTR)NULL );           // no params to pass on
+
+if (!hwndApp)
+    {
+    MessageBox(NULL,"Unable to create 3D View window","ERROR",MB_OK);
+    exit(FALSE);
+    }
+
+ShowWindow(hwndApp,SW_NORMAL);
+
+//if (WinG.pRecommendDIBFormat((BITMAPINFO *)&BufferHeader))
+//    {
+//    BufferHeader.Header.biBitCount = 8;
+//    BufferHeader.Header.biCompression = BI_RGB;
+//    }
+//else
+ //   {
+   /* BufferHeader.Header.biSize = sizeof(BITMAPINFOHEADER);
+    BufferHeader.Header.biPlanes = 1;
+    BufferHeader.Header.biBitCount = 8;
+    BufferHeader.Header.biCompression = BI_RGB;
+    BufferHeader.Header.biSizeImage = 0;
+    BufferHeader.Header.biClrUsed = 0;
+    BufferHeader.Header.biClrImportant = 0;
+  //  }
+
+BufferHeader.Header.biWidth = 64;
+BufferHeader.Header.biHeight = -350; // Use -height for a Top-down bitmap
+*/
+CreateAckPalette();
+/*
+for (Counter = 0;Counter < 256;Counter++)
+    {
+    BufferHeader.aColors[Counter].rgbRed   = ColorTable[Counter].rgbRed;
+    BufferHeader.aColors[Counter].rgbGreen = ColorTable[Counter].rgbGreen;
+    BufferHeader.aColors[Counter].rgbBlue  = ColorTable[Counter].rgbBlue;
+    BufferHeader.aColors[Counter].rgbReserved = 0;
+    }*/
+
+Buffer = CreateCompatibleDC(GetDC(hwndApp));
+hbm = CreateCompatibleBitmap(GetDC(hwndApp),nBitmapW,nBitmapH);
+
+gbmOldMonoBitmap = (HBITMAP)SelectObject(Buffer, hbm);
+
+PatBlt(Buffer, 0,0,nBitmapW,nBitmapH, BLACKNESS);
+GetClientRect(hWnd,&rect);
+GridWidth = (short)rect.right;
+GridHeight = (short)rect.bottom;
+//BufferHeader.Header.biWidth = (short)rect.right;
+//BufferHeader.Header.biHeight = -(rect.bottom+GridSize); // Use -height for a Top-down bitmap
+MapBuffer = CreateCompatibleDC(GetDC(hwndApp));
+hbm = CreateCompatibleBitmap(GetDC(hwndApp),rect.right,rect.bottom);
+SelectObject(MapBuffer,hbm);
+PatBlt(MapBuffer, 0,0,rect.right,rect.bottom, BLACKNESS);
+bMapBitmapInitialized = TRUE;
+InvalidateRect(hWnd,NULL,TRUE);
+InvalidateRect(hWndChild,NULL,TRUE);
+}
+
+HINSTANCE Main::hInstance = 0;
+HINSTANCE Main::hPrevInstance = 0;
+int Main::nCmdShow = 0;
+
+
+//****************************************************************************
+//
+//****************************************************************************
+int Main::MessageLoop(void)
+{
+    MSG msg;
+    unsigned int iCurTick = GetTickCount();
+    unsigned int iTemp = 0;
+
+for (;;)
+    {
+        iTemp = GetTickCount();
+    if (PeekMessage(&msg, NULL, 0, 0,PM_REMOVE))
+        {
+        if (msg.message == WM_QUIT)
+            break;
+
+        TranslateMessage(&msg);
+        DispatchMessage(&msg);
+        }
+        //MEH Limit our framerate to something reasonable so you can actually MOVE AROUND in the 3D view
+        //without getting totally sick.
+    else if(iTemp - iCurTick >= 30)
+        {
+        if (nOperation == OP_NORMAL)
+            DoCycle();
+        iCurTick = iTemp;
+        }
+    }
+
+return msg.wParam;
+}
+
+
+//****************************************************************************
+//
+//****************************************************************************
+void MainWindow::DrawGrid(HDC hdc,short wt,short ht)
+{
+    POINT   pt;
+    HPEN    pen,oldpen;
+    short   x,y;
+
+/*//MEH first fill in bg color. Pretty standard graphics primitives stuff
+PalletteSlot bgpalcol = pallette[nBackColor];
+HBRUSH hBgColorBrush = CreateSolidBrush(RGB(bgpalcol.b, bgpalcol.g, bgpalcol.r));   //remember that R and B are reversed...
+HBRUSH hOld = (HBRUSH)SelectObject(hdc, hBgColorBrush);
+RECT rcArea = {0,0,wt*GridSize, ht*GridSize};
+FillRect(hdc, &rcArea, hBgColorBrush);
+SelectObject(hdc, hOld);
+DeleteObject(hBgColorBrush);
+//---MEH */
+
+pen = CreatePen(PS_SOLID,1,RGB(128,128,128));
+oldpen = (HPEN)SelectObject(hdc,pen);
+
+for (y = 0; y < ht; y += GridSize)
+    {
+    MoveToEx(hdc,0,y,&pt);
+    LineTo(hdc,wt,y);
+    }
+
+for (x = 0; x < wt; x += GridSize)
+    {
+    MoveToEx(hdc,x,0,&pt);
+    LineTo(hdc,x,ht);
+    }
+
+SelectObject(hdc,oldpen);
+DeleteObject(pen);
+}
+
+
+
+//****************************************************************************
+//
+//****************************************************************************
+void DrawMap(HWND hWnd,HDC hdc,short wt,short ht)
+{
+    //wt++;
+    //ht+=GridSize;
+
+    short   MapPosn,x,y,mx,my,OrgPos,bx,by,x2,y2,x3,y3;
+    int     len,offset;
+    RECT    rect;
+    POINT   point;
+    POINT   pts[4];
+    WORD    nMapCode;
+    HBRUSH  NewBrush,OldBrush;
+    UCHAR   *pBmp,*pMap;
+    NEWOBJECT   *pObj;
+
+
+
+if (!bMapBitmapInitialized)
+    return;
+
+    UCHAR   *TempScreenBuffer = (UCHAR*)malloc(wt*ht);   //MEH Create a temp screen buffer
+    UCHAR   *TempIconBuffer = (UCHAR*)malloc(wt*ht*4);    //MEH and another buffer to hold the icon
+    memset(TempScreenBuffer,nBackColor,wt*ht);  //Fill in with bg color initially
+
+NewBrush = CreateSolidBrush(RGB(0,0,192));
+OldBrush = (HBRUSH)SelectObject(hdc,NewBrush);
+
+if (bTrackPlayer)
+    {
+    bx = xCurrent;
+    by = yCurrent;
+    x = (short)(wt / GridSize);
+    y = (short)(ht / GridSize);
+    x2 = x >> 1;
+    y2 = y >> 1;
+    mx = ae->xPlayer >> 6;
+    my = ae->yPlayer >> 6;
+
+    x = 63 - x;
+    y = 63 - y;
+
+    xCurrent = mx - x2;
+    if (xCurrent < 0)
+        xCurrent = 0;
+
+    if (xCurrent > x)
+        xCurrent = x;
+
+    yCurrent = my - y2;
+    if (yCurrent < 0)
+        yCurrent = 0;
+
+    if (yCurrent > y)
+        yCurrent = y;
+
+    if (xCurrent != bx)
+        SetScrollPos(hWnd,SB_HORZ,xCurrent,TRUE);
+
+    if (yCurrent != by)
+        SetScrollPos(hWnd,SB_VERT,yCurrent,TRUE);
+
+    }
+
+OrgPos = MapPosn = (short)((yCurrent * GRID_WIDTH) + xCurrent);
+x2 = (short)((wt / GridSize) * GridSize);
+y2 = (short)((ht / GridSize) * GridSize);
+
+pMap = (UCHAR *)TempScreenBuffer;
+
+len = (int)(wt * ht);
+//memset(pMap,nBackColor,len);
+
+switch (nViewType)
+    {
+    case VIEW_WALLS:
+        for (y = 0; y < y2; y += GridSize)
+            {
+            mx = MapPosn;
+            for (x = 0; x < x2; x += GridSize)
+                {
+                nMapCode = ObjGrid[mx];
+                if (nMapCode)
+                    {
+                    pObj = ae->ObjList[nMapCode & 0xFF];
+                    if (pObj != NULL)
+                        {
+                        pBmp = ae->oMaps[pObj->CurrentBitmaps[0]];
+                        offset = (y * wt) + x;
+                        for (bx = 0; bx < GridSize; bx++)
+                            {
+                            pMap = (UCHAR *)TempScreenBuffer + offset;
+                            for (by = 0; by < GridSize; by++)
+                                {
+                                *pMap = *pBmp;
+                                pMap += wt;
+                                pBmp += 2;
+                                }
+                            offset++;
+                            pBmp += 64;
+                            }
+                        }
+                    }
+
+                nMapCode = ae->xGrid[mx];
+                if (nMapCode)
+                    {
+                    pMap = (UCHAR *)TempScreenBuffer + (y * wt) + x;
+                    pBmp = ae->bMaps[nMapCode & 0x00FF];
+                    for (my = 0; my < GridSize; my++)
+                        {
+                        *pMap = *pBmp;
+                        pMap[1] = pBmp[(7 * 64)];
+                        pMap[2] = pBmp[(15 * 64)];
+                        pMap[3] = pBmp[(23 * 64)];
+                        pMap[4] = pBmp[(31 * 64)];
+                        pMap[5] = pBmp[(39 * 64)];
+                        pMap[6] = pBmp[(47 * 64)];
+                        pMap[7] = pBmp[(55 * 64)];
+                        pMap += wt;
+                        pBmp++;
+                        }
+                    }
+
+                nMapCode = ae->yGrid[mx];
+                if (nMapCode)
+                    {
+                    pMap = (UCHAR *)TempScreenBuffer + (y * wt) + x;
+                    pBmp = ae->bMaps[nMapCode & 0x00FF];
+                    for (my = 0; my < 8; my++)
+                        {
+                        memcpy(pMap,pBmp,GridSize);
+                        pBmp += (7 * 64);
+                        pMap += wt;
+                        }
+                    }
+
+                mx++;
+                }
+
+            MapPosn += (short)64;
+            offset = y * wt;
+            pMap = (UCHAR *)TempScreenBuffer + offset;
+            memset(pMap,0,wt);
+            }
+        break;
+
+    case VIEW_FLOOR:
+        for (y = 0; y < y2; y += GridSize)
+            {
+            mx = MapPosn;
+            for (x = 0; x < x2; x += GridSize)
+                {
+                nMapCode = FloorMap[mx];
+                if (nMapCode)
+                    {
+                    pBmp = ae->bMaps[nMapCode & 0xFF];
+                    offset = (y * wt) + x;
+                    for (bx = 0; bx < GridSize; bx++)
+                        {
+                        pMap = (UCHAR *)TempScreenBuffer + offset;
+                        for (by = 0; by < GridSize; by++)
+                            {
+                            *pMap = *pBmp;
+                            pMap += wt;
+                            pBmp += 2;
+                            }
+                        offset++;
+                        pBmp += 64;
+                        }
+
+                    }
+
+                mx++;
+                }
+            MapPosn += (short)64;
+            offset = y * wt;
+            pMap = (UCHAR *)TempScreenBuffer + offset;
+            memset(pMap,0,wt);
+            }
+        break;
+
+    case VIEW_CEILING:
+        for (y = 0; y < y2; y += GridSize)
+            {
+            mx = MapPosn;
+            for (x = 0; x < x2; x += GridSize)
+                {
+                nMapCode = CeilMap[mx];
+                if (nMapCode)
+                    {
+                    pBmp = ae->bMaps[nMapCode & 0xFF];
+                    offset = (y * wt) + x;
+                    for (bx = 0; bx < GridSize; bx++)
+                        {
+                        pMap = (UCHAR *)TempScreenBuffer + offset;
+                        for (by = 0; by < GridSize; by++)
+                            {
+                            *pMap = *pBmp;
+                            pMap += wt;
+                            pBmp += 2;
+                            }
+                        offset++;
+                        pBmp += 64;
+                        }
+                    }
+                mx++;
+                }
+            MapPosn += (short)64;
+            offset = y * wt;
+            pMap = (UCHAR *)TempScreenBuffer + offset;
+            memset(pMap,0,wt);
+            }
+        break;
+
+    default:
+        break;
+    }
+
+for (x = 0; x < x2; x += GridSize)
+    {
+    pMap = (UCHAR *)TempScreenBuffer + x;
+    for (y = 0; y < ht; y++)
+        {
+        *pMap = 0;
+        pMap += wt;
+        }
+    }
+
+    //MEH Draw stuffz!
+    unsigned char* pBufferData = TempIconBuffer;
+    for(int r = 0; r < ht; r++)
+    {
+        for(int c = 0; c < wt; c++) //AHAHA JOKE
+        {
+            *pBufferData++ = pallette[TempScreenBuffer[c+wt*r]].r;
+            *pBufferData++ = pallette[TempScreenBuffer[c+wt*r]].g;
+            *pBufferData++ = pallette[TempScreenBuffer[c+wt*r]].b;
+            *pBufferData++ = 255; //Alpha = 255 by default.
+        }
+    }
+    //Create our offscreen HDC if we haven't yet
+    /*if(!hOffscreenDC)
+    {
+        hOffscreenDC = CreateCompatibleDC(hdc);
+        hOffscreenBitmap = CreateCompatibleBitmap(hdc, 320, 200);
+        SelectObject(hOffscreenDC, hOffscreenBitmap);
+    }*/
+    //PatBlt(hOffscreenDC, 0,0,nBitmapW,nBitmapH, BLACKNESS);
+    HICON ic = CreateIcon(Main::hInstance, wt, ht, 1, 32, NULL, (BYTE*)(TempIconBuffer));
+    DrawIconEx(hdc, 0, 0, ic, wt, ht, NULL, NULL, DI_NORMAL);
+    DestroyIcon(ic);
+    //-------MEH
+
+//BitBlt(hdc,0,0,wt,ht,MapBuffer,0,0, SRCCOPY);
+
+x = (short)((ae->yPlayer & 0xFFC0) + (ae->xPlayer >> 6));
+
+if (x >= OrgPos && x <= (MapPosn-1))
+    {
+    mx = (short)((ae->xPlayer >> 6) - xCurrent);
+    my = (short)((ae->yPlayer >> 6) - yCurrent);
+    x = ((mx * GridSize) + (GridSize >> 1));
+    y = ((my * GridSize) + (GridSize >> 1));
+
+    bx = (CosTable[ae->PlayerAngle] * 16) >> 16;
+    by = (SinTable[ae->PlayerAngle] * 16) >> 16;
+    bx += x;
+    by += y;
+    mx = ae->PlayerAngle - INT_ANGLE_90;
+    if (mx < 0)
+        mx += INT_ANGLE_360;
+    x2 = (CosTable[mx] * 5) >> 16;
+    y2 = (SinTable[mx] * 5) >> 16;
+    x2 += x;
+    y2 += y;
+    mx = ae->PlayerAngle + INT_ANGLE_90;
+    if (mx >= INT_ANGLE_360)
+        mx -= INT_ANGLE_360;
+    x3 = (CosTable[mx] * 5) >> 16;
+    y3 = (SinTable[mx] * 5) >> 16;
+    x3 += x;
+    y3 += y;
+
+    pts[0].x = bx;
+    pts[0].y = by;
+    pts[1].x = x2;
+    pts[1].y = y2;
+    pts[2].x = x3;
+    pts[2].y = y3;
+    pts[3].x = bx;
+    pts[3].y = by;
+    Polygon(hdc,(LPPOINT)&pts,4);
+    }
+
+SelectObject(hdc,OldBrush);
+DeleteObject(NewBrush);
+
+if (bShowCoords)
+    {
+    wsprintf(LineBuffer,"Map Editor - Row:%d,Col:%d",ae->yPlayer >> 6,ae->xPlayer >> 6);
+    SetWindowText(hWnd,LineBuffer);
+    }
+
+free(TempScreenBuffer); //MEH clean up memory
+free(TempIconBuffer);
+
+}
+
+
+//****************************************************************************
+//
+//****************************************************************************
+void MainWindow::Paint(void)
+{
+    PAINTSTRUCT ps;
+    RECT        rect;
+
+BeginPaint( hWnd, &ps );
+GetClientRect(hWnd,&rect);
+if (!bNoShow)
+{
+    DrawMap(hWnd,ps.hdc,(short)rect.right,(short)rect.bottom);
+    DrawGrid(ps.hdc,(short)rect.right,(short)rect.bottom);
+}
+EndPaint( hWnd, &ps );
+}
+
+//****************************************************************************
+//
+//****************************************************************************
+void SetOperationCursor(void)
+{
+if (nOperation == OP_NORMAL)
+    SetCursor(LoadCursor(NULL,IDC_ARROW));
+
+if (nOperation == OP_WAIT)
+    SetCursor(LoadCursor(NULL,IDC_WAIT));
+
+}
+
+
+//****************************************************************************
+//
+//****************************************************************************
+void HighlightBitmap(HDC hdc,COLORREF crColor)
+{
+    POINT   pt;
+    HPEN    pen,oldpen;
+
+if (BitmapSelectX1 < 0)
+    return;
+
+pen = CreatePen(PS_SOLID,2,crColor);
+oldpen = (HPEN)SelectObject(hdc,pen);
+
+MoveToEx(hdc,BitmapSelectX1,BitmapSelectY1,&pt);
+LineTo(hdc,BitmapSelectX2,BitmapSelectY1);
+LineTo(hdc,BitmapSelectX2,BitmapSelectY2);
+LineTo(hdc,BitmapSelectX1,BitmapSelectY2);
+LineTo(hdc,BitmapSelectX1,BitmapSelectY1-1);
+
+SelectObject(hdc,oldpen);
+DeleteObject(pen);
+}
+
+
+//****************************************************************************
+// Draw the bitmaps and such in the bitmap/object select window
+//****************************************************************************
+void PaintChild(HWND hWnd)
+{
+    PAINTSTRUCT ps;
+    RECT        rect;
+    short       y,y1,yOffset,nIndex,OrgIndex,bx,by;
+    UCHAR       *pPtr = NULL;//,*pBuf;
+    NEWOBJECT   *pObj;
+    UCHAR       cIsObjFlag = 0; //If this is an object, go ahead and draw transparent instead of black
+
+BeginPaint( hWnd, &ps );
+if (bNoShow)
+    {
+    EndPaint( hWnd, &ps );
+    return;
+    }
+
+//Make sure our offscreen buffer is initialized
+/*if(!hChildOffscreenDC)
+{
+    hChildOffscreenDC = CreateCompatibleDC(ps.hdc);
+    hChildOffscreenBitmap = CreateCompatibleBitmap(ps.hdc, 90, 298);
+}*/
+
+
+if (hpalApp)
+    {
+    UnrealizeObject(hpalApp);
+    SelectPalette(ps.hdc, hpalApp, FALSE);
+    RealizePalette(ps.hdc);
+    }
+
+GetClientRect(hWnd,&rect);
+
+PatBlt(ps.hdc, 0,0,90, 298, WHITENESS);  //Clear the bitmap to white
+
+OrgIndex = nIndex = CurrentTopBitmap;
+BitmapSelectX1 = 0;
+y1 = (short)(rect.bottom - 66);
+//memset(pBuffer,255,(short)(rect.bottom * 66));
+y = 2;
+while (y < y1)
+    {
+    if (nEditType == EDIT_WALLS)
+        pPtr = ae->bMaps[nIndex++];
+    else
+        {
+        pPtr = NULL;
+        pObj = ae->ObjList[nIndex++];
+        if (pObj != NULL)
+            {
+            if (pObj->CurrentBitmaps != NULL)
+               pPtr = ae->oMaps[pObj->CurrentBitmaps[0]];
+            cIsObjFlag = 1;
+            }
+        }
+
+    if (pPtr == NULL)
+        {
+        Rectangle(ps.hdc,2,y,66,y+64);
+        }
+    else
+        {
+        yOffset = (short)(y * 64);
+
+        //Draw the currently selected bitmap
+        //First block-copy the data into a form Windows likes
+        unsigned char* pBufferData = GenericUseBitmapBuffer;
+        for(bx = 0; bx < 64; bx++)
+        {
+            pBufferData = &GenericUseBitmapBuffer[bx*4];
+            for(int by = 0; by < 64; by++)
+            {
+                unsigned char red = pallette[*pPtr].r;
+                unsigned char green = pallette[*pPtr].g;
+                unsigned char blue = pallette[*pPtr].b;
+                *pBufferData++ = red;
+                *pBufferData++ = green;
+                *pBufferData++ = blue;
+                if(red == 0 && green == 0 && blue == 0 && cIsObjFlag)
+                    *pBufferData++ = 0; //Set alpha to zero for black object pixels
+                else
+                    *pBufferData++ = 255; //Set alpha to 255 by default
+                //Go to next col/row/whatever
+                pBufferData += 63*4;    //I really don't understand how in the world, but 63 is the right number here
+                pPtr++;
+            }
+        }
+
+        HICON ic = CreateIcon(Main::hInstance, 64, 64, 1, 32, NULL, (BYTE*)(GenericUseBitmapBuffer));
+        if(ic == NULL)
+            printf("Icon null: %d\n", GetLastError());
+        DrawIconEx(ps.hdc, 2, y, ic, 64, 64, NULL, NULL, DI_NORMAL);
+        DestroyIcon(ic);
+
+        /*for (bx = 0; bx < 64; bx++)
+            {
+            pBuf = (UCHAR *)pBuffer + bx + yOffset;
+            for (by = 0; by < 64; by++)
+                {
+                *pBuf = *pPtr++;
+                pBuf += 64;
+                }
+            }*/
+        }
+
+    if ((nIndex-1) == CurrentBitmap)
+        {
+        BitmapSelectX1 = 1;
+        BitmapSelectY1 = (short)(y-1);
+        BitmapSelectX2 = 66;
+        BitmapSelectY2 = (short)(y+65);
+        }
+
+    if (nEditType == EDIT_WALLS)
+      {
+      if (nIndex >= MAX_WALLBMPS)
+           nIndex = 1;
+
+      }
+   else
+      {
+      if (nIndex >= MAX_OBJECTS)
+         nIndex = 1;
+      }
+
+
+    if (nIndex == OrgIndex)
+        break;
+
+    y += (short)67;
+    }
+
+//BitBlt(ps.hdc,0,0,90,298,hChildOffscreenDC,0,0, SRCCOPY);
+if (BitmapSelectX1)
+    HighlightBitmap(ps.hdc,rgbSelectColor);
+
+EndPaint( hWnd, &ps );
+}
+
+
+//****************************************************************************
+//
+//****************************************************************************
+#pragma argsused
+void AckPaint(HWND hWnd,HDC hdc)
+{
+
+if (ae != NULL)
+    {
+    AckCheckObjectMovement();
+    AckBuildView();
+    }
+
+//MEH
+//Fill in our screenbuffer from ACK's buffer
+unsigned char* pBufferData = OffscreenBuffer;
+for(int r = 0; r < 320; r++)
+{
+    for(int c = 0; c < 200; c++) //AHAHA JOKE
+    {
+        *pBufferData++ = pallette[ae->ScreenBuffer[c+200*r]].r;
+        *pBufferData++ = pallette[ae->ScreenBuffer[c+200*r]].g;
+        *pBufferData++ = pallette[ae->ScreenBuffer[c+200*r]].b;
+        *pBufferData++ = 255; //Alpha = 255 by default. You could probably do crazy stuff with this, but I'm not going to.
+    }
+}
+//Create our offscreen HDC if we haven't yet
+if(!hOffscreenDC)
+{
+    hOffscreenDC = CreateCompatibleDC(hdc);
+    hOffscreenBitmap = CreateCompatibleBitmap(hdc, 320, 200);
+    SelectObject(hOffscreenDC, hOffscreenBitmap);
+}
+PatBlt(hOffscreenDC, 0,0,nBitmapW,nBitmapH, BLACKNESS);
+HICON ic = CreateIcon(hInstGlobal, 320, 200, 1, 32, NULL, (BYTE*)(OffscreenBuffer));
+DrawIconEx(hOffscreenDC, 0, 0, ic, 320, 200, NULL, NULL, DI_NORMAL);
+DestroyIcon(ic);
+
+
+if (StretchFactor != 1)
+    StretchBlt(hdc,0,0,StretchFactor*nBitmapW,StretchFactor*nBitmapH,
+                     hOffscreenDC,0,0,nBitmapW,nBitmapH, SRCCOPY);
+else
+    BitBlt(hdc,0,0,nBitmapW,nBitmapH,hOffscreenDC,0,0, SRCCOPY);
+
+}
+
+//****************************************************************************
+//
+//****************************************************************************
+void ScrollMap(HWND hWnd,int nScrollCode,int nPos,int nDir)
+{
+    int     pos,nMaxWt,nWt,nMaxHt,nHt;
+    RECT    rect;
+
+
+if (bTrackPlayer)
+    return;
+
+GetClientRect(hWnd,&rect);
+nWt = rect.right / GridSize;
+nMaxWt = 64 - nWt;
+nHt = rect.bottom / GridSize;
+nMaxHt = 64 - nHt;
+
+if (nDir)
+    pos = GetScrollPos(hWnd,SB_VERT);
+else
+    pos = GetScrollPos(hWnd,SB_HORZ);
+
+switch (nScrollCode)
+    {
+    case SB_LINEDOWN:
+        if (nDir)
+            {
+            if (pos < nMaxHt)
+                pos++;
+            }
+        else
+            {
+            if (pos < nMaxWt)
+                pos++;
+            }
+        break;
+
+    case SB_LINEUP:
+        if (pos)
+            pos--;
+        break;
+
+    case SB_PAGEDOWN:
+        if (nDir)
+            {
+            pos += nHt;
+            if (pos > nMaxHt)
+                pos = nMaxHt;
+            }
+        else
+            {
+            pos += nWt;
+            if (pos > nMaxWt)
+                pos = nMaxWt;
+            }
+        break;
+
+    case SB_PAGEUP:
+        if (nDir)
+            pos -= nHt;
+        else
+            pos -= nWt;
+        if (pos < 0)
+            pos = 0;
+        break;
+
+    case SB_THUMBTRACK:
+    case SB_THUMBPOSITION:
+        pos = nPos;
+        if (pos < 0)
+            pos = 0;
+        if (nDir == 1 && pos > nMaxHt)
+            pos = nMaxHt;
+        if (nDir == 0 && pos > nMaxWt)
+            pos = nMaxWt;
+        break;
+
+
+    default:
+        break;
+    }
+
+if (nDir)
+    {
+    yCurrent = (short)pos;
+    SetScrollPos(hWnd,SB_VERT,pos,TRUE);
+    }
+else
+    {
+    xCurrent = (short)pos;
+    SetScrollPos(hWnd,SB_HORZ,pos,TRUE);
+    }
+
+InvalidateRect(hWnd,NULL,TRUE);
+
+}
+
+//****************************************************************************
+//
+//****************************************************************************
+int GetGridPos(short mx,short my)
+{
+    int     row,col,pos;
+
+row = my / GridSize;
+col = mx / GridSize;
+row += yCurrent;
+col += xCurrent;
+pos = (row * GRID_WIDTH) + col;
+return(pos);
+}
+
+//****************************************************************************
+//
+//****************************************************************************
+short ObjectInUse(short nCode)
+{
+    short   i;
+
+for (i = 0; i < 4096; i++)
+    {
+    if (nCode == (ObjGrid[i] & 0xFF))
+        return(1);
+    }
+
+return(0);
+}
+
+
+//****************************************************************************
+//
+//****************************************************************************
+void SetBitmap(HWND hWnd,short xPos,short yPos,short nCode)
+{
+    short   gsLeft,gsRight;
+    int     mPos;
+    NEWOBJECT  *pObj;
+    BOOL    bSetAll = FALSE;
+    unsigned short nMask;
+
+mPos = GetGridPos(xPos,yPos);
+
+switch (nViewType)
+    {
+    case VIEW_WALLS:
+        if (nEditType == EDIT_OBJECTS)
+            {
+            if (nCode != 0 && ObjectInUse(nCode) != 0)
+                {
+                MessageBox(hWnd,"Object has already been used in map.","Warning",MB_OK);
+                return;
+                }
+
+            ObjGrid[mPos] = nCode;
+            if (nCode)
+                {
+                pObj = ae->ObjList[nCode];
+                if (pObj != NULL)
+                    {
+                    yPos = (short)(yCurrent + (yPos / GridSize));
+                    xPos = (short)(xCurrent + (xPos / GridSize));
+                    pObj->x = (short)((xPos * GRID_WIDTH) + (GRID_WIDTH / 2));
+                    pObj->y = (short)((yPos * GRID_WIDTH) + (GRID_WIDTH / 2));
+                    pObj->mPos = (short)mPos;
+                    pObj->Active = 1;
+                    AckSetObjectType(ae,nCode,NO_CREATE);
+                    if (pObj->Flags & OF_MOVEABLE)
+                        ObjGrid[mPos] = nCode;
+                    }
+                else
+                    ObjGrid[mPos] = 0;
+                }
+            break;
+            }
+
+        xPos = (short)(xPos % GridSize);
+        yPos = (short)(yPos % GridSize);
+        gsLeft = 4;
+        gsRight = (short)(GridSize - 4);
+        if (nCode)
+            {
+            nMask = 0xFF00;
+            if (!nWallFlags) nMask = 0;
+            else nCode |= nWallFlags;
+            }
+        else
+            nMask = 0;
+
+
+        if (yPos > gsLeft && yPos < gsRight)
+            {
+            if (xPos < gsLeft)
+                {
+                ae->xGrid[mPos] &= nMask;
+                ae->xGrid[mPos] |= nCode;
+                }
+            else
+                {
+                if (xPos >= gsLeft)
+                    {
+                    ae->xGrid[mPos+1] &= nMask;
+                    ae->xGrid[mPos+1] |= nCode;
+                    }
+                else
+                    {
+                    bSetAll = TRUE;
+                    }
+                }
+            }
+
+        if (xPos > gsLeft && xPos < gsRight)
+            {
+            if (yPos < gsLeft)
+                {
+                ae->yGrid[mPos] &= nMask;
+                ae->yGrid[mPos] |= nCode;
+                }
+            else
+                {
+                if (yPos >= gsRight)
+                    {
+                    ae->yGrid[mPos+GRID_WIDTH] &= nMask;
+                    ae->yGrid[mPos+GRID_WIDTH] |= nCode;
+                    }
+                else
+                    {
+                    bSetAll = TRUE;
+                    }
+                }
+            }
+
+
+        if (bSetAll)
+            {
+            ae->xGrid[mPos] &= nMask;
+            ae->xGrid[mPos] |= nCode;
+            ae->xGrid[mPos+1] &= nMask;
+            ae->xGrid[mPos+1] |= nCode;
+            ae->yGrid[mPos] &= nMask;
+            ae->yGrid[mPos] |= nCode;
+            ae->yGrid[mPos+GRID_WIDTH] &= nMask;
+            ae->yGrid[mPos+GRID_WIDTH] |= nCode;
+            }
+        break;
+
+    case VIEW_FLOOR:
+        FloorMap[mPos] = nCode;
+        break;
+
+    case VIEW_CEILING:
+        CeilMap[mPos] = nCode;
+        break;
+
+    default:
+        break;
+    }
+
+bModified = TRUE;
+InvalidateRect(hWnd,NULL,TRUE);
+InvalidateRect(hwndApp,NULL,FALSE);
+}
+
+
+//****************************************************************************
+//
+//****************************************************************************
+void GrabSquare(HWND hWndChild,short xPos,short yPos)
+{
+    short   gsLeft,gsRight;
+    short   nCode = 0;
+    int     mPos;
+
+mPos = GetGridPos(xPos,yPos);
+
+switch (nViewType)
+    {
+    case VIEW_WALLS:
+        if (nEditType == EDIT_OBJECTS)
+            {
+            nCode = ObjGrid[mPos];
+            break;
+            }
+
+        xPos = (short)(xPos % GridSize);
+        yPos = (short)(yPos % GridSize);
+        gsLeft = 4;
+        gsRight = (short)(GridSize - 4);
+        if (yPos > gsLeft && yPos < gsRight)
+            {
+            if (xPos < gsLeft)
+                {
+                nCode = ae->xGrid[mPos];
+                }
+            else
+                {
+                if (xPos >= gsLeft)
+                    {
+                    nCode = ae->xGrid[mPos+1];
+                    }
+                }
+            }
+
+        if (xPos > gsLeft && xPos < gsRight)
+            {
+            if (yPos < gsLeft)
+                {
+                nCode = ae->yGrid[mPos];
+                }
+            else
+                {
+                if (yPos >= gsRight)
+                    {
+                    nCode = ae->yGrid[mPos+GRID_WIDTH];
+                    }
+                }
+            }
+        break;
+
+    case VIEW_FLOOR:
+        nCode = FloorMap[mPos];
+        break;
+
+    case VIEW_CEILING:
+        nCode = CeilMap[mPos];
+        break;
+
+    default:
+        break;
+    }
+
+if (nCode)
+    {
+    CurrentTopBitmap = CurrentBitmap = nCode & 0xFF;
+    SetScrollPos(hWndChild,SB_VERT,CurrentTopBitmap,TRUE);
+    InvalidateRect(hWndChild,NULL,TRUE);
+    }
+
+
+}
+
+//****************************************************************************
+//
+//****************************************************************************
+void RemapBufferPalettes(void)
+{
+    HBITMAP     hbm;
+    short       ht,wt,Counter;
+    RECT        rect;
+
+CreateAckPalette();
+
+for (Counter = 0;Counter < 256;Counter++)
+    {
+    BufferHeader.aColors[Counter].rgbRed   = ColorTable[Counter].rgbRed;
+    BufferHeader.aColors[Counter].rgbGreen = ColorTable[Counter].rgbGreen;
+    BufferHeader.aColors[Counter].rgbBlue  = ColorTable[Counter].rgbBlue;
+    BufferHeader.aColors[Counter].rgbReserved = 0;
+    }
+
+GetClientRect(hWndMap,&rect);
+wt = rect.right;
+ht = rect.bottom;
+
+if (MapBuffer)
+    {
+    //BufferHeader.Header.biWidth = wt;
+    //BufferHeader.Header.biHeight = -ht;
+
+    hbm = CreateCompatibleBitmap(MapBuffer,wt,ht);
+
+    hbm = (HBITMAP)SelectObject(MapBuffer,hbm);
+    DeleteObject(hbm);
+
+    PatBlt(MapBuffer,0,0,wt,ht,BLACKNESS);
+    }
+else
+    {
+    /*if (WinG.pRecommendDIBFormat((BITMAPINFO *)&BufferHeader))
+        {
+        BufferHeader.Header.biBitCount = 8;
+        BufferHeader.Header.biCompression = BI_RGB;
+        }
+    else
+        {
+        BufferHeader.Header.biSize = sizeof(BITMAPINFOHEADER);
+        BufferHeader.Header.biPlanes = 1;
+        BufferHeader.Header.biBitCount = 8;
+        BufferHeader.Header.biCompression = BI_RGB;
+        BufferHeader.Header.biSizeImage = 0;
+        BufferHeader.Header.biClrUsed = 0;
+        BufferHeader.Header.biClrImportant = 0;
+        }
+
+    BufferHeader.Header.biWidth = wt;
+    BufferHeader.Header.biHeight = -ht;*/
+
+    MapBuffer = CreateCompatibleDC(GetDC(hWndMap));
+    hbm = CreateCompatibleBitmap(GetDC(hWndMap),wt, ht);
+
+    SelectObject(MapBuffer,hbm);
+    PatBlt(MapBuffer, 0,0,wt,ht, BLACKNESS);
+    }
+
+
+if (Buffer)
+    {
+    //BufferHeader.Header.biWidth = 64;
+    //BufferHeader.Header.biHeight = -350;
+
+    hbm = CreateCompatibleBitmap(Buffer,64,350);
+
+    hbm = (HBITMAP)SelectObject(Buffer,hbm);
+    DeleteObject(hbm);
+
+    PatBlt(Buffer,0,0,wt,ht,BLACKNESS);
+    }
+else
+    {
+    /*if (WinG.pRecommendDIBFormat((BITMAPINFO *)&BufferHeader))
+        {
+        BufferHeader.Header.biBitCount = 8;
+        BufferHeader.Header.biCompression = BI_RGB;
+        }
+    else
+        {
+        BufferHeader.Header.biSize = sizeof(BITMAPINFOHEADER);
+        BufferHeader.Header.biPlanes = 1;
+        BufferHeader.Header.biBitCount = 8;
+        BufferHeader.Header.biCompression = BI_RGB;
+        BufferHeader.Header.biSizeImage = 0;
+        BufferHeader.Header.biClrUsed = 0;
+        BufferHeader.Header.biClrImportant = 0;
+        }
+
+    BufferHeader.Header.biWidth = 64;
+    BufferHeader.Header.biHeight = -350;*/
+
+    Buffer = CreateCompatibleDC(GetDC(hWndMap));
+    hbm = CreateCompatibleBitmap(GetDC(hWndMap), 64, 350);
+
+    SelectObject(Buffer,hbm);
+    PatBlt(Buffer, 0,0,wt,ht, BLACKNESS);
+    }
+
+
+if (AckBuffer)
+    {
+    //BufferHeader.Header.biWidth = nBitmapW;
+    //BufferHeader.Header.biHeight = -nBitmapH;   // -height for top-down display
+
+    hbm = CreateCompatibleBitmap(AckBuffer,nBitmapW,nBitmapH);
+
+    hbm = (HBITMAP)SelectObject(AckBuffer, hbm);
+    DeleteObject(hbm);
+
+    PatBlt(AckBuffer, 0,0,nBitmapW,nBitmapH, BLACKNESS);
+
+    if (ae != NULL)
+        {
+//        ae->ScreenBuffer = (UCHAR *)pAckBuffer;
+        ae->WinEndX = (short)nBitmapW;
+        ae->WinEndY = (short)nBitmapH;
+        if (ae->WinEndX > 319)
+            ae->WinEndX = 319;
+        if (ae->WinEndY > 199)
+            ae->WinEndY = 199;
+        AckRegisterStructure(ae);
+        }
+    }
+else
+    {
+    /*if (WinG.pRecommendDIBFormat((BITMAPINFO *)&BufferHeader))
+        {
+        BufferHeader.Header.biBitCount = 8;
+        BufferHeader.Header.biCompression = BI_RGB;
+        }
+    else
+        {
+        BufferHeader.Header.biSize = sizeof(BITMAPINFOHEADER);
+        BufferHeader.Header.biPlanes = 1;
+        BufferHeader.Header.biBitCount = 8;
+        BufferHeader.Header.biCompression = BI_RGB;
+        BufferHeader.Header.biSizeImage = 0;
+        BufferHeader.Header.biClrUsed = 0;
+        BufferHeader.Header.biClrImportant = 0;
+        }
+
+    BufferHeader.Header.biWidth = nBitmapW;
+    BufferHeader.Header.biHeight = -nBitmapH;*/
+
+    AckBuffer = CreateCompatibleDC(GetDC(hwndApp));
+    hbm = CreateCompatibleBitmap(GetDC(hwndApp),nBitmapW,nBitmapH);
+
+    SelectObject(AckBuffer, hbm);
+
+    PatBlt(AckBuffer, 0,0,nBitmapW,nBitmapH, BLACKNESS);
+    if (ae != NULL)
+        {
+//        ae->ScreenBuffer = (UCHAR *)pAckBuffer;
+        AckRegisterStructure(ae);
+        }
+    }
+
+}
+
+//****************************************************************************
+//
+//****************************************************************************
+void ResizeMapBuffer(HWND hWnd,LPARAM lParam)
+{
+    HBITMAP hbm;
+    short   ht,wt;
+    short   gWt,gHt;
+    int Counter;
+
+wt = LOWORD(lParam);
+ht = HIWORD(lParam);
+wt = ((wt+3)/4)*4;
+GridWidth = wt;
+GridHeight = ht;
+gHt = (short)(64 - (ht / GridSize));
+if (gHt < 1) gHt = 1;
+gWt = (short)(64 - (wt / GridSize));
+if (gWt < 1) gWt = 1;
+SetScrollRange(hWnd,SB_VERT,0,gHt,FALSE);
+SetScrollRange(hWnd,SB_HORZ,0,gWt,FALSE);
+SetScrollPos(hWnd,SB_VERT,0,TRUE);
+SetScrollPos(hWnd,SB_HORZ,0,TRUE);
+xCurrent = yCurrent = 0;
+
+if (MapBuffer)
+    {
+    BufferHeader.Header.biWidth = wt;
+    BufferHeader.Header.biHeight = -ht;
+
+    hbm = CreateCompatibleBitmap(GetDC(hWndMap),wt,ht);
+
+    hbm = (HBITMAP)SelectObject(MapBuffer, hbm);
+    DeleteObject(hbm);
+
+    PatBlt(MapBuffer, 0,0,wt,ht, BLACKNESS);
+    }
+else
+    {
+    /*if (WinG.pRecommendDIBFormat((BITMAPINFO *)&BufferHeader))
+        {
+        BufferHeader.Header.biBitCount = 8;
+        BufferHeader.Header.biCompression = BI_RGB;
+        }
+    else
+        {
+        BufferHeader.Header.biSize = sizeof(BITMAPINFOHEADER);
+        BufferHeader.Header.biPlanes = 1;
+        BufferHeader.Header.biBitCount = 8;
+        BufferHeader.Header.biCompression = BI_RGB;
+        BufferHeader.Header.biSizeImage = 0;
+        BufferHeader.Header.biClrUsed = 0;
+        BufferHeader.Header.biClrImportant = 0;
+        }
+
+    BufferHeader.Header.biWidth = wt;
+    BufferHeader.Header.biHeight = -ht;
+
+    for (Counter = 0;Counter < 256;Counter++)
+        {
+        BufferHeader.aColors[Counter].rgbRed   = ColorTable[Counter].rgbRed;
+        BufferHeader.aColors[Counter].rgbGreen = ColorTable[Counter].rgbGreen;
+        BufferHeader.aColors[Counter].rgbBlue  = ColorTable[Counter].rgbBlue;
+        BufferHeader.aColors[Counter].rgbReserved = 0;
+        }*/
+
+    MapBuffer = CreateCompatibleDC(GetDC(hWndMap));
+    hbm = CreateCompatibleBitmap(GetDC(hWndMap),wt,ht);
+
+    SelectObject(MapBuffer, hbm);
+    PatBlt(MapBuffer, 0,0,wt,ht, BLACKNESS);
+    }
+
+}
+
+//****************************************************************************
+//
+//****************************************************************************
+void DeleteBitmap(HWND hWnd,HWND hwndChild)
+{
+    short   mPos;
+
+
+if (nEditType == EDIT_WALLS)
+    {
+    if (ae->bMaps[CurrentBitmap] == NULL)
+        return;
+
+    if (MessageBox(hWnd,"Delete Current Bitmap?","Warning",MB_OKCANCEL) != IDOK)
+        return;
+
+    for (mPos = 0; mPos < 4096; mPos++)
+        {
+        if (CurrentBitmap == (ae->xGrid[mPos] & 0xFF))
+            ae->xGrid[mPos] = 0;
+        if (CurrentBitmap == (ae->yGrid[mPos] & 0xFF))
+            ae->yGrid[mPos] = 0;
+        if (CurrentBitmap == (FloorMap[mPos] & 0xFF))
+            FloorMap[mPos] = 0;
+        if (CurrentBitmap == (CeilMap[mPos] & 0xFF))
+            CeilMap[mPos] = 0;
+        }
+    AckFree(ae->bMaps[CurrentBitmap]);
+    ae->bMaps[CurrentBitmap] = NULL;
+    }
+else
+    {
+    if (ae->ObjList[CurrentBitmap] == NULL)
+        return;
+
+    if (MessageBox(hWnd,"Delete Current Object?","Warning",MB_OKCANCEL) != IDOK)
+        return;
+
+    for (mPos = 0; mPos < 4096; mPos++)
+        {
+        if (CurrentBitmap == (ObjGrid[mPos] & 0xFF))
+            ObjGrid[mPos] = 0;
+        }
+
+    AckFree(ae->ObjList[CurrentBitmap]);
+    ae->ObjList[CurrentBitmap] = NULL;
+    }
+
+
+InvalidateRect(hWnd,NULL,TRUE);
+InvalidateRect(hwndChild,NULL,TRUE);
+}
+
+//****************************************************************************
+//
+//****************************************************************************
+void FillBorder(void)
+{
+    short   row,col,offset;
+
+switch (nViewType)
+    {
+    case VIEW_WALLS:
+        offset = 0;
+        for (col = 0; col < 64; col++)
+            {
+            ae->yGrid[col] = CurrentBitmap;
+            }
+        for (row = 0; row < 64; row++)
+            {
+            ae->xGrid[offset] = CurrentBitmap;
+            ae->xGrid[offset+63] = CurrentBitmap;
+            offset += (short)64;
+            }
+
+        offset = 64 * 63;
+        for (col = 0; col < 64; col++)
+            {
+            ae->yGrid[offset++] = CurrentBitmap;
+            }
+        break;
+
+    case VIEW_FLOOR:
+        offset = 64 * 63;
+        for (col = 0; col < 64; col++)
+            {
+            FloorMap[col] = CurrentBitmap;
+            FloorMap[offset++] = CurrentBitmap;
+            }
+        offset = 0;
+        for (row = 0; row < 64; row++)
+            {
+            FloorMap[offset] = CurrentBitmap;
+            FloorMap[offset+63] = CurrentBitmap;
+            offset += (short)64;
+            }
+        break;
+
+    case VIEW_CEILING:
+        offset = 64 * 63;
+        for (col = 0; col < 64; col++)
+            {
+            CeilMap[col] = CurrentBitmap;
+            CeilMap[offset++] = CurrentBitmap;
+            }
+        offset = 0;
+        for (row = 0; row < 64; row++)
+            {
+            CeilMap[offset] = CurrentBitmap;
+            CeilMap[offset+63] = CurrentBitmap;
+            offset += (short)64;
+            }
+        break;
+
+    default:
+        break;
+    }
+
+bModified = TRUE;
+}
+
+
+//****************************************************************************
+//
+//****************************************************************************
+void FillEntireMap(short nCode)
+{
+    short   i;
+
+switch (nViewType)
+    {
+    case VIEW_WALLS:
+        for (i = 0; i < 4096; i++)
+            {
+            ae->xGrid[i] = nCode;
+            ae->yGrid[i] = nCode;
+            }
+        break;
+
+    case VIEW_FLOOR:
+        for (i = 0; i < 4096; i++)
+            FloorMap[i] = nCode;
+        break;
+
+    case VIEW_CEILING:
+        for (i = 0; i < 4096; i++)
+            CeilMap[i] = nCode;
+        break;
+
+    default:
+        break;
+    }
+
+bModified = TRUE;
+}
+
+//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//
+//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+short GetLoadType(char *szName)
+{
+    short   nType = BMLOAD_BBM;
+
+if (strstr(szName,".PCX"))
+    nType = BMLOAD_PCX;
+else
+    if (strstr(szName,".GIF"))
+        nType = BMLOAD_PNG;
+
+return(nType);
+}
+
+
+//****************************************************************************
+//
+//****************************************************************************
+void AddFileName(short nType,char *szName)
+{
+if (nType == TYPE_WALL)
+    {
+    if (bMapFiles[CurrentBitmap] != NULL)
+        AckFree(bMapFiles[CurrentBitmap]);
+    bMapFiles[CurrentBitmap] = (char *)AckMalloc(strlen(szName)+1);
+    lstrcpy(bMapFiles[CurrentBitmap],szName);
+    bMapType[CurrentBitmap] = GetLoadType(szName);
+    }
+else
+    {
+    if (oMapFiles[CurrentBitmap] != NULL)
+        AckFree(oMapFiles[CurrentBitmap]);
+    oMapFiles[CurrentBitmap] = (char *)AckMalloc(strlen(szName)+1);
+    lstrcpy(oMapFiles[CurrentBitmap],szName);
+    oMapType[CurrentBitmap] = GetLoadType(szName);
+    }
+
+bModified = TRUE;
+}
+
+//****************************************************************************
+//
+//****************************************************************************
+void RemoveFileName(short nType,short nIndex)
+{
+if (nType == TYPE_WALL)
+    {
+    if (bMapFiles[nIndex] != NULL)
+        {
+        AckFree(bMapFiles[nIndex]);
+        bMapFiles[nIndex] = NULL;
+        }
+    }
+else
+    {
+    if (oMapFiles[nIndex] != NULL)
+        {
+        AckFree(oMapFiles[nIndex]);
+        oMapFiles[nIndex] = NULL;
+        }
+    }
+}
+
+//****************************************************************************
+//
+//****************************************************************************
+void UpdateChildText(HWND hWnd)
+{
+    char    szBuf[50];
+
+if (nEditType == EDIT_WALLS)
+    wsprintf(szBuf,"Wall: %d",CurrentBitmap);
+else
+    wsprintf(szBuf,"Obj: %d",CurrentBitmap);
+
+SetWindowText(hWnd,szBuf);
+}
+
+
+//****************************************************************************
+//
+//****************************************************************************
+LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
+{
+    short           mx,my,nItem;
+    HDC             hDC;
+    LPMINMAXINFO    lpmmi;
+    LPWINDOWPOS     lpwp;
+    char            szName[128];
+
+
+    switch (iMessage)
+        {
+        case WM_CREATE:
+            SetScrollRange(hWnd,SB_VERT,0,64,TRUE);
+            SetScrollRange(hWnd,SB_HORZ,0,64,TRUE);
+            break;
+
+        case WM_CLOSE:
+            if (bModified)
+                {
+                if (MessageBox(hWnd,"Map has been modified.\nExit anyway?",
+                        "Exit",MB_YESNO) != IDYES)
+                    {
+                    return(0);
+                    }
+                }
+            DestroyWindow(hWnd);
+            return(0);
+
+        case WM_ERASEBKGND:
+            return(1L);
+
+        case WM_SIZE:
+            ResizeMapBuffer(hWnd,lParam);
+            break;
+
+        case WM_VSCROLL:
+            ScrollMap(hWnd,LOWORD(wParam),HIWORD(wParam),1);
+            break;
+
+        case WM_HSCROLL:
+            ScrollMap(hWnd,LOWORD(wParam),HIWORD(wParam),0);
+            break;
+
+        case WM_PAINT:
+            Paint();
+            break;
+
+
+        case WM_SETFOCUS:
+            InvalidateRect(hWnd,NULL,FALSE);
+            return DefWindowProc( hWnd, iMessage, wParam, lParam );
+
+        case WM_KEYDOWN:
+            ProcessKeys(iMessage,wParam);
+            if (wParam == VK_PRIOR)
+                {
+                nBackColor--;
+                InvalidateRect(hWnd,NULL,TRUE);
+                }
+
+            if (wParam == VK_NEXT)
+                {
+                nBackColor++;
+                InvalidateRect(hWnd,NULL,TRUE);
+                }
+
+            if (wParam == VK_F1)
+                {
+                wsprintf(LineBuffer,"ACK Mem used: %ld",AckMemUsed);
+                MessageBox(hWnd,LineBuffer,"Info",MB_OK);
+                }
+            break;
+
+        case WM_KEYUP:
+            ProcessKeys(iMessage,wParam);
+            InvalidateRect(hWnd,NULL,FALSE);
+            break;
+
+        case WM_LBUTTONDOWN:
+            mx = LOWORD(lParam);
+            my = HIWORD(lParam);
+            if (wParam & MK_CONTROL)
+                {
+                GrabSquare(hWndChild,mx,my);
+                break;
+                }
+
+            if (wParam & MK_SHIFT)
+                {
+                my = (short)(yCurrent + (my / GridSize));
+                mx = (short)(xCurrent + (mx / GridSize));
+                ae->xPlayer = (short)(mx * GRID_WIDTH);
+                ae->yPlayer = (short)(my * GRID_WIDTH);
+                InvalidateRect(hWnd,NULL,TRUE);
+                }
+            else
+                SetBitmap(hWnd,mx,my,CurrentBitmap);
+            break;
+
+        case WM_RBUTTONDOWN:
+            SetBitmap(hWnd,LOWORD(lParam),HIWORD(lParam),0);
+            break;
+
+        case WM_DESTROY:
+            PostQuitMessage( 0 );
+            break;
+
+        case WM_INITMENU:
+            switch (nViewType)
+                {
+                case VIEW_WALLS:
+                    nItem = CM_VIEWWALLS;
+                    break;
+
+                case VIEW_FLOOR:
+                    nItem = CM_VIEWFLOOR;
+                    break;
+
+                case VIEW_CEILING:
+                    nItem = CM_VIEWCEILING;
+                    break;
+
+                default:
+                    nItem = 0;
+                    break;
+                }
+            CheckMenuItem((HMENU)wParam,CM_VIEWWALLS,MF_UNCHECKED|MF_BYCOMMAND);
+            CheckMenuItem((HMENU)wParam,CM_VIEWFLOOR,MF_UNCHECKED|MF_BYCOMMAND);
+            CheckMenuItem((HMENU)wParam,CM_VIEWCEILING,MF_UNCHECKED|MF_BYCOMMAND);
+            CheckMenuItem((HMENU)wParam,nItem,MF_CHECKED|MF_BYCOMMAND);
+
+            CheckMenuItem((HMENU)wParam,CM_VIEWTIMES_ONE,MF_UNCHECKED|MF_BYCOMMAND);
+            CheckMenuItem((HMENU)wParam,CM_VIEWTIMES_TWO,MF_UNCHECKED|MF_BYCOMMAND);
+            if (StretchFactor == 1)
+                nItem = CM_VIEWTIMES_ONE;
+            else
+                nItem = CM_VIEWTIMES_TWO;
+            CheckMenuItem((HMENU)wParam,nItem,MF_CHECKED|MF_BYCOMMAND);
+
+            nItem = CM_EDITMAP;
+            if (nEditType == EDIT_OBJECTS)
+                nItem = CM_EDITOBJECTS;
+
+            CheckMenuItem((HMENU)wParam,CM_EDITMAP,MF_UNCHECKED|MF_BYCOMMAND);
+            CheckMenuItem((HMENU)wParam,CM_EDITOBJECTS,MF_UNCHECKED|MF_BYCOMMAND);
+            CheckMenuItem((HMENU)wParam,nItem,MF_CHECKED|MF_BYCOMMAND);
+
+            nItem = CM_WALLS_NORMAL;
+            if (nWallFlags & DOOR_TYPE_SPLIT)
+               nItem = CM_WALLS_SPLIT;
+            if (nWallFlags & DOOR_TYPE_SLIDE)
+               nItem = CM_WALLS_SLIDING;
+            if (nWallFlags & DOOR_TYPE_SECRET)
+               nItem = CM_WALLS_SECRET;
+
+            CheckMenuItem((HMENU)wParam,CM_WALLS_NORMAL,MF_UNCHECKED|MF_BYCOMMAND);
+            CheckMenuItem((HMENU)wParam,CM_WALLS_SPLIT,MF_UNCHECKED|MF_BYCOMMAND);
+            CheckMenuItem((HMENU)wParam,CM_WALLS_SLIDING,MF_UNCHECKED|MF_BYCOMMAND);
+            CheckMenuItem((HMENU)wParam,CM_WALLS_SECRET,MF_UNCHECKED|MF_BYCOMMAND);
+            CheckMenuItem((HMENU)wParam,nItem,MF_CHECKED|MF_BYCOMMAND);
+
+            mx = MF_UNCHECKED;
+            if (nWallFlags & WALL_TYPE_TRANS)
+               mx = MF_CHECKED;
+
+            mx |= MF_BYCOMMAND;
+            CheckMenuItem((HMENU)wParam,CM_WALLS_TRANSPARENT,mx);
+
+            mx = MF_UNCHECKED;
+            if (nWallFlags & WALL_TYPE_PASS)
+               mx = MF_CHECKED;
+
+            mx |= MF_BYCOMMAND;
+            CheckMenuItem((HMENU)wParam,CM_WALLS_PASSABLE,mx);
+
+            if (ae->SysFlags & SYS_SOLID_FLOOR)
+               mx = MF_CHECKED;
+            else
+               mx = MF_UNCHECKED;
+            mx |= MF_BYCOMMAND;
+            CheckMenuItem((HMENU)wParam,CM_GOODIESSOLID_FLOOR,mx);
+
+            if (ae->SysFlags & SYS_SOLID_CEIL)
+               mx = MF_CHECKED;
+            else
+               mx = MF_UNCHECKED;
+            mx |= MF_BYCOMMAND;
+            CheckMenuItem((HMENU)wParam,CM_GOODIESSOLID_CEILING,mx);
+
+            if (ae->LightFlag == SHADING_OFF)
+                mx = MF_UNCHECKED;
+            else
+                mx = MF_CHECKED;
+
+            mx |= MF_BYCOMMAND;
+            CheckMenuItem((HMENU)wParam,CM_GOODIESLIGHT_SHADING,mx);
+
+            if (ae->SysFlags & SYS_SINGLE_BMP)
+                mx = MF_CHECKED;
+            else
+                mx = MF_UNCHECKED;
+
+            mx |= MF_BYCOMMAND;
+            CheckMenuItem((HMENU)wParam,CM_GOODIESSINGLE_BITMAP,mx);
+
+            if (nEditType == EDIT_WALLS)
+                ModifyMenu((HMENU)wParam,CM_GOODIESATTRIBUTES,MF_STRING,
+                            CM_GOODIESATTRIBUTES,"&Wall Attributes ...");
+            else
+                ModifyMenu((HMENU)wParam,CM_GOODIESATTRIBUTES,MF_STRING,
+                            CM_GOODIESATTRIBUTES,"&Object Attributes ...");
+
+
+            if (bTrackPlayer)
+                mx = MF_CHECKED;
+            else
+                mx = MF_UNCHECKED;
+            mx |= MF_BYCOMMAND;
+            CheckMenuItem((HMENU)wParam,CM_GOODIESTRACK_PLAYER,mx);
+
+            if (bShowCoords)
+                mx = MF_CHECKED;
+            else
+                mx = MF_UNCHECKED;
+            mx |= MF_BYCOMMAND;
+            CheckMenuItem((HMENU)wParam,CM_GOODIESSHOW_COORDINATES,mx);
+
+            break;
+
+        case WM_GETMINMAXINFO:
+            lpmmi = (LPMINMAXINFO)lParam;
+            mx = (short)(GridSize * 24);
+            lpmmi->ptMaxSize.x = mx;
+            lpmmi->ptMaxSize.y = mx;
+            lpmmi->ptMaxTrackSize.x = mx;
+            lpmmi->ptMaxTrackSize.y = mx;
+            lpmmi->ptMinTrackSize.x = GridSize;
+            lpmmi->ptMinTrackSize.y = GridSize;
+            lpmmi->ptMaxPosition.x = 0;
+            lpmmi->ptMaxPosition.y = 0;
+            break;
+
+
+        case WM_PALETTECHANGED:
+            if (hWnd == (HWND)wParam)
+                break;
+            // Fall through here
+        case WM_QUERYNEWPALETTE:
+            hDC = GetDC(hWnd);
+            if (hpalApp)
+                SelectPalette(hDC,hpalApp,FALSE);
+            RealizePalette(hDC);
+            ReleaseDC(hWnd,hDC);
+            return FALSE;
+
+        case WM_WINDOWPOSCHANGING:
+            lpwp = (LPWINDOWPOS)lParam;
+            lpwp->cx = (lpwp->cx / GridSize) * GridSize;
+            lpwp->cy = (lpwp->cy / GridSize) * GridSize;
+            lpwp->flags |= SWP_NOCOPYBITS;
+            return 0;
+
+        case WM_COMMAND:
+            switch (wParam)
+                {
+                case CM_FILEOPEN:
+                    if (!ACKFileOpen(hWnd,ResFileName,sizeof(ResFileName),
+                        "Resource Files (*.dtf)\0*.dtf\0All Files (*.*)\0*.*\0",
+                        "Open Resource File","dtf"))
+                        {
+                        if (!AckOpenResource(ResFileName))
+                            {
+                            bNoShow = TRUE;
+                            AckReset();
+                            mx = (short)ProcessInfoFile(0);
+                            xCurrent = yCurrent = 0;
+                            CurrentTopBitmap = CurrentBitmap = 1;
+                            if (mx)
+                                {
+                                wsprintf(szName,"Error: %d in DTF file at line %d",mx,LineNumber);
+                                MessageBox(hWnd,szName,"ERROR",MB_OK);
+                                }
+                            else
+                                {
+                                LoadBackDrop();
+                                AckRegisterStructure(ae);
+                                bNoShow = FALSE;
+                                }
+
+                        //  AckDoSize(hWnd,0);
+                        //  CreateAckPalette();
+                            RemapBufferPalettes();
+                            InvalidateRect(hWnd,NULL,TRUE);
+                            InvalidateRect(hWndChild,NULL,TRUE);
+                            }
+                        }
+                    break;
+
+                case CM_FILESAVE:
+                     SetCurrentDirectory(szCurPath);
+                     SaveResource(hWnd,ResFileName);
+                     break;
+
+                case CM_FILESAVE_AS_:
+                    strcpy(szName,ResFileName);
+                    if (!ACKFileSave(hWnd,szName,sizeof(szName),
+                        "Resource Files (*.dtf)\0*.dtf\0All Files (*.*)\0*.*\0",
+                        "Save Resource File"))
+                        {
+                        SaveResource(hWnd,szName);
+                        strcpy(ResFileName,szName);
+                        GetCurrentDirectory(sizeof(szCurPath),szCurPath);
+                        }
+                    break;
+
+
+                case CM_FILEEXIT:
+                    if (bModified)
+                        {
+                        if (MessageBox(hWnd,"Map has been modified.\nExit anyway?",
+                            "Exit",MB_YESNO) != IDYES)
+                            {
+                            break;
+                            }
+                        }
+                    PostQuitMessage(0);
+                    break;
+
+                case CM_EDITGLOBAL:
+                    DoGlobalDlg(hInstGlobal,hWnd);
+                    break;
+
+                case CM_EDITMAP:
+                    nEditType = EDIT_WALLS;
+                    pBitmaps = ae->bMaps;
+                    if (nViewType != VIEW_WALLS)
+                        {
+                        nViewType = VIEW_WALLS;
+                        InvalidateRect(hWnd,NULL,TRUE);
+                        }
+                    CurrentTopBitmap = CurrentBitmap = 1;
+                    UpdateChildText(hWndChild);
+                    SetScrollPos(hWndChild,SB_VERT,1,TRUE);
+                    InvalidateRect(hWndChild,NULL,TRUE);
+                    break;
+
+                case CM_EDITOBJECTS:
+                    nEditType = EDIT_OBJECTS;
+                    pBitmaps = ae->oMaps;
+                    if (nViewType != VIEW_WALLS)
+                        {
+                        nViewType = VIEW_WALLS;
+                        InvalidateRect(hWnd,NULL,TRUE);
+                        }
+                    CurrentTopBitmap = CurrentBitmap = 1;
+                    UpdateChildText(hWndChild);
+                    SetScrollPos(hWndChild,SB_VERT,1,TRUE);
+                    InvalidateRect(hWndChild,NULL,TRUE);
+                    break;
+
+                case CM_BITMAPLOAD:
+                    bNoShow = TRUE;
+                    *szName = '\0';
+                    if (nEditType == EDIT_WALLS)
+                        {
+                        if (ae->bMaps[CurrentBitmap] != NULL)
+                            {
+                            if (MessageBox(hWnd,"Replace Current bitmap?","Warning",
+                                MB_OKCANCEL) != IDOK)
+                                {
+                                break;
+                                }
+
+                            }
+
+                        if (!ACKFileOpen(hWnd,szName,sizeof(szName),
+                            "PCX files (*.pcx)\0*.pcx\0BBM Bitmaps (*.bbm)\0*.bbm\0All Files (*.*)\0*.*\0",
+                            "Open Bitmap File","bbm"))
+                            {
+                            if (strstr(szName,".PCX"))
+                                ae->bmLoadType = BMLOAD_PCX;
+                            else if (strstr(szName,".PNG"))
+                                ae->bmLoadType = BMLOAD_PNG;
+                            //MEH Free bitmap data AFTER we know the user wants to
+                            AckFree(ae->bMaps[CurrentBitmap]);
+                            ae->bMaps[CurrentBitmap] = NULL;
+                            //----
+                            AckLoadBitmap(ae,CurrentBitmap,TYPE_WALL,szName);
+                            ae->bmLoadType = BMLOAD_BBM;
+                            AddFileName(TYPE_WALL,szName);
+                            InvalidateRect(hWndChild,NULL,TRUE);
+                            }
+                        }
+                    else
+                        {
+                        MessageBox(hWnd,"Use Object Attributes to\nload new bitmaps.",
+                                    "Information",MB_OK);
+                        }
+                    bNoShow = FALSE;
+                    break;
+
+                case CM_BITMAPDELETE:
+                    DeleteBitmap(hWnd,hWndChild);
+                    break;
+
+                case CM_VIEWWALLS:
+                    nViewType = VIEW_WALLS;
+                    SetWindowText(hWnd,"Map Editor - Walls");
+                    InvalidateRect(hWnd,NULL,TRUE);
+                    break;
+
+                case CM_VIEWFLOOR:
+                    nViewType = VIEW_FLOOR;
+                    SetWindowText(hWnd,"Map Editor - Floors");
+                    InvalidateRect(hWnd,NULL,TRUE);
+                    break;
+
+                case CM_VIEWCEILING:
+                    nViewType = VIEW_CEILING;
+                    SetWindowText(hWnd,"Map Editor - Ceilings");
+                    InvalidateRect(hWnd,NULL,TRUE);
+                    break;
+
+                case CM_GOODIESATTRIBUTES:
+                    if (nEditType == EDIT_OBJECTS)
+                        {
+                        if (ae->ObjList[CurrentBitmap] == NULL)
+                            {
+                            if (MessageBox(hWnd,"Create NEW object?","Question",
+                                MB_YESNO) != IDYES)
+                                {
+                                break;
+                                }
+                            AckCreateObject(ae,CurrentBitmap);
+                            AckSetObjectType(ae,CurrentBitmap,NO_CREATE);
+                            }
+                        }
+                    DoOptionsDlg(hInstGlobal,hWnd);
+                    SetCurrentDirectory(szCurPath);
+                    InvalidateRect(hWndChild,NULL,TRUE);
+                    break;
+
+                case CM_VIEWINF_FILE:
+                    DoInfoDlg(hInstGlobal,hWnd);
+                    break;
+
+                case CM_VIEWTIMES_ONE:
+                    StretchFactor = 1;
+                    SetWindowPos(hwndApp,NULL,0,0,320,200,
+                                 SWP_NOMOVE|SWP_NOZORDER|SWP_NOCOPYBITS);
+                    break;
+
+                case CM_VIEWTIMES_TWO:
+                    StretchFactor = 2;
+                    SetWindowPos(hwndApp,NULL,0,0,640,400,
+                                 SWP_NOMOVE|SWP_NOZORDER|SWP_NOCOPYBITS);
+                    break;
+
+
+                case CM_FILLBORDER:
+                    if (MessageBox(hWnd,"Fill border with current bitmap?","Warning",
+                        MB_OKCANCEL) == IDOK)
+                        {
+                        FillBorder();
+                        InvalidateRect(hWnd,NULL,TRUE);
+                        }
+                    break;
+
+                case CM_FILLENTIRE_MAP:
+                    if (MessageBox(hWnd,"Fill ENTIRE map with current bitmap?",
+                        "Warning",MB_OKCANCEL) == IDOK)
+                        {
+                        FillEntireMap(CurrentBitmap);
+                        InvalidateRect(hWnd,NULL,TRUE);
+                        }
+                    break;
+
+                case CM_WALLS_NORMAL:
+                    nWallFlags = 0;
+                    break;
+
+                case CM_WALLS_SPLIT:
+                    nWallFlags &= ~DOOR_TYPE_SLIDE;
+                    nWallFlags &= ~DOOR_TYPE_SECRET;
+                    nWallFlags |= DOOR_TYPE_SPLIT;
+                    break;
+
+                case CM_WALLS_SLIDING:
+                    nWallFlags &= ~DOOR_TYPE_SPLIT;
+                    nWallFlags &= ~DOOR_TYPE_SECRET;
+                    nWallFlags |= DOOR_TYPE_SLIDE;
+                    break;
+
+                case CM_WALLS_SECRET:
+                    nWallFlags &= ~DOOR_TYPE_SPLIT;
+                    nWallFlags &= ~DOOR_TYPE_SLIDE;
+                    nWallFlags |= DOOR_TYPE_SECRET;
+                    break;
+
+                case CM_WALLS_TRANSPARENT:
+                    nWallFlags ^= WALL_TYPE_TRANS;
+                    break;
+
+                case CM_WALLS_PASSABLE:
+                    nWallFlags ^= WALL_TYPE_PASS;
+                    break;
+
+                case CM_GOODIESCLEAR_MAP:
+                    if (MessageBox(hWnd,"Clear ENTIRE map?",
+                        "Warning",MB_OKCANCEL) == IDOK)
+                        {
+                        FillEntireMap(0);
+                        InvalidateRect(hWnd,NULL,TRUE);
+                        }
+                    break;
+
+
+                case CM_GOODIESLOAD_BACKDROP:
+                    *szName = '\0';
+                    if (!ACKFileOpen(hWnd,szName,sizeof(szName),
+                        "PCX files (*.pcx)\0*.pcx\0All Files (*.*)\0*.*\0",
+                        "Open Backdrop File","pcx"))
+                        {
+                        //if (strstr(szName,".PCX"))
+                        //    ae->bmLoadType = BMLOAD_PCX;
+                        LoadNewBackDrop(szName);
+                        //ae->bmLoadType = BMLOAD_BBM;
+                        lstrcpy(BackGndFile,szName);
+                        InvalidateRect(hwndApp,NULL,FALSE);
+                        }
+                    break;
+
+                case CM_GOODIESLIGHT_SHADING:
+                    if (ae->LightFlag == SHADING_OFF)
+                        ae->LightFlag = SHADING_ON;
+                    else
+                        ae->LightFlag = SHADING_OFF;
+                    AckSetupPalRanges(ae,ranges);
+                    AckRegisterStructure(ae);
+                    break;
+
+
+                case CM_GOODIESSOLID_FLOOR:
+                  ae->SysFlags ^= SYS_SOLID_FLOOR;
+                  AckRegisterStructure(ae);
+                  break;
+
+                case CM_GOODIESSOLID_CEILING:
+                  ae->SysFlags ^= SYS_SOLID_CEIL;
+                  AckRegisterStructure(ae);
+                  break;
+
+                case CM_GOODIESSINGLE_BITMAP:
+                    if (ae->SysFlags & SYS_SINGLE_BMP)
+                        ae->SysFlags &= ~SYS_SINGLE_BMP;
+                    else
+                        {
+                        ae->SysFlags |= SYS_SINGLE_BMP;
+                        ae->SysFlags &= ~SYS_SOLID_FLOOR;
+                        ae->SysFlags &= ~SYS_SOLID_CEIL;
+                        }
+                    AckRegisterStructure(ae);
+                    break;
+
+                case CM_GOODIESTRACK_PLAYER:
+                    bTrackPlayer ^= 1;
+                    InvalidateRect(hWnd,NULL,TRUE);
+                    break;
+
+                case CM_GOODIESSHOW_COORDINATES:
+                    bShowCoords ^= 1;
+                    InvalidateRect(hWnd,NULL,TRUE);
+                    break;
+
+                case CM_ASSIGN_CEILING:
+                    ae->CeilBitmap = CurrentBitmap;
+                    AckRegisterStructure(ae);
+                    break;
+
+                case CM_ASSIGN_FLOOR:
+                    ae->FloorBitmap = CurrentBitmap;
+                    AckRegisterStructure(ae);
+                    break;
+
+
+                default:
+                    break;
+                }
+            break;
+
+
+        default:
+            return DefWindowProc( hWnd, iMessage, wParam, lParam );
+        }
+return 0;
+}
+
+
+// If data pointers are near pointers
+#if defined(__SMALL__) || defined(__MEDIUM__)
+inline Window *GetPointer(HWND hWnd)
+{
+return (Window *)GetWindowWord(hWnd,0);
+}
+
+inline void SetPointer(HWND hWnd,Window *pWindow)
+{
+SetWindowWord(hWnd,0,(WORD)pWindow);
+}
+
+// else pointers are far
+#else//if defined(__LARGE__) || defined(__COMPACT__) || defined(__FLAT__)
+inline Window *GetPointer( HWND hWnd )
+{
+return (Window *)GetWindowLongPtr(hWnd,0);
+}
+
+inline void SetPointer( HWND hWnd, Window *pWindow )
+{
+SetWindowLongPtr(hWnd,0,(LONG) pWindow);
+}
+
+//#else
+//    #error Choose another memory model!
+#endif
+
+//****************************************************************************
+//
+//****************************************************************************
+LRESULT  CALLBACK _export WndProc(HWND hWnd,UINT iMessage,WPARAM wParam,
+                                 LPARAM lParam)
+{
+    LPCREATESTRUCT lpcs;
+    Window         *pWindow = GetPointer(hWnd);
+
+if (pWindow == 0)
+    {
+    if ( iMessage == WM_CREATE )
+        {
+        lpcs = (LPCREATESTRUCT) lParam;
+        pWindow = (Window *) lpcs->lpCreateParams;
+        SetPointer(hWnd,pWindow);
+        return pWindow->WndProc(iMessage,wParam,lParam);
+        }
+    else
+        return DefWindowProc(hWnd,iMessage,wParam,lParam);
+    }
+else
+    return pWindow->WndProc(iMessage,wParam,lParam);
+}
+
+
+
+//****************************************************************************
+//
+//****************************************************************************
+LRESULT  CALLBACK _export AckWndProc( HWND hWnd, UINT iMessage, WPARAM wParam,
+                                 LPARAM lParam )
+
+{
+        HDC         hDC;
+        PAINTSTRUCT ps;
+
+switch (iMessage)
+    {
+    case WM_CREATE:
+        break;
+
+    case WM_DESTROY:
+        PostQuitMessage(0);
+        break;
+
+    case WM_SIZE:
+        AckDoSize(hWnd,lParam);
+        break;
+
+    case WM_PAINT:
+        BeginPaint(hWnd,&ps);
+        AckPaint(hWnd,ps.hdc);
+        EndPaint(hWnd,&ps);
+        break;
+
+    case WM_SETCURSOR:
+        SetOperationCursor();
+        return(TRUE);
+
+    case WM_KEYDOWN:
+        ProcessKeys(iMessage,wParam);
+        break;
+    case WM_KEYUP:
+        ProcessKeys(iMessage,wParam);
+        InvalidateRect(hWndMap,NULL,FALSE);
+        break;
+
+    case WM_RBUTTONDOWN:
+        AckCheckDoorOpen(ae->xPlayer,ae->yPlayer,ae->PlayerAngle);
+        break;
+
+    case WM_LBUTTONDOWN:
+        ProcessMouse(hWnd,1,LOWORD(lParam),HIWORD(lParam));
+        SetCapture(hWnd);
+        break;
+
+    case WM_MOUSEMOVE:
+        if (wParam & MK_LBUTTON)
+            ProcessMouse(hWnd,1,LOWORD(lParam),HIWORD(lParam));
+        break;
+
+    case WM_LBUTTONUP:
+        ProcessMouse(hWnd,0,LOWORD(lParam),HIWORD(lParam));
+        ReleaseCapture();
+        InvalidateRect(hWndMap,NULL,FALSE);
+        break;
+
+    case WM_PALETTECHANGED:
+        if (hWnd == (HWND)wParam)
+            break;
+        // Fall through here
+    case WM_QUERYNEWPALETTE:
+        hDC = GetDC(hWnd);
+        if (hpalApp)
+            SelectPalette(hDC,hpalApp,FALSE);
+        RealizePalette(hDC);
+        ReleaseDC(hWnd,hDC);
+        return FALSE;
+
+
+    default:
+        return DefWindowProc(hWnd,iMessage,wParam,lParam);
+    }
+
+return 0;
+}
+
+//****************************************************************************
+//
+//****************************************************************************
+void SelectBitmap(HWND hWnd,short yPos)
+{
+    HDC     hdc;
+    short   oldCurrent = CurrentBitmap;
+
+CurrentBitmap = (short)(CurrentTopBitmap + (yPos / 66));
+if (CurrentBitmap != oldCurrent)
+    {
+    hdc = GetDC(hWnd);
+    HighlightBitmap(hdc,RGB(255,255,255));
+    ReleaseDC(hWnd,hdc);
+    InvalidateRect(hWnd,NULL,FALSE);
+    UpdateChildText(hWnd);
+    }
+}
+
+
+//****************************************************************************
+//
+//****************************************************************************
+void ScrollBitmaps(HWND hWnd,int nScrollCode,int nPos)
+{
+    HDC     hdc;
+    int     pos = GetScrollPos(hWnd,SB_VERT);
+
+switch (nScrollCode)
+    {
+    case SB_LINEDOWN:
+        if (pos < 253)
+            pos++;
+        break;
+
+    case SB_LINEUP:
+        if (pos > 1)
+            pos--;
+        break;
+
+    case SB_PAGEDOWN:
+        pos += 4;
+        if (pos > 253)
+            pos = 253;
+        break;
+
+    case SB_PAGEUP:
+        pos -= 4;
+        if (pos < 1)
+            pos = 1;
+
+    case SB_THUMBTRACK:
+    case SB_THUMBPOSITION:
+        pos = nPos;
+        if (pos < 1)
+            pos = 1;
+        break;
+
+    default:
+        break;
+    }
+
+CurrentTopBitmap = (short)pos;
+SetScrollPos(hWnd,SB_VERT,pos,TRUE);
+
+hdc = GetDC(hWnd);
+HighlightBitmap(hdc,RGB(255,255,255));
+ReleaseDC(hWnd,hdc);
+InvalidateRect(hWnd,NULL,FALSE);
+}
+
+
+//****************************************************************************
+//
+//****************************************************************************
+LRESULT  CALLBACK _export ChildWndProc( HWND hWnd, UINT iMessage, WPARAM wParam,
+                                 LPARAM lParam )
+{
+    HDC     hDC;
+
+switch (iMessage)
+    {
+    case WM_CREATE:
+        SetScrollRange(hWnd,SB_VERT,0,253,TRUE);
+        break;
+
+    case WM_PAINT:
+        PaintChild(hWnd);
+        break;
+
+    case WM_SETCURSOR:
+        SetOperationCursor();
+        return(TRUE);
+
+    case WM_LBUTTONDOWN:
+        SelectBitmap(hWnd,HIWORD(lParam));
+        break;
+
+    case WM_DESTROY:
+        PostQuitMessage( 0 );
+        break;
+
+    case WM_VSCROLL:
+        ScrollBitmaps(hWnd,LOWORD(wParam),HIWORD(wParam));
+        break;
+
+    case WM_KEYUP:
+        ProcessKeys(iMessage,wParam);
+        InvalidateRect(hWndMap,NULL,FALSE);
+        break;
+
+    case WM_KEYDOWN:
+        ProcessKeys(iMessage,wParam);
+        break;
+
+    case WM_PALETTECHANGED:
+        if (hWnd == (HWND)wParam)
+            break;
+        // Fall through here
+    case WM_QUERYNEWPALETTE:
+        hDC = GetDC(hWnd);
+        if (hpalApp)
+            SelectPalette(hDC,hpalApp,FALSE);
+        RealizePalette(hDC);
+        ReleaseDC(hWnd,hDC);
+        return FALSE;
+
+
+    default:
+        return DefWindowProc(hWnd,iMessage,wParam,lParam);
+    }
+return 0;
+}
+
+#pragma argsused
+#pragma option -w-aus
+//****************************************************************************
+//
+//****************************************************************************
+int PASCAL WinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance,LPSTR lpszCmdLine,
+                    int nCmdShow)
+{
+    short   i;
+    int     result;
+    HBITMAP hbm;
+
+nOperation = OP_NORMAL;
+hInstGlobal = hInstance;
+Main::hInstance = hInstance;
+Main::hPrevInstance = hPrevInstance;
+Main::nCmdShow = nCmdShow;
+
+MainWindow MainWnd;
+
+if ( ! Main::hPrevInstance )
+    MainWnd.Register();
+
+if (InitACKEngine())
+    return(-1);
+
+//MEH Read in our pallette also
+ReadInPallette();
+
+GetCurrentDirectory(sizeof(szCurPath),szCurPath);
+strcpy(ResFileName,"pics.dtf");
+AckOpenResource(ResFileName);
+result = ProcessInfoFile(1);
+
+if (result)
+    {
+    wsprintf(LineBuffer,"Error: %d reading resource\nfile %s",result,ResFileName);
+    MessageBox(NULL,LineBuffer,"Error",MB_OK|MB_ICONSTOP);
+    AckCloseResource();
+    return(-2);
+    }
+
+LoadBackDrop();
+AckCloseResource();
+
+nViewType = VIEW_WALLS;
+nEditType = EDIT_WALLS;
+nWallFlags = 0;
+nObjFlags = 0;
+nBackColor = 9;
+pBitmaps = ae->bMaps;
+BackGndFile[0] = '\0';
+nMoveSpeed = 0;
+nTurnSpeed = 0;
+bTrackPlayer = TRUE;
+bModified = FALSE;
+bShowCoords = FALSE;
+
+for (i = 0; i < MAX_OBJBMPS; i++)
+    {
+    oMapFiles[i] = NULL;
+    }
+
+for (i = 0; i < MAX_WALLBMPS; i++)
+    {
+    bMapFiles[i] = NULL;
+    }
+
+AckSetupPalRanges(ae,ranges);
+MainWnd.CreateAll();
+result = Main::MessageLoop();
+
+if (Buffer)
+    {
+    hbm = (HBITMAP)SelectObject(Buffer,gbmOldMonoBitmap);
+    DeleteObject(hbm);
+    DeleteDC(Buffer);
+    }
+
+if(hpalApp)
+    {
+    DeleteObject(hpalApp);
+    }
+
+//WinG.Free();
+
+return(result);
+}
+
+
+//MEH Read in the pallette from pallette.txt
+void ReadInPallette()
+{
+    std::ifstream infile("pallette.txt");
+    if(infile.fail())
+        return;
+//printf("reading in pallette\n");
+    for(int i = 0; i < 256; i++)
+    {
+        unsigned int r, g, b;
+        PalletteSlot p = {0, 0, 0};
+        infile >> r >> g >> b;
+        p.r = (unsigned char)b; //Flip blue and red, because Windows wants the icon data in BGRA format
+        p.g = (unsigned char)g;
+        p.b = (unsigned char)r;
+        p.a = 255;
+        //printf("%d, %d, %d\n", p.r, p.g, p.b);
+        pallette[i] = p;
+    }
+    infile.close();
+}
+
+
+
+
+

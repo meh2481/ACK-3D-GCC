@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="ACKEDIT" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="AckEdit" prefix_auto="1" extension_auto="1" />
+				<Option object_output=".\.objs\Debug" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="AckEdit" prefix_auto="1" extension_auto="1" />
+				<Option object_output=".\.objs\Release" />
+				<Option type="0" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+		</Compiler>
+		<Linker>
+			<Add library="gdi32" />
+			<Add library="user32" />
+			<Add library="kernel32" />
+			<Add library="comdlg32" />
+			<Add library="..\liback.a" />
+		</Linker>
+		<Unit filename="ACK.H" />
+		<Unit filename="ACK3D.H" />
+		<Unit filename="ACKDLG.CPP" />
+		<Unit filename="ACKDOC.H" />
+		<Unit filename="ACKDOOR.H" />
+		<Unit filename="ACKEDIT.CPP" />
+		<Unit filename="ACKEDIT.H" />
+		<Unit filename="ACKEDIT.RC">
+			<Option compilerVar="WINDRES" />
+		</Unit>
+		<Unit filename="ACKENG.H" />
+		<Unit filename="ACKEXT.H" />
+		<Unit filename="ACKOBJ.H" />
+		<Unit filename="ACKPLAY.H" />
+		<Unit filename="ACKRES.H" />
+		<Unit filename="ACKSUP.CPP" />
+		<Unit filename="ACKVIEW.H" />
+		<Unit filename="ACKWIN.CPP" />
+		<Unit filename="ACKWIN.H" />
+		<Unit filename="IFF.H" />
+		<Unit filename="KEYS.H" />
+		<Unit filename="WINPAL.CPP" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
