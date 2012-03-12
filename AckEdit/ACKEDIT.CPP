@@ -16,6 +16,9 @@
 //MEH Include this for reading in pallette
 #include <fstream>
 
+void ReadConfig();
+void WriteConfig();
+
 extern              short   rsHandle;
 extern              ULONG   *rbaTable;
 extern              short   Resolution;
@@ -267,8 +270,14 @@ Update();
 
 GetWindowRect(hWnd,&rect);
 
+char cBitmapTxt[32];
+if(nEditType == EDIT_OBJECTS)
+    sprintf(cBitmapTxt, "Obj: 1");
+else
+    sprintf(cBitmapTxt, "Wall: 1");
+
 hWndChild = CreateWindow( "ACKBitmaps",
-                "Wall: 1",
+                cBitmapTxt,
                 WS_POPUP|WS_BORDER|WS_CAPTION|WS_VISIBLE|WS_VSCROLL,
                 rect.right,
                 0,
@@ -290,8 +299,7 @@ xPos = (short)rect.right;
 
 GetWindowRect(hWndChild,&rect);
 
-nBitmapW = 319;         //default size (window client size to use).
-nBitmapH = 199;
+
 
 
 windx = windy = GetSystemMetrics(SM_CXBORDER) * 2;
@@ -308,6 +316,10 @@ hwndApp = CreateWindow ("ACK3DVIEW",    // Class name
                 (HMENU)NULL,            // use class menu
                 Main::hInstance,        // handle to window instance
                (LPSTR)NULL );           // no params to pass on
+
+//Set the window pos to 640*400 if stretched
+if(StretchFactor == 2)
+    SetWindowPos(hwndApp,NULL,0,0,640,400, SWP_NOMOVE|SWP_NOZORDER|SWP_NOCOPYBITS);
 
 if (!hwndApp)
     {
@@ -2750,6 +2762,10 @@ nTurnSpeed = 0;
 bTrackPlayer = TRUE;
 bModified = FALSE;
 bShowCoords = FALSE;
+nBitmapW = 319;         //default size (window client size to use).
+nBitmapH = 199;
+ReadConfig();
+
 
 for (i = 0; i < MAX_OBJBMPS; i++)
     {
@@ -2778,6 +2794,7 @@ if(hpalApp)
     }
 
 //WinG.Free();
+WriteConfig();
 
 return(result);
 }

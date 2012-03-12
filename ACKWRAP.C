@@ -63,12 +63,12 @@ short AckWrapUp (ACKENG * ae)
 
 if (AckKeyboardSetup)
     {
-    AckSetIntVector(9,OldKeybdInt.sel,OldKeybdInt.off);
+//    AckSetIntVector(9,OldKeybdInt.sel,OldKeybdInt.off);
     AckKeyboardSetup = 0;
     }
 if (AckTimerSetup)
     {
-    AckSetIntVector(0x1C,OldTimerInt.sel,OldTimerInt.off);
+//    AckSetIntVector(0x1C,OldTimerInt.sel,OldTimerInt.off);
     AckTimerSetup = 0;
     }
 

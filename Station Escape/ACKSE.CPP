@@ -157,6 +157,9 @@ nIntroCount = 0;
 // Here we loop until the application closes
 result = MessageLoop();
 
+//Kill all the ACK-3D buffers and stuffz
+AckWrapUp(ae);
+
 // Free up our buffers we used from WinG
 if (AckBuffer)
   {
