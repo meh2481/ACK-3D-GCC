@@ -289,13 +289,13 @@ short AckReadMapFile(ACKENG *ae,char *MapFileName);
 short AckLoadBitmap(ACKENG *ae,short BitmapNumber,short BitmapType,char *bmFileName);
 /* Loads a bitmap and places in either bMaps or oMaps based on bmType */
 
-UCHAR *AckReadiff(char *FileName);
+UCHAR *AckReadBBM(char *FileName);
 /* Reads in a .LBM or .BBM file and returns a buffer */
 
 UCHAR *AckReadPCX(char *filename);
 /* Reads in a .PCX file and returns a buffer */
 
-UCHAR *AckReadgif(char *FileName);
+UCHAR *AckReadPNG(char *FileName);
 /* Reads a 256 color GIF file and returns a buffer */
 
 short AckLoadAndSetPalette(char *FileName);

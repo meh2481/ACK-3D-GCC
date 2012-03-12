@@ -55,7 +55,7 @@ if (rsHandle)
 
 }
 
-unsigned char *AckReadiff(char *picname)
+unsigned char *AckReadBBM(char *picname)
    {
 //   FILE     *pic;
    short    handle;

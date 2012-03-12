@@ -334,10 +334,10 @@ short AckSetupObject(ACKENG *ae,short oNum,short oType,OBJSEQ *os);
 // The user callable functions defined in ACKIFF.C, ACKGIF.C, and ACKPCX.C
 //*************************************************************************
 // Reads in a .LBM or .BBM file and returns a buffer.
-UCHAR *AckReadiff(char *FileName);
+UCHAR *AckReadBBM(char *FileName);
 
 // Reads a 256 color GIF file and returns a buffer.
-UCHAR *AckReadgif(char *FileName);
+UCHAR *AckReadPNG(char *FileName);
 
 // Reads in a 256 color PCX file and returns a buffer.
 UCHAR *AckReadPCX(char *filename);

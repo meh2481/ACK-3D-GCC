@@ -19,7 +19,7 @@
 // image.
 //北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
 //#pragma argsused
-unsigned char *AckReadgif (char *picname)
+unsigned char *AckReadPNG (char *picname)
 {
 // This is a stub routine used only as a place holder for the actual
 // GIF read routine. It was omitted based on current patent issues.

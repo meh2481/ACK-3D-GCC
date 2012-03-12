@@ -15,7 +15,7 @@
 #include "ackext.h"
 
 char *GetExtent(char *s);
-UCHAR *AckReadiff(char *s);
+UCHAR *AckReadBBM(char *s);
 UCHAR *AckReadPCX(char *s);
 short BlankSlice(short,UCHAR *);
 
@@ -62,10 +62,10 @@ bLen = BITMAP_SIZE + BITMAP_WIDTH;
 buf = NULL;
 
 if (ae->bmLoadType == BMLOAD_BBM)
-    buf = AckReadiff(BitmapName);
+    buf = AckReadBBM(BitmapName);
 
 if (ae->bmLoadType == BMLOAD_PNG)
-	buf = AckReadgif(BitmapName);
+	buf = AckReadPNG(BitmapName);
 
 if (ae->bmLoadType == BMLOAD_PCX)
 	buf = AckReadPCX(BitmapName);
