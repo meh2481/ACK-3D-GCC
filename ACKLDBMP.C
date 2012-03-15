@@ -55,7 +55,6 @@ short AckLoadBitmap(ACKENG *ae,short BitmapNumber,short BitmapType,char *BitmapN
     UCHAR    *buf;
     UCHAR    *bmp;
     UCHAR    *bmpFlags;
-
 bFlag = 0;
 
 bLen = BITMAP_SIZE + BITMAP_WIDTH;
@@ -71,7 +70,10 @@ if (ae->bmLoadType == BMLOAD_PCX)
 	buf = AckReadPCX(BitmapName);
 
 if (buf == NULL)
-	return(ERR_LOADINGBITMAP);
+{
+    //printf("Bitmap name: %s\n", BitmapName);
+    return(ERR_LOADINGBITMAP);
+}
 
 x = (*(short *)buf);
 y = (*(short *)&buf[2]);

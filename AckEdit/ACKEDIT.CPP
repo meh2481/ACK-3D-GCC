@@ -1170,6 +1170,14 @@ switch (nViewType)
                 return;
                 }
 
+            //MEH Set object to inactive if we're right-clicking it, BEFORE WE REMOVE IT! Grr...
+            if(!nCode)
+            {
+                pObj = ae->ObjList[ObjGrid[mPos]];
+                if(pObj != NULL)
+                    pObj->Active = 0;
+            }
+
             ObjGrid[mPos] = nCode;
             if (nCode)
                 {
@@ -1729,11 +1737,34 @@ void FillEntireMap(short nCode)
 switch (nViewType)
     {
     case VIEW_WALLS:
-        for (i = 0; i < 4096; i++)
+        //MEH Clear objects if we're editing them, rather than just blindly clearing walls
+        if(nEditType == EDIT_OBJECTS)
+        {
+            //Loop through all grid positions
+            for (i = 0; i < 4096; i++)
             {
-            ae->xGrid[i] = nCode;
-            ae->yGrid[i] = nCode;
+                //Grab the object at this position
+                unsigned short nCode = ObjGrid[i];
+                if(nCode)   //If there's one here,
+                {
+                    //Grab the object at this position
+                    NEWOBJECT* pObj = ae->ObjList[nCode];
+                    if(pObj != NULL)
+                    {
+                        pObj->Active = 0;   //MAKE IT INACTIVE BEFORE YOU DELETE IT
+                    }
+                    ObjGrid[i] = 0; //Remove it
+                }
             }
+        }
+        else    //Otherwise, clear the walls
+        {
+            for (i = 0; i < 4096; i++)
+            {
+                ae->xGrid[i] = nCode;
+                ae->yGrid[i] = nCode;
+            }
+        }
         break;
 
     case VIEW_FLOOR:
@@ -2243,18 +2274,33 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                     break;
 
                 case CM_VIEWWALLS:
+                    if (nEditType != EDIT_WALLS)    //MEH Make sure we aren't editing objects while viewing floors or cielings!!!
+                    {
+                        nEditType = EDIT_WALLS;
+                        InvalidateRect(hWndChild,NULL,TRUE);
+                    }
                     nViewType = VIEW_WALLS;
                     SetWindowText(hWnd,"Map Editor - Walls");
                     InvalidateRect(hWnd,NULL,TRUE);
                     break;
 
                 case CM_VIEWFLOOR:
+                    if (nEditType != EDIT_WALLS)    //MEH Make sure we aren't editing objects while viewing floors or cielings!!!
+                    {
+                        nEditType = EDIT_WALLS;
+                        InvalidateRect(hWndChild,NULL,TRUE);
+                    }
                     nViewType = VIEW_FLOOR;
                     SetWindowText(hWnd,"Map Editor - Floors");
                     InvalidateRect(hWnd,NULL,TRUE);
                     break;
 
                 case CM_VIEWCEILING:
+                    if (nEditType != EDIT_WALLS)    //MEH Make sure we aren't editing objects while viewing floors or cielings!!!
+                    {
+                        nEditType = EDIT_WALLS;
+                        InvalidateRect(hWndChild,NULL,TRUE);
+                    }
                     nViewType = VIEW_CEILING;
                     SetWindowText(hWnd,"Map Editor - Ceilings");
                     InvalidateRect(hWnd,NULL,TRUE);
