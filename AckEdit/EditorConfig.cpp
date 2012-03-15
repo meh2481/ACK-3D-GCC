@@ -21,7 +21,7 @@
 using std::endl;
 
 //Default name for text file we'll open
-const char sConfigFile[] = "config.txt";
+const char sConfigFile[] = "./config.txt";
 
 //Variables we want to keep in the config
 extern BOOL        bTrackPlayer;   // On if map tracks player position

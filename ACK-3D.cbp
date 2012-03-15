@@ -52,9 +52,6 @@
 		<Unit filename="ACKFLOOR.C">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="ACKGIF.C">
-			<Option compilerVar="CC" />
-		</Unit>
 		<Unit filename="ACKIFF.C">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -71,6 +68,9 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="ACKPCX.C">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="ACKPNG.C">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="ACKPOV.C">

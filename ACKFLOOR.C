@@ -34,10 +34,10 @@ extern    ACKENG* ae;//MEH
     long    mFactor;
     long    dFactor;
 
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 // Internal function called during the initialize process to setup the
 // floor and light shading arrays.
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 void SetupFloors(ACKENG *ae)
 {
     short   i;//,a;
@@ -89,9 +89,9 @@ dFactor = 160;
 // methods.
 #define DRAW_BACK       1
 
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 // Draws the floor and ceiling horizontally.
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 void AckDrawFloorHz(void)
 {
     int     col,row,ht,Rcol,EndCol,BegCol;
@@ -271,9 +271,9 @@ for (col = BegCol; col < EndCol; col ++)//= 2)
 
 }
 
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 // Draws the floor and ceiling horizontally.
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 void AckDrawCeilingOnlyNS(void)
 {
     int     col,row,ht,Rcol,EndCol,BegCol;
@@ -429,9 +429,9 @@ for (col = BegCol; col < EndCol; col ++)//= 2)
 
 }
 
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 // Draws the floor and ceiling horizontally.
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 void AckDrawFloorOnlyNS(void)
 {
     int     col,row,ht,Rcol,EndCol,BegCol;
@@ -586,10 +586,10 @@ for (col = BegCol; col < EndCol; col ++)//= 2)
 }
 
 
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 // The function performs the same process as AckDrawFloorHz except here
 // we include light shading with distance.
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 void AckDrawFloor(void)
 {
     int     col,row,ht,Rcol,EndCol,BegCol;
@@ -773,9 +773,9 @@ for (col = BegCol; col < EndCol; col ++)//= 2) //MEH For higher resolution, only
 
 }
 
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 // Draw ceiling texture bitmaps only. Floor is assumed to be a solid color.
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 void AckDrawCeilingOnly(void)
 {
     int     col,row,ht,Rcol,EndCol,BegCol;
@@ -938,9 +938,9 @@ for (col = BegCol; col < EndCol; col ++)//= 2)
 }
 
 
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 // Draw floor textured bitmaps only. Ceiling is a solid color.
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 void AckDrawFloorOnly(void)
 {
     int     col,row,ht,Rcol,EndCol,BegCol;
@@ -1101,13 +1101,13 @@ for (col = BegCol; col < EndCol; col ++)//= 2)
 
 
 
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 // This function performs the same process as AckDrawFloorHz except
 // we don't need to check for a bitmap index for every pixel since only
 // one bitmap will be used for the floor and one bitmap for the ceiling.
 // Draws a floor that contains only one type of bitmap. This is a much
 // faster process and may be useful in some applications.
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 void AckDrawOneFloor(void)
 {
     int     col,row,ht,Rcol,EndCol,BegCol;

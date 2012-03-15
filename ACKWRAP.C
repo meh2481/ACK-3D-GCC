@@ -25,11 +25,11 @@ extern	SELOFF	OldTimerInt;
 
 void AckSetIntVector(int VecNum,int sel,int VecOff);
 
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 // Frees up buffers and closes any resource file that may be open.
 // After calling this function, do NOT call AckBuildView() or
 // AckDisplayScreen()
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 short AckWrapUp (ACKENG * ae)
 {
 

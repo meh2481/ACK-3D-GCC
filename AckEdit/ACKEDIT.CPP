@@ -109,7 +109,7 @@ extern              char    LineBuffer[];
 
 
 ColorRange  ranges[64] = {
-        {16,15},
+        {16,16},
         {32,16},
         {48,16},
         {64,16},
@@ -125,13 +125,13 @@ ColorRange  ranges[64] = {
         {160,8},
         {168,8},
         {176,8},
-        {184,16},
-        {200,16},
-        {216,16},
-        {232,16},
-        {248,16},
+        {184,8},
+        {192,16},
+        {208,16},
+        {224,16},
+        {240,15},
         {0,0}
-        };
+};
 
     extern  int LineNumber; // In ACKSUP.CPP
 
@@ -2216,9 +2216,9 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                             "PCX files (*.pcx)\0*.pcx\0BBM Bitmaps (*.bbm)\0*.bbm\0All Files (*.*)\0*.*\0",
                             "Open Bitmap File","bbm"))
                             {
-                            if (strstr(szName,".PCX"))
+                            if (strstr(szName,".PCX") || strstr(szName,".pcx"))
                                 ae->bmLoadType = BMLOAD_PCX;
-                            else if (strstr(szName,".PNG"))
+                            else if (strstr(szName,".PNG") || strstr(szName,".png"))
                                 ae->bmLoadType = BMLOAD_PNG;
                             //MEH Free bitmap data AFTER we know the user wants to
                             AckFree(ae->bMaps[CurrentBitmap]);

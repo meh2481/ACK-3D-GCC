@@ -58,7 +58,6 @@
 		<Unit filename="ACKWIN.CPP" />
 		<Unit filename="ACKWIN.H" />
 		<Unit filename="EditorConfig.cpp" />
-		<Unit filename="IFF.H" />
 		<Unit filename="KEYS.H" />
 		<Unit filename="WINPAL.CPP" />
 		<Extensions>

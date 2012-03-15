@@ -19,10 +19,10 @@ UCHAR *AckReadBBM(char *s);
 UCHAR *AckReadPCX(char *s);
 short BlankSlice(short,UCHAR *);
 
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 // Determines if the column of the bitmap contains all transparent colors
 // or not. If so then it is marked to be skipped during the draw phase.
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 short BlankSlice(short col,UCHAR *bmp)
 {
     short     i,pos;
@@ -38,14 +38,14 @@ return(0);
 }
 
 
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 // Loads a bitmap of different formats based on the setting of bmLoadType
 // in the ACKENG interface structure. The bitmap loaded is placed into
 // either the wall bitmap array or the object array based on the value
 // of BitmapType passed to this function.
 // BitmapName can be either a filename or an index into the currently
 // open resource file.
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 short AckLoadBitmap(ACKENG *ae,short BitmapNumber,short BitmapType,char *BitmapName)
 {
     short    handle,bFlag;
@@ -143,9 +143,9 @@ AckFree(buf);
 return(0);
 }
 
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 // Returns a pointer to the file extent
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 char *GetExtent(char *s)
 {
     char    *e;
@@ -158,28 +158,28 @@ e++;
 return(e);
 }
 
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 // Calls AckLoadBitmap with the TYPE_WALL flag set so the bitmap is placed
 // in the wall array.
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 short AckLoadWall(ACKENG *ae,short WallNumber,char *bmFileName)
 {
 return( AckLoadBitmap(ae,WallNumber,TYPE_WALL,bmFileName) );
 }
 
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 // Calls AckLoadBitmap with the TYPE_OBJECT flag set so the bitmap is
 // placed in the object array.
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 short AckLoadObject(ACKENG *ae,short BmpNumber,char *bmFileName)
 {
 return( AckLoadBitmap(ae,BmpNumber,TYPE_OBJECT,bmFileName) );
 }
 
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 // Creates an object structure. This function MUST be called before the
 // object data can be initialized in the NEWOBJECT structure.
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 short AckCreateObject(ACKENG *ae,short ObjNumber)
 {
 
@@ -199,11 +199,11 @@ if (ObjNumber >= ae->MaxObjects)
 return(0);
 }
 
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 // Sets an object up into one of the predefined phase types (CREATE,DESTROY,
 // etc.). Moveable objects are placed into a special list that is used
 // later in the drawing phase.
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 short AckSetObjectType(ACKENG *ae,short oNum,short oType)
 {
     short   i,j,result = 0;
@@ -271,12 +271,12 @@ if (ae->ObjList[oNum]->Flags & OF_MOVEABLE)
 return(result);
 }
 
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 // Fills in the object structure with a communication structure passed
 // by the application. This allows the application to setup the fields
 // such as number of sides to an object, what bitmaps are displayed for
 // each side, etc. The object structures are defined in ACK3D.H
-//北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
+//------------------------------------------------------------------------
 short AckSetupObject(ACKENG *ae,short oNum,short oType,OBJSEQ *os)
 {
     short   result = 0;
