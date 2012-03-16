@@ -71,7 +71,7 @@ void BuildUpView(void)
             ViewAngle += INT_ANGLE_360;
 
         //printf("Now in loop %d\n", i);
-        WallDistTable[i] = 4096; //init to max dist by default
+        WallDistTable[i] = 2048; //init to max dist by default
         sPtr = &(Slice[ViewColumn]);
         //movzx edi,[_ViewAngle]
         xRaySetup();
@@ -195,211 +195,26 @@ void DrawWalls(void)
 //Draw a wall column without light shading
 void ShowColNS(void)
 {
-    //Grab the bitmap number for this slice. And it with 0xFF to eliminate any wall flags on it (like passable, door, etc)
-    unsigned short bNumber = gCurSlice->bNumber & 0xFF;
-    //Find the spot in the wall-drawing table that we should start at
-    short* sTableSpot = LowerTable[gCurSlice->Distance];
-    //Get the height for the wall that we're supposed to draw
-    unsigned int iWallHeight = DistanceTable[gCurSlice->Distance] - 1;
-
-    if(iWallHeight > 99)
-        iWallHeight = 99;   //Force to half the screen as a max height
-    // Draw bottom half of bitmap, from the middle down
-    //CurCol will point at the screen buffer where we're supposed to draw the bitmap to. Start at the top of the buffer.
-    UCHAR* CurCol = &(gScrnBuffer[g_iCurScreenSpot]);
-    //Then move to the vertical center of the buffer
-    CurCol=&CurCol[VIEW_WIDTH * gWinHeight/2];
-    //BmpCol is the column of the bitmap that we're going to draw to the screenbuffer. Start by getting the right bitmap
-    UCHAR* BmpCol = gCurSlice->bMap[bNumber];
-    //Jump to the vertical center of the bitmap (note bitmaps are rotated 90 degrees in memory)
-    BmpCol=&BmpCol[BITMAP_HEIGHT / 2];
-    //Jump to the horizontal column we're going to draw from
-    BmpCol = &BmpCol[gCurSlice->bColumn * BITMAP_WIDTH];
-
-    //Loop through this bottom half of the bitmap
-    int i;
-    for(i = 0; i < iWallHeight; i++)
-    {
-        //The LowerTable tells us what pixels from the bitmap to draw
-        *CurCol = BmpCol[*sTableSpot];
-        //Go to next pixel in the column (320 pixels later, as screenbuffer is in row-col format)
-        CurCol=&CurCol[VIEW_WIDTH];
-        //Get next pixel number we're supposed to draw
-        sTableSpot++;
-    }
-
-    //Draw top half of bitmap, from the middle up
-    iWallHeight++; //Seems we drop a couple pixels from the top accidentally. Fix this.
-    //if(iWallHeight > 102)
-    //    iWallHeight = 102;  //Make sure we don't go above range
-    //Reset our pointers
-    sTableSpot = LowerTable[gCurSlice->Distance];
-    CurCol = &(gScrnBuffer[g_iCurScreenSpot]);
-    CurCol=&CurCol[VIEW_WIDTH * (gWinHeight/2 - 1)];
-    BmpCol = gCurSlice->bMap[bNumber];
-    BmpCol = &BmpCol[gCurSlice->bColumn * BITMAP_HEIGHT];
-    BmpCol=&BmpCol[BITMAP_HEIGHT / 2 - 1];
-    for(i = 0; i < iWallHeight; i++)
-    {
-        //Of course, now we're drawing pixels above the middle of the bitmap, so use this as a negative index
-        *CurCol = BmpCol[-(*sTableSpot)];
-        //Go up one pixel row for next pixel up in the column
-        CurCol-=VIEW_WIDTH;
-        sTableSpot++;
-    }
+    ShowColumn(0,0);
 
 }
 
 //Draw a wall column without light shading, replacing black with transparency
 void ShowColMaskNS(void)
 {
-    unsigned short bNumber = gCurSlice->bNumber & 0xFF;
-    short* sTableSpot = LowerTable[gCurSlice->Distance];
-    //Get the height for the wall that we're supposed to draw
-    unsigned int iWallHeight = DistanceTable[gCurSlice->Distance] - 1;
-
-    if(iWallHeight > 99)
-    {
-        iWallHeight = 99;   //Force to max height
-    }
-
-
-    // Draw bottom half of bitmap - from middle of screen down
-    UCHAR* CurCol = &(gScrnBuffer[g_iCurScreenSpot]);
-    CurCol=&CurCol[VIEW_WIDTH * gWinHeight/2];
-    UCHAR* BmpCol = gCurSlice->bMap[bNumber];
-    BmpCol=&BmpCol[BITMAP_HEIGHT / 2];
-    BmpCol = &BmpCol[gCurSlice->bColumn * BITMAP_WIDTH];
-    //CurCol += ((200 - iWallHeight) / 2) * 320;
-    int i;
-    for(i = 0; i < iWallHeight; i++)
-    {
-        //This is the same as ShowColNS(), only we don't draw this pixel if it's transparent (0, aka black)
-        if(BmpCol[*sTableSpot] != 0)
-            *CurCol = BmpCol[*sTableSpot];
-        CurCol=&CurCol[VIEW_WIDTH];
-        sTableSpot++;
-    }
-
-    //Draw top half of bitmap - from middle of screen up
-    iWallHeight++;
-    sTableSpot = LowerTable[gCurSlice->Distance];
-    CurCol = &(gScrnBuffer[g_iCurScreenSpot]);
-    CurCol=&CurCol[VIEW_WIDTH * (gWinHeight/2 - 1)];
-    BmpCol = gCurSlice->bMap[bNumber];
-    BmpCol = &BmpCol[gCurSlice->bColumn * BITMAP_HEIGHT];
-    BmpCol=&BmpCol[BITMAP_HEIGHT / 2 - 1];
-    for(i = 0; i < iWallHeight; i++)
-    {
-        if(BmpCol[-(*sTableSpot)] != 0) //Skip over this pixel if it's transparent
-            *CurCol = BmpCol[-(*sTableSpot)];
-        CurCol-=VIEW_WIDTH;
-        sTableSpot++;
-    }
+    ShowColumn(1,0);
 }
 
 //ShowCol - Draw a column of wall with light shading
 void ShowCol(void)
 {
-    //Grab the bitmap number for this slice. And it with 0xFF to eliminate any wall flags on it (like passable, door, etc)
-    unsigned short bNumber = gCurSlice->bNumber & 0xFF;
-    //Find the spot in the wall-drawing table that we should start at
-    short* sTableSpot = LowerTable[gCurSlice->Distance];
-    //Get the height for the wall that we're supposed to draw
-    unsigned int iWallHeight = DistanceTable[gCurSlice->Distance] - 1;
-
-    if(iWallHeight > 99)
-        iWallHeight = 99;   //Force to half the screen as a max height
-    // Draw bottom half of bitmap, from the middle down
-    //CurCol will point at the screen buffer where we're supposed to draw the bitmap to. Start at the top of the buffer.
-    UCHAR* CurCol = &(gScrnBuffer[g_iCurScreenSpot]);
-    //Then move to the vertical center of the buffer
-    CurCol=&CurCol[VIEW_WIDTH * gWinHeight/2];
-    //BmpCol is the column of the bitmap that we're going to draw to the screenbuffer. Start by getting the right bitmap
-    UCHAR* BmpCol = gCurSlice->bMap[bNumber];
-    //Jump to the vertical center of the bitmap (note bitmaps are rotated 90 degrees in memory)
-    BmpCol=&BmpCol[BITMAP_HEIGHT / 2];
-    //Jump to the horizontal column we're going to draw from
-    BmpCol = &BmpCol[gCurSlice->bColumn * BITMAP_WIDTH];
-
-    //Loop through this bottom half of the bitmap
-    int i;
-    for(i = 0; i < iWallHeight; i++)
-    {
-        *CurCol = GetLightShadedPixel(BmpCol[*sTableSpot]);
-        //Go to next pixel in the column (320 pixels later, as screenbuffer is in row-col format)
-        CurCol=&CurCol[VIEW_WIDTH];
-        //Get next pixel number we're supposed to draw
-        sTableSpot++;
-    }
-
-    //Draw top half of bitmap, from the middle up
-    iWallHeight++; //Seems we drop a couple pixels from the top accidentally. Fix this.
-    if(iWallHeight > 100)
-        iWallHeight = 100;  //Make sure we don't go above range
-    //Reset our pointers
-    sTableSpot = LowerTable[gCurSlice->Distance];
-    CurCol = &(gScrnBuffer[g_iCurScreenSpot]);
-    CurCol=&CurCol[VIEW_WIDTH * (gWinHeight/2 - 1)];
-    BmpCol = gCurSlice->bMap[bNumber];
-    BmpCol = &BmpCol[gCurSlice->bColumn * BITMAP_HEIGHT];
-    BmpCol=&BmpCol[BITMAP_HEIGHT / 2 - 1];
-    for(i = 0; i < iWallHeight; i++)
-    {
-        //Of course, now we're drawing pixels above the middle of the bitmap, so use this as a negative index
-        *CurCol = GetLightShadedPixel(BmpCol[-(*sTableSpot)]);
-        //Go up one pixel row for next pixel up in the column
-        CurCol-=VIEW_WIDTH;
-        sTableSpot++;
-    }
+    ShowColumn(0,1);
 }
 
 //ShowColMask - Draw a column of wall with light shading, replacing black color with transparency
 void ShowColMask(void)
 {
-    unsigned short bNumber = gCurSlice->bNumber & 0xFF;
-    short* sTableSpot = LowerTable[gCurSlice->Distance];
-    //Get the height for the wall that we're supposed to draw
-    unsigned int iWallHeight = DistanceTable[gCurSlice->Distance] - 1;
-
-    if(iWallHeight > 99)
-    {
-        iWallHeight = 99;   //Force to max height
-    }
-
-
-    // Draw bottom half of bitmap - from middle of screen down
-    UCHAR* CurCol = &(gScrnBuffer[g_iCurScreenSpot]);
-    CurCol=&CurCol[VIEW_WIDTH * gWinHeight/2];
-    UCHAR* BmpCol = gCurSlice->bMap[bNumber];
-    BmpCol=&BmpCol[BITMAP_HEIGHT / 2];
-    BmpCol = &BmpCol[gCurSlice->bColumn * BITMAP_WIDTH];
-    //CurCol += ((200 - iWallHeight) / 2) * 320;
-    int i;
-    for(i = 0; i < iWallHeight; i++)
-    {
-        //This is the same as ShowColNS(), only we don't draw this pixel if it's transparent (0, aka black)
-        if(BmpCol[*sTableSpot] != 0)
-            *CurCol = GetLightShadedPixel(BmpCol[*sTableSpot]);
-        CurCol=&CurCol[VIEW_WIDTH];
-        sTableSpot++;
-    }
-
-    //Draw top half of bitmap - from middle of screen up
-    iWallHeight++;
-    sTableSpot = LowerTable[gCurSlice->Distance];
-    CurCol = &(gScrnBuffer[g_iCurScreenSpot]);
-    CurCol=&CurCol[VIEW_WIDTH * (gWinHeight/2 - 1)];
-    BmpCol = gCurSlice->bMap[bNumber];
-    BmpCol = &BmpCol[gCurSlice->bColumn * BITMAP_HEIGHT];
-    BmpCol=&BmpCol[BITMAP_HEIGHT / 2 - 1];
-    for(i = 0; i < iWallHeight; i++)
-    {
-        if(BmpCol[-(*sTableSpot)] != 0) //Skip over this pixel if it's transparent
-            *CurCol = GetLightShadedPixel(BmpCol[-(*sTableSpot)]);
-        CurCol-=VIEW_WIDTH;
-        sTableSpot++;
-    }
+    ShowColumn(1,1);    //Draw masked, with light shading
 }
 
 
@@ -425,3 +240,65 @@ unsigned char GetLightShadedPixel(unsigned char cPixel)
     return cPixel;
 }
 
+//Draw this column; all four options in one for code reuse
+void ShowColumn(char bTrans, char bLightShaded)
+{
+    unsigned short bNumber = gCurSlice->bNumber & 0xFF;
+    short* sTableSpot = LowerTable[gCurSlice->Distance];
+    //Get the height for the wall that we're supposed to draw
+    unsigned int iWallHeight = DistanceTable[gCurSlice->Distance] - 1;
+
+    if(iWallHeight > 99)
+    {
+        iWallHeight = 99;   //Force to max height
+    }
+
+
+    // Draw bottom half of bitmap - from middle of screen down
+    UCHAR* CurCol = &(gScrnBuffer[g_iCurScreenSpot]);
+    CurCol=&CurCol[VIEW_WIDTH * gWinHeight/2];
+    UCHAR* BmpCol = gCurSlice->bMap[bNumber];
+    BmpCol=&BmpCol[BITMAP_HEIGHT / 2];
+    BmpCol = &BmpCol[gCurSlice->bColumn * BITMAP_WIDTH];
+    //CurCol += ((200 - iWallHeight) / 2) * 320;
+    int i;
+    for(i = 0; i < iWallHeight; i++)
+    {
+        UCHAR cTemp = BmpCol[*sTableSpot];
+        //Get lightshaded value if we should
+        if(bLightShaded)
+            cTemp = GetLightShadedPixel(cTemp);
+        // If we're transparent and not invisible
+        if(bTrans && cTemp)
+            *CurCol = cTemp;
+        //Not transparent
+        else if(!bTrans)
+            *CurCol = cTemp;
+        CurCol=&CurCol[VIEW_WIDTH];
+        sTableSpot++;
+    }
+
+    //Draw top half of bitmap - from middle of screen up
+    iWallHeight++;
+    sTableSpot = LowerTable[gCurSlice->Distance];
+    CurCol = &(gScrnBuffer[g_iCurScreenSpot]);
+    CurCol=&CurCol[VIEW_WIDTH * (gWinHeight/2 - 1)];
+    BmpCol = gCurSlice->bMap[bNumber];
+    BmpCol = &BmpCol[gCurSlice->bColumn * BITMAP_HEIGHT];
+    BmpCol=&BmpCol[BITMAP_HEIGHT / 2 - 1];
+    for(i = 0; i < iWallHeight; i++)
+    {
+        UCHAR cTemp = BmpCol[-(*sTableSpot)];
+        //Get lightshaded value if we should
+        if(bLightShaded)
+            cTemp = GetLightShadedPixel(cTemp);
+        // If we're transparent and not invisible
+        if(bTrans && cTemp)
+            *CurCol = cTemp;
+        //Not transparent
+        else if(!bTrans)
+            *CurCol = cTemp;
+        CurCol-=VIEW_WIDTH;
+        sTableSpot++;
+    }
+}

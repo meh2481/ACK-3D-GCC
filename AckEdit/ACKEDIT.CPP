@@ -1791,10 +1791,10 @@ short GetLoadType(char *szName)
 {
     short   nType = BMLOAD_BBM;
 
-if (strstr(szName,".PCX"))
+if (strstr(szName,".PCX") || strstr(szName,".pcx"))
     nType = BMLOAD_PCX;
 else
-    if (strstr(szName,".GIF"))
+    if (strstr(szName,".PNG") || strstr(szName,".png"))
         nType = BMLOAD_PNG;
 
 return(nType);

@@ -80,6 +80,7 @@ void FindObject(void);
 void CheckHitMap(void);
 void DrawWalls(void);
 unsigned char GetLightShadedPixel(unsigned char cPixel);    //MEH Get a pixel's correct lightshaded value
+void ShowColumn(char bTrans, char bLightShaded);            //MEH All the ShowColX() routines call this one, for code reuse
 
 //MEH Variables I'm adding for ease-of-use
 SLICE* gCurSlice;
