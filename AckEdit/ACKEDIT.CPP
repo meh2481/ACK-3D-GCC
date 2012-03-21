@@ -20,6 +20,8 @@
 void ReadConfig();
 void WriteConfig();
 void HandleGenericKeypresses(WPARAM wParam);
+void UpdateParentText(HWND hWnd);
+void UpdateChildText(HWND hWnd);
 
 extern              short   rsHandle;
 extern              ULONG   *rbaTable;
@@ -381,6 +383,10 @@ PatBlt(MapBuffer, 0,0,rect.right,rect.bottom, BLACKNESS);
 bMapBitmapInitialized = TRUE;
 InvalidateRect(hWnd,NULL,TRUE);
 InvalidateRect(hWndChild,NULL,TRUE);
+
+//MEH Make sure windows have right text to start with
+UpdateChildText(hWndChild);
+UpdateParentText(hWnd);
 }
 
 HINSTANCE Main::hInstance = 0;
@@ -763,10 +769,9 @@ SelectObject(hdc,OldBrush);
 DeleteObject(NewBrush);
 
 if (bShowCoords)
-    {
-    wsprintf(LineBuffer,"Map Editor - Row:%d,Col:%d",ae->yPlayer >> 6,ae->xPlayer >> 6);
-    SetWindowText(hWnd,LineBuffer);
-    }
+{
+    UpdateParentText(hWnd);
+}
 
 free(TempScreenBuffer); //MEH clean up memory
 free(TempIconBuffer);
@@ -1869,6 +1874,50 @@ else
 SetWindowText(hWnd,szBuf);
 }
 
+//****************************************************************************
+//  MEH Update the parent text
+//****************************************************************************
+void UpdateParentText(HWND hWnd)
+{
+    char buf[128];
+    switch(nViewType)
+    {
+        case VIEW_WALLS:
+            if (bShowCoords)
+            {
+                wsprintf(buf,"Map Editor - Walls Row:%d,Col:%d",ae->yPlayer >> 6,ae->xPlayer >> 6);
+                SetWindowText(hWnd,buf);
+            }
+            else
+            {
+                SetWindowText(hWnd,"Map Editor - Walls");
+            }
+            break;
+        case VIEW_FLOOR:
+            if (bShowCoords)
+            {
+                wsprintf(buf,"Map Editor - Floors Row:%d,Col:%d",ae->yPlayer >> 6,ae->xPlayer >> 6);
+                SetWindowText(hWnd,buf);
+            }
+            else
+            {
+                SetWindowText(hWnd,"Map Editor - Floors");
+            }
+            break;
+        case VIEW_CEILING:
+            if (bShowCoords)
+            {
+                wsprintf(buf,"Map Editor - Ceilings Row:%d,Col:%d",ae->yPlayer >> 6,ae->xPlayer >> 6);
+                SetWindowText(hWnd,buf);
+            }
+            else
+            {
+                SetWindowText(hWnd,"Map Editor - Ceilings");
+            }
+            break;
+    }
+}
+
 
 //****************************************************************************
 //
@@ -2276,7 +2325,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         InvalidateRect(hWndChild,NULL,TRUE);
                     }
                     nViewType = VIEW_WALLS;
-                    SetWindowText(hWnd,"Map Editor - Walls");
+                    UpdateParentText(hWnd);
                     InvalidateRect(hWnd,NULL,TRUE);
                     break;
 
@@ -2287,7 +2336,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         InvalidateRect(hWndChild,NULL,TRUE);
                     }
                     nViewType = VIEW_FLOOR;
-                    SetWindowText(hWnd,"Map Editor - Floors");
+                    UpdateParentText(hWnd);
                     InvalidateRect(hWnd,NULL,TRUE);
                     break;
 
@@ -2298,7 +2347,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         InvalidateRect(hWndChild,NULL,TRUE);
                     }
                     nViewType = VIEW_CEILING;
-                    SetWindowText(hWnd,"Map Editor - Ceilings");
+                    UpdateParentText(hWnd);
                     InvalidateRect(hWnd,NULL,TRUE);
                     break;
 
@@ -2730,8 +2779,6 @@ switch (iMessage)
         SelectBitmap(hWnd,HIWORD(lParam));
         break;
 
-    //MEH Double-clicking on wall or object in bitmap window brings up object dialog
-
     case WM_DESTROY:
         PostQuitMessage( 0 );
         break;
@@ -2912,6 +2959,7 @@ void HandleGenericKeypresses(WPARAM wParam)
             //Of course, redraw and set the child (bitmap) window text to be correct
             InvalidateRect(MainAppWnd->GetChildHandle(), NULL, TRUE);
             UpdateChildText(MainAppWnd->GetChildHandle());
+            UpdateParentText(MainAppWnd->GetHandle());
             break;
 
         //Pagedown/pageup causes background color to change
@@ -2936,6 +2984,7 @@ void HandleGenericKeypresses(WPARAM wParam)
                 }
                 nViewType = VIEW_WALLS;
                 InvalidateRect(MainAppWnd->GetHandle(), NULL, TRUE);
+                UpdateParentText(MainAppWnd->GetHandle());
             }
             break;
 
@@ -2951,6 +3000,7 @@ void HandleGenericKeypresses(WPARAM wParam)
                 }
                 nViewType = VIEW_FLOOR;
                 InvalidateRect(MainAppWnd->GetHandle(), NULL, TRUE);
+                UpdateParentText(MainAppWnd->GetHandle());
             }
             break;
 
@@ -2966,6 +3016,7 @@ void HandleGenericKeypresses(WPARAM wParam)
                 }
                 nViewType = VIEW_CEILING;
                 InvalidateRect(MainAppWnd->GetHandle(), NULL, TRUE);
+                UpdateParentText(MainAppWnd->GetHandle());
             }
             break;
     }
