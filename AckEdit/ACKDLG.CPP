@@ -830,7 +830,7 @@ switch (iMessage)
         SetScrollPos(GetDlgItem(hDlg,IDC_VSCROLLCURRENT),SB_CTL,0,FALSE);
         return(TRUE);
 
-    case WM_LBUTTONDBLCLK:
+    case WM_LBUTTONUP:    //MEH Left-clicking, rather than double-clicking, moves bitmaps. I HATE double-clicking.
         pt.x = LOWORD(lParam);
         pt.y = HIWORD(lParam);
         ClientToScreen(hDlg,&pt);

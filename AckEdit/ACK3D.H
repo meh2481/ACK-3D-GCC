@@ -1,5 +1,6 @@
 /* Header file for ACK3D engine interface */
-
+#ifndef ACK3D_EDITOR_H
+#define ACK3D_EDITOR_H
 /* USED TO RID OURSELVES OF THE MANY CASTING PROBLEMS */
 #define CAST(t,f) (t)(f)
 /*#define CAST(t,f) (f)*/ /* BACK TO NORMAL */
@@ -412,3 +413,18 @@ void *AckMalloc(size_t mSize);
 void AckFree(void *m);
 /* ALL memory allocated with AckMalloc must use AckFree to free memory */
 
+//MEH Defines I need
+#ifndef VK_1
+#define VK_1 49
+#endif
+#ifndef VK_2
+#define VK_2 50
+#endif
+#ifndef VK_3
+#define VK_3 51
+#endif
+
+
+
+
+#endif //Defined ACK3D_EDITOR_H

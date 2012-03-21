@@ -16,8 +16,10 @@
 //MEH Include this for reading in pallette
 #include <fstream>
 
+//MEH My function declarations
 void ReadConfig();
 void WriteConfig();
+void HandleGenericKeypresses(WPARAM wParam);
 
 extern              short   rsHandle;
 extern              ULONG   *rbaTable;
@@ -106,6 +108,9 @@ extern              char    LineBuffer[];
     short       oMapType[MAX_OBJBMPS];
 
     char        BackGndFile[128];
+
+    //MEH So we can globally access our main window...
+    MainWindow* MainAppWnd;
 
 
 ColorRange  ranges[64] = {
@@ -1170,13 +1175,13 @@ switch (nViewType)
                 return;
                 }
 
-            //MEH Set object to inactive if we're right-clicking it, BEFORE WE REMOVE IT! Grr...
-            if(!nCode)
-            {
-                pObj = ae->ObjList[ObjGrid[mPos]];
-                if(pObj != NULL)
-                    pObj->Active = 0;
-            }
+            //MEH Set object at this position to inactive, BEFORE WE REMOVE IT! Grr...
+            //(if (!nCode), then we're removing an object, and if(nCode), then we're placing an object here,
+            // and there could be one here already, so test whatever the case is)
+            pObj = ae->ObjList[ObjGrid[mPos]];
+            if(pObj != NULL)
+                pObj->Active = 0;
+            //--MEH
 
             ObjGrid[mPos] = nCode;
             if (nCode)
@@ -1922,23 +1927,14 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
 
         case WM_KEYDOWN:
             ProcessKeys(iMessage,wParam);
-            if (wParam == VK_PRIOR)
-                {
-                nBackColor--;
-                InvalidateRect(hWnd,NULL,TRUE);
-                }
-
-            if (wParam == VK_NEXT)
-                {
-                nBackColor++;
-                InvalidateRect(hWnd,NULL,TRUE);
-                }
-
-            if (wParam == VK_F1)
-                {
-                wsprintf(LineBuffer,"ACK Mem used: %ld",AckMemUsed);
-                MessageBox(hWnd,LineBuffer,"Info",MB_OK);
-                }
+            HandleGenericKeypresses(wParam);
+            switch(wParam)
+            {
+                case VK_F1:
+                    wsprintf(LineBuffer,"ACK Mem used: %ld",AckMemUsed);
+                    MessageBox(hWnd,LineBuffer,"Info",MB_OK);
+                    break;
+            }
             break;
 
         case WM_KEYUP:
@@ -2571,6 +2567,7 @@ switch (iMessage)
 
     case WM_KEYDOWN:
         ProcessKeys(iMessage,wParam);
+        HandleGenericKeypresses(wParam);
         break;
     case WM_KEYUP:
         ProcessKeys(iMessage,wParam);
@@ -2625,14 +2622,32 @@ void SelectBitmap(HWND hWnd,short yPos)
     HDC     hdc;
     short   oldCurrent = CurrentBitmap;
 
-CurrentBitmap = (short)(CurrentTopBitmap + (yPos / 66));
-if (CurrentBitmap != oldCurrent)
+    CurrentBitmap = (short)(CurrentTopBitmap + (yPos / 66));
+    if (CurrentBitmap != oldCurrent)
     {
-    hdc = GetDC(hWnd);
-    HighlightBitmap(hdc,RGB(255,255,255));
-    ReleaseDC(hWnd,hdc);
-    InvalidateRect(hWnd,NULL,FALSE);
-    UpdateChildText(hWnd);
+        hdc = GetDC(hWnd);
+        HighlightBitmap(hdc,RGB(255,255,255));
+        ReleaseDC(hWnd,hdc);
+        InvalidateRect(hWnd,NULL,FALSE);
+        UpdateChildText(hWnd);
+    }
+    else    //MEH If we're clicking the same bitmap again, open wall options dialog
+    {
+        if (nEditType == EDIT_OBJECTS)
+        {
+            if (ae->ObjList[CurrentBitmap] == NULL)
+            {
+                if (MessageBox(MainAppWnd->GetHandle(),"Create NEW object?","Question", MB_YESNO) != IDYES)
+                {
+                    return;
+                }
+                AckCreateObject(ae,CurrentBitmap);
+                AckSetObjectType(ae,CurrentBitmap,NO_CREATE);
+            }
+        }
+        DoOptionsDlg(hInstGlobal,MainAppWnd->GetHandle());
+        SetCurrentDirectory(szCurPath);
+        InvalidateRect(MainAppWnd->GetChildHandle(),NULL,TRUE);
     }
 }
 
@@ -2715,6 +2730,8 @@ switch (iMessage)
         SelectBitmap(hWnd,HIWORD(lParam));
         break;
 
+    //MEH Double-clicking on wall or object in bitmap window brings up object dialog
+
     case WM_DESTROY:
         PostQuitMessage( 0 );
         break;
@@ -2730,6 +2747,7 @@ switch (iMessage)
 
     case WM_KEYDOWN:
         ProcessKeys(iMessage,wParam);
+        HandleGenericKeypresses(wParam);
         break;
 
     case WM_PALETTECHANGED:
@@ -2770,6 +2788,7 @@ Main::hPrevInstance = hPrevInstance;
 Main::nCmdShow = nCmdShow;
 
 MainWindow MainWnd;
+MainAppWnd = &MainWnd;
 
 if ( ! Main::hPrevInstance )
     MainWnd.Register();
@@ -2869,6 +2888,88 @@ void ReadInPallette()
 }
 
 
+//MEH Handle key presses no matter what window they're in, if they're a keypress we want to respond
+// to no matter the window. That kinda explains itself, doesn't it?
+void HandleGenericKeypresses(WPARAM wParam)
+{
+    switch(wParam)
+    {
+        //MEH Pressing tab will alternate object editing and wall editing
+        case VK_TAB:
+            if(nEditType == EDIT_OBJECTS)
+            {
+                nEditType = EDIT_WALLS;
+            }
+            else
+            {
+                if(nViewType == VIEW_FLOOR || nViewType == VIEW_CEILING)
+                {
+                    nViewType = VIEW_WALLS;
+                    InvalidateRect(MainAppWnd->GetHandle(), NULL, TRUE);
+                }
+                nEditType = EDIT_OBJECTS;
+            }
+            //Of course, redraw and set the child (bitmap) window text to be correct
+            InvalidateRect(MainAppWnd->GetChildHandle(), NULL, TRUE);
+            UpdateChildText(MainAppWnd->GetChildHandle());
+            break;
+
+        //Pagedown/pageup causes background color to change
+        case VK_PRIOR:
+            nBackColor--;
+            break;
+
+        case VK_NEXT:
+            nBackColor++;
+            break;
+
+        //MEH Pressing 1, 2, 3 will change view type
+        case VK_1:
+            if(nViewType != VIEW_WALLS || nEditType == EDIT_OBJECTS)
+            {
+                //Redraw the bitmap window if we're toggling from objects
+                if(nEditType == EDIT_OBJECTS)
+                {
+                    nEditType = EDIT_WALLS;
+                    InvalidateRect(MainAppWnd->GetChildHandle(), NULL, TRUE);
+                    UpdateChildText(MainAppWnd->GetChildHandle());
+                }
+                nViewType = VIEW_WALLS;
+                InvalidateRect(MainAppWnd->GetHandle(), NULL, TRUE);
+            }
+            break;
+
+        case VK_2:
+            if(nViewType != VIEW_FLOOR)
+            {
+                //Redraw the bitmap window if we're toggling from objects
+                if(nEditType == EDIT_OBJECTS)
+                {
+                    nEditType = EDIT_WALLS;
+                    InvalidateRect(MainAppWnd->GetChildHandle(), NULL, TRUE);
+                    UpdateChildText(MainAppWnd->GetChildHandle());
+                }
+                nViewType = VIEW_FLOOR;
+                InvalidateRect(MainAppWnd->GetHandle(), NULL, TRUE);
+            }
+            break;
+
+        case VK_3:
+            if(nViewType != VIEW_CEILING)
+            {
+                //Redraw the bitmap window if we're toggling from objects
+                if(nEditType == EDIT_OBJECTS)
+                {
+                    nEditType = EDIT_WALLS;
+                    InvalidateRect(MainAppWnd->GetChildHandle(), NULL, TRUE);
+                    UpdateChildText(MainAppWnd->GetChildHandle());
+                }
+                nViewType = VIEW_CEILING;
+                InvalidateRect(MainAppWnd->GetHandle(), NULL, TRUE);
+            }
+            break;
+    }
+}
 
 
 

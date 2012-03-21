@@ -587,25 +587,8 @@ if (ae != NULL && nIntroCount == 0)
 // Check for any introduction graphics to display
 if (nIntroCount)
   {
-  /*if (pIntroBuf != NULL && AckBuffer != NULL)
-    {
-    memcpy(pAckBuffer,&pIntroBuf[4],64000);
-    AckFree(pIntroBuf);
-    pIntroBuf = NULL;
-    }
-  nIntroCount--;*/
   nIntroCount = 0;  //Segfaults on memcpy(), and I don't want this anyway.
   }
-// Let WinG display the buffer into our window. We can use a StretchFactor
-// to display larger windows if so desired, at the cost of speed. The
-// fastest way is to simply BitBlt the buffer into our window.
-//HBITMAP hbm = CreateBitmap(320, 200, 1, 8, ae->ScreenBuffer);
-//SelectObject(AckBuffer, hbm);
-//PatBlt(AckBuffer, 0,0,nBitmapW,nBitmapH, WHITENESS);
-/*for(int i = 0; i < PAL_SIZE; i++)
-{
-    ae->ScreenBuffer[i] = ae->PalTable[i];
-}*/
 
 //Fill in our screenbuffer from ACK's buffer
 unsigned char* pBufferData = OffscreenBuffer;
