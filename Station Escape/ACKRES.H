@@ -1,5 +1,5 @@
 // ACKRES.H Header file for ACKEDIT.RC and ACKEDIT.CPP
-#define DIALOG_2	2
+//#define DIALOG_2	2
 #define DLGINFO	1000
 #define IDC_LISTBOX1	101
 #define IDC_ST_HEADER	3000

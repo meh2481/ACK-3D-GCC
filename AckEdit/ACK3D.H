@@ -423,7 +423,21 @@ void AckFree(void *m);
 #ifndef VK_3
 #define VK_3 51
 #endif
-
+#ifndef VK_B
+#define VK_B 66
+#endif
+#ifndef VK_M
+#define VK_M 77
+#endif
+#ifndef VK_O
+#define VK_O 79
+#endif
+#ifndef VK_S
+#define VK_S 83
+#endif
+#ifndef VK_X
+#define VK_X 88
+#endif
 
 
 

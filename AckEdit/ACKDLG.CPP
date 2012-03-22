@@ -32,8 +32,8 @@ void AddFileName(short nType,char *szName);
 void RemoveFileName(short nType,short nIndex);
 BOOL CALLBACK _export FAR PASCAL OptionsDlgProc(HWND hDlg, UINT iMessage,
         WPARAM wParam, LPARAM lParam);
-BOOL CALLBACK _export FAR PASCAL GlobalDlgProc(HWND hDlg, UINT iMessage,
-        WPARAM wParam, LPARAM lParam);
+//BOOL CALLBACK _export FAR PASCAL GlobalDlgProc(HWND hDlg, UINT iMessage,
+//        WPARAM wParam, LPARAM lParam);
 BOOL CALLBACK _export FAR PASCAL InfoDlgProc(HWND hDlg, UINT iMessage,
         WPARAM wParam, LPARAM lParam);
 
@@ -90,7 +90,7 @@ int DoOptionsDlg(HINSTANCE hInst, HWND hWnd)
 //**************************************************************************
 //
 //**************************************************************************
-int DoGlobalDlg(HINSTANCE hInst, HWND hWnd)
+/*int DoGlobalDlg(HINSTANCE hInst, HWND hWnd)
 {
     DLGPROC   lpfnGlobalDlgProc;
     int       iReturn;
@@ -106,7 +106,7 @@ int DoGlobalDlg(HINSTANCE hInst, HWND hWnd)
 
 
     return(iReturn);
-}
+}*/
 
 //**************************************************************************
 //
@@ -1001,7 +1001,7 @@ return(TRUE);
 //**************************************************************************
 //
 //**************************************************************************
-BOOL CALLBACK _export FAR PASCAL GlobalDlgProc(HWND hDlg, UINT iMessage,
+/*BOOL CALLBACK _export FAR PASCAL GlobalDlgProc(HWND hDlg, UINT iMessage,
         WPARAM wParam, LPARAM lParam)
 {
     short   nTF;
@@ -1085,7 +1085,7 @@ switch (iMessage)
     }
 
 return(TRUE);
-}
+}*/
 
 //**************************************************************************
 //

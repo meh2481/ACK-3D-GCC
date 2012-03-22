@@ -168,7 +168,7 @@ void AckReset(void);
 void gkScaleBitmap(short bmWt,short bmHt,short DstWt,short DstHt,UCHAR *bm,
                    UCHAR *DstBuffer);
 int DoOptionsDlg(HINSTANCE hInst,HWND hWnd);
-int DoGlobalDlg(HINSTANCE hInst,HWND hWnd);
+//int DoGlobalDlg(HINSTANCE hInst,HWND hWnd);
 int DoInfoDlg(HINSTANCE hInst,HWND hWnd);
 short SaveResource(HWND hWnd,char *szName);
 void EditInfoFile(HWND hWnd);
@@ -2054,7 +2054,17 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
 
             nItem = CM_EDITMAP;
             if (nEditType == EDIT_OBJECTS)
+            {
                 nItem = CM_EDITOBJECTS;
+                //MEH Make menu say you can Tab into other edit mode
+                ModifyMenu((HMENU)wParam,CM_EDITMAP,MF_STRING,CM_EDITMAP,"&Map\tTab");
+                ModifyMenu((HMENU)wParam,CM_EDITOBJECTS,MF_STRING,CM_EDITOBJECTS,"&Objects");
+            }
+            else
+            {
+                ModifyMenu((HMENU)wParam,CM_EDITMAP,MF_STRING,CM_EDITMAP,"&Map");
+                ModifyMenu((HMENU)wParam,CM_EDITOBJECTS,MF_STRING,CM_EDITOBJECTS,"&Objects\tTab");
+            }
 
             CheckMenuItem((HMENU)wParam,CM_EDITMAP,MF_UNCHECKED|MF_BYCOMMAND);
             CheckMenuItem((HMENU)wParam,CM_EDITOBJECTS,MF_UNCHECKED|MF_BYCOMMAND);
@@ -2093,14 +2103,14 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
             else
                mx = MF_UNCHECKED;
             mx |= MF_BYCOMMAND;
-            CheckMenuItem((HMENU)wParam,CM_GOODIESSOLID_FLOOR,mx);
+//            CheckMenuItem((HMENU)wParam,CM_GOODIESSOLID_FLOOR,mx);
 
             if (ae->SysFlags & SYS_SOLID_CEIL)
                mx = MF_CHECKED;
             else
                mx = MF_UNCHECKED;
             mx |= MF_BYCOMMAND;
-            CheckMenuItem((HMENU)wParam,CM_GOODIESSOLID_CEILING,mx);
+//            CheckMenuItem((HMENU)wParam,CM_GOODIESSOLID_CEILING,mx);
 
             if (ae->LightFlag == SHADING_OFF)
                 mx = MF_UNCHECKED;
@@ -2116,7 +2126,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                 mx = MF_UNCHECKED;
 
             mx |= MF_BYCOMMAND;
-            CheckMenuItem((HMENU)wParam,CM_GOODIESSINGLE_BITMAP,mx);
+//            CheckMenuItem((HMENU)wParam,CM_GOODIESSINGLE_BITMAP,mx);
 
             if (nEditType == EDIT_WALLS)
                 ModifyMenu((HMENU)wParam,CM_GOODIESATTRIBUTES,MF_STRING,
@@ -2241,9 +2251,9 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                     PostQuitMessage(0);
                     break;
 
-                case CM_EDITGLOBAL:
+                /*case CM_EDITGLOBAL:
                     DoGlobalDlg(hInstGlobal,hWnd);
-                    break;
+                    break;*/
 
                 case CM_EDITMAP:
                     nEditType = EDIT_WALLS;
@@ -2257,6 +2267,9 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                     UpdateChildText(hWndChild);
                     SetScrollPos(hWndChild,SB_VERT,1,TRUE);
                     InvalidateRect(hWndChild,NULL,TRUE);
+                    //MEH Update the menu
+                    //ModifyMenu((HMENU)wParam,CM_EDITMAP,MF_STRING,CM_EDITMAP,"&Map");
+                    //ModifyMenu((HMENU)wParam,CM_EDITOBJECTS,MF_STRING,CM_EDITOBJECTS,"&Objects\tTab");
                     break;
 
                 case CM_EDITOBJECTS:
@@ -2271,6 +2284,9 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                     UpdateChildText(hWndChild);
                     SetScrollPos(hWndChild,SB_VERT,1,TRUE);
                     InvalidateRect(hWndChild,NULL,TRUE);
+                    //MEH Update the menu
+                    //ModifyMenu((HMENU)wParam,CM_EDITMAP,MF_STRING,CM_EDITMAP,"&Map\tTab");
+                    //ModifyMenu((HMENU)wParam,CM_EDITOBJECTS,MF_STRING,CM_EDITOBJECTS,"&Objects");
                     break;
 
                 case CM_BITMAPLOAD:
@@ -2470,17 +2486,17 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                     break;
 
 
-                case CM_GOODIESSOLID_FLOOR:
+                /*case CM_GOODIESSOLID_FLOOR:
                   ae->SysFlags ^= SYS_SOLID_FLOOR;
                   AckRegisterStructure(ae);
-                  break;
+                  break;*/
 
-                case CM_GOODIESSOLID_CEILING:
+                /*case CM_GOODIESSOLID_CEILING:
                   ae->SysFlags ^= SYS_SOLID_CEIL;
                   AckRegisterStructure(ae);
-                  break;
+                  break;*/
 
-                case CM_GOODIESSINGLE_BITMAP:
+                /*case CM_GOODIESSINGLE_BITMAP:
                     if (ae->SysFlags & SYS_SINGLE_BMP)
                         ae->SysFlags &= ~SYS_SINGLE_BMP;
                     else
@@ -2490,7 +2506,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         ae->SysFlags &= ~SYS_SOLID_CEIL;
                         }
                     AckRegisterStructure(ae);
-                    break;
+                    break;*/
 
                 case CM_GOODIESTRACK_PLAYER:
                     bTrackPlayer ^= 1;
@@ -2502,15 +2518,15 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                     InvalidateRect(hWnd,NULL,TRUE);
                     break;
 
-                case CM_ASSIGN_CEILING:
+                /*case CM_ASSIGN_CEILING:
                     ae->CeilBitmap = CurrentBitmap;
                     AckRegisterStructure(ae);
-                    break;
+                    break;*/
 
-                case CM_ASSIGN_FLOOR:
+                /*case CM_ASSIGN_FLOOR:
                     ae->FloorBitmap = CurrentBitmap;
                     AckRegisterStructure(ae);
-                    break;
+                    break;*/
 
 
                 default:
@@ -2939,6 +2955,9 @@ void ReadInPallette()
 // to no matter the window. That kinda explains itself, doesn't it?
 void HandleGenericKeypresses(WPARAM wParam)
 {
+    char            szName[128];
+    short           mx;
+
     switch(wParam)
     {
         //MEH Pressing tab will alternate object editing and wall editing
@@ -2973,6 +2992,13 @@ void HandleGenericKeypresses(WPARAM wParam)
 
         //MEH Pressing 1, 2, 3 will change view type
         case VK_1:
+            //If they're pressing Control+1 or Control+2, though, change view size
+            if(GetAsyncKeyState(VK_CONTROL))
+            {
+                StretchFactor = 1;
+                SetWindowPos(hwndApp,NULL,0,0,320,200,SWP_NOMOVE|SWP_NOZORDER|SWP_NOCOPYBITS);
+                break;
+            }
             if(nViewType != VIEW_WALLS || nEditType == EDIT_OBJECTS)
             {
                 //Redraw the bitmap window if we're toggling from objects
@@ -2989,6 +3015,13 @@ void HandleGenericKeypresses(WPARAM wParam)
             break;
 
         case VK_2:
+            //Change to view size = 2 if they're pressing Ctrl+2
+            if(GetAsyncKeyState(VK_CONTROL))
+            {
+                StretchFactor = 2;
+                SetWindowPos(hwndApp,NULL,0,0,640,400,SWP_NOMOVE|SWP_NOZORDER|SWP_NOCOPYBITS);
+                break;
+            }
             if(nViewType != VIEW_FLOOR)
             {
                 //Redraw the bitmap window if we're toggling from objects
@@ -3019,6 +3052,90 @@ void HandleGenericKeypresses(WPARAM wParam)
                 UpdateParentText(MainAppWnd->GetHandle());
             }
             break;
+
+        //Fill in border of map with Ctrl+B
+        case VK_B:
+            if(GetAsyncKeyState(VK_CONTROL) && MessageBox(MainAppWnd->GetHandle(),"Fill border with current bitmap?","Warning",MB_OKCANCEL) == IDOK)
+            {
+                FillBorder();
+                InvalidateRect(MainAppWnd->GetHandle(),NULL,TRUE);
+            }
+            break;
+
+        //Fill in whole map with Ctrl+M
+        case VK_M:
+            if(GetAsyncKeyState(VK_CONTROL) && MessageBox(MainAppWnd->GetHandle(),"Fill ENTIRE map with current bitmap?","Warning",MB_OKCANCEL) == IDOK)
+            {
+                FillEntireMap(CurrentBitmap);
+                InvalidateRect(MainAppWnd->GetHandle(),NULL,TRUE);
+            }
+            break;
+
+        case VK_O:
+            //If pressing Ctrl+O, open file
+            if(GetAsyncKeyState(VK_CONTROL))
+            {
+                if (!ACKFileOpen(MainAppWnd->GetHandle(),ResFileName,sizeof(ResFileName),
+                        "Resource Files (*.dtf)\0*.dtf\0All Files (*.*)\0*.*\0",
+                        "Open Resource File","dtf"))
+                {
+                if (!AckOpenResource(ResFileName))
+                    {
+                    bNoShow = TRUE;
+                    AckReset();
+                    mx = (short)ProcessInfoFile(0);
+                    xCurrent = yCurrent = 0;
+                    CurrentTopBitmap = CurrentBitmap = 1;
+                    if (mx)
+                        {
+                        wsprintf(szName,"Error: %d in DTF file at line %d",mx,LineNumber);
+                        MessageBox(MainAppWnd->GetHandle(),szName,"ERROR",MB_OK);
+                        }
+                    else
+                        {
+                        LoadBackDrop();
+                        AckRegisterStructure(ae);
+                        bNoShow = FALSE;
+                        }
+                    RemapBufferPalettes();
+                    InvalidateRect(MainAppWnd->GetHandle(),NULL,TRUE);
+                    InvalidateRect(MainAppWnd->GetChildHandle(),NULL,TRUE);
+                    }
+                }
+            }
+            break;
+
+            case VK_S:
+            //If pressing Ctrl+Shift+S, save as
+            if(GetAsyncKeyState(VK_CONTROL) && GetAsyncKeyState(VK_SHIFT))
+            {
+                strcpy(szName,ResFileName);
+                if (!ACKFileSave(MainAppWnd->GetHandle(),szName,sizeof(szName),
+                                 "Resource Files (*.dtf)\0*.dtf\0All Files (*.*)\0*.*\0",
+                                 "Save Resource File"))
+                {
+                    SaveResource(MainAppWnd->GetHandle(),szName);
+                    strcpy(ResFileName,szName);
+                    GetCurrentDirectory(sizeof(szCurPath),szCurPath);
+                }
+            }
+            //Otherwise, Ctrl+S = save
+            else if (GetAsyncKeyState(VK_CONTROL))
+            {
+                SetCurrentDirectory(szCurPath);
+                SaveResource(MainAppWnd->GetHandle(),ResFileName);
+            }
+            break;
+
+            //Clear the map if they press Ctrl+X
+            case VK_X:
+                //OH LOOK I'M ACTUALLY USING C++'S METHOD OF PARSING STATEMENTS SEQUENTIALLY
+                if (GetAsyncKeyState(VK_CONTROL) && MessageBox(MainAppWnd->GetHandle(),"Clear ENTIRE map?", "Warning",MB_OKCANCEL) == IDOK)
+                {
+                    FillEntireMap(0);
+                    InvalidateRect(MainAppWnd->GetHandle(),NULL,TRUE);
+                }
+                break;
     }
 }
 

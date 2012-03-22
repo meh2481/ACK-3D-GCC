@@ -21,7 +21,7 @@
 using std::endl;
 
 //Default name for text file we'll open
-const char sConfigFile[] = "./config.txt";
+const char sConfigFile[] = "config.txt";
 
 //Variables we want to keep in the config
 extern BOOL        bTrackPlayer;   // On if map tracks player position
@@ -36,9 +36,18 @@ extern short       nBackColor;
 //--------------------------------------------------
 void ReadConfig()
 {
+    //Make sure we're in the right directory for our config heres. Don't want to save config files all over the place.
+    CHAR PathBuffer[256];
+    GetCurrentDirectory(256, PathBuffer);
+    SetCurrentDirectory("./");
+
     std::ifstream infile(sConfigFile);
     if(infile.fail())
+    {
+        SetCurrentDirectory(PathBuffer);
+        infile.close();
         return; //if it isn't there, we don't care
+    }
 
     infile >> bTrackPlayer;
     infile >> nViewType;
@@ -48,6 +57,8 @@ void ReadConfig()
     infile >> nBackColor;
 
     infile.close();
+
+    SetCurrentDirectory(PathBuffer);
 }
 
 //------------------------------------------------------
@@ -55,9 +66,17 @@ void ReadConfig()
 //------------------------------------------------------
 void WriteConfig()
 {
+    CHAR PathBuffer[256];
+    GetCurrentDirectory(256, PathBuffer);
+    SetCurrentDirectory("./");
+
     std::ofstream ofile(sConfigFile);
     if(ofile.fail())
+    {
+        ofile.close();
+        SetCurrentDirectory(PathBuffer);
         return; //Can't write this file
+    }
 
     ofile << bTrackPlayer << endl;
     ofile << nViewType << endl;
@@ -67,4 +86,5 @@ void WriteConfig()
     ofile << nBackColor << endl;
 
     ofile.close();
+    SetCurrentDirectory(PathBuffer);
 }
