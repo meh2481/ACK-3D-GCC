@@ -247,7 +247,6 @@ void ShowColumn(char bTrans, char bLightShaded)
     short* sTableSpot = LowerTable[gCurSlice->Distance];
     //Get the height for the wall that we're supposed to draw
     unsigned int iWallHeight = DistanceTable[gCurSlice->Distance] - 1;
-
     if(iWallHeight > 99)
     {
         iWallHeight = 99;   //Force to max height

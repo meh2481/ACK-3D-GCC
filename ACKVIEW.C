@@ -114,11 +114,11 @@ USHORT yRayCastMulti(void);
 
 void DrawFloorCeiling(void);            // Routines for drawing floors and ceilings
 void AckDrawFloor(void);
-void AckDrawFloorOnly(void);
-void AckDrawCeilingOnly(void);
+//void AckDrawFloorOnly(void);
+//void AckDrawCeilingOnly(void);
 void AckDrawFloorNS(void);
-void AckDrawFloorOnlyNS(void);
-void AckDrawCeilingOnlyNS(void);
+//void AckDrawFloorOnlyNS(void);
+//void AckDrawCeilingOnlyNS(void);
 void AckDrawFloorHz(void);
 void AckDrawOneFloor(void);
 void DrawSolidCeilAndFloor(void);

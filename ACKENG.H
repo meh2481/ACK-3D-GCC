@@ -26,7 +26,7 @@
 #define TYPE_PALETTE    2
 
 #define MAX_HEIGHT      960		// Maximum height of a wall
-#define MIN_HEIGHT      8		// Minimum height of a wall
+#define MIN_HEIGHT      4		// Minimum height of a wall
 
 #define MAX_UPDOWN	    30      // Max up or down spots for each level
 

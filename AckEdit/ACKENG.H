@@ -19,7 +19,7 @@
 #define TYPE_PALETTE	2
 
 #define MAX_HEIGHT	960
-#define MIN_HEIGHT	8
+#define MIN_HEIGHT	4
 
 
 #define MAX_UPDOWN	    30	    /* Max up or down spots for each level */

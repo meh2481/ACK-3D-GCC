@@ -401,11 +401,16 @@ switch (nCode)
             }
         break;
     case SB_LINEDOWN:
-        if (nPos < 252)
-            {
+        if(bSupply && nPos < 252)
+        {
             nPos++;
             bShow = TRUE;
-            }
+        }
+        else if((!bSupply) && nPos < 29)
+        {
+            nPos++;
+            bShow = TRUE;
+        }
         break;
     case SB_PAGEUP:
         nPos -= 3;
@@ -416,8 +421,10 @@ switch (nCode)
 
     case SB_PAGEDOWN:
         nPos += 3;
-        if (nPos > 252)
+        if(bSupply && nPos > 252)
             nPos = 252;
+        else if((!bSupply) && nPos > 29)
+            nPos = 29;
         bShow = TRUE;
         break;
 
@@ -426,8 +433,10 @@ switch (nCode)
         nPos = nSBPos;
         if (nPos < 0)
             nPos = 0;
-        if (nPos > 252)
+        if (bSupply && nPos > 252)
             nPos = 252;
+        else if((!bSupply) && nPos > 29)
+            nPos = 29;
         bShow = TRUE;
         break;
 
@@ -470,6 +479,10 @@ if (bmCurrent[nBitmap] == 0)
 for (y = nBitmap; y < 254; y++)
     bmCurrent[y] = bmCurrent[y+1];
 
+//MEH Now update the bitmaps per view and such...
+GetObjectEdit(hDlg);
+SetObjectEdits(hDlg);
+
 ShowCurrent(hDlg);
 }
 
@@ -490,16 +503,21 @@ nBitmap = nSupplyTop + (y / 66);
 if (ae->oMaps[nBitmap] == NULL)
     return;
 
+BOOL bFoundOne = 0;
 for (y = 0; y < MAX_OBJ_BITMAPS; y++)
     {
-    if (!bmCurrent[y])
+    if (!bmCurrent[y] && !bFoundOne)
         {
         bmCurrent[y] = nBitmap;
         ShowCurrent(hDlg);
         GetObjectEdit(hDlg);
         SetObjectEdits(hDlg);
-        break;
+        bFoundOne = 1;
+        continue;
         }
+    //MEH Brute-force these random blank bitmaps out
+    if(bFoundOne)
+        bmCurrent[y] = 0;
     }
 }
 
@@ -825,7 +843,7 @@ switch (iMessage)
         ShowSupply(hDlg);
         ShowCurrent(hDlg);
         SetScrollRange(GetDlgItem(hDlg,IDC_VSCROLLSUPPLY),SB_CTL,0,252,FALSE);
-        SetScrollRange(GetDlgItem(hDlg,IDC_VSCROLLCURRENT),SB_CTL,0,MAX_OBJ_BITMAPS,FALSE);
+        SetScrollRange(GetDlgItem(hDlg,IDC_VSCROLLCURRENT),SB_CTL,0,MAX_OBJ_BITMAPS-3,FALSE);
         SetScrollPos(GetDlgItem(hDlg,IDC_VSCROLLSUPPLY),SB_CTL,0,FALSE);
         SetScrollPos(GetDlgItem(hDlg,IDC_VSCROLLCURRENT),SB_CTL,0,FALSE);
         return(TRUE);
@@ -862,11 +880,25 @@ switch (iMessage)
         GetWindowRect(GetDlgItem(hDlg,IDC_SUPPLY),&rect);
         if (mx >= rect.left && mx <= rect.right &&
             my >= rect.top && my <= rect.bottom)
-            {
-        DeleteSupplyBitmap(hDlg,mx,my);
-            }
-    break;
+        {
+            DeleteSupplyBitmap(hDlg,mx,my);
+        }
+        break;
 
+    //MEH Right-clicking current bitmaps also removes them. Just for fun.
+    case WM_RBUTTONUP:
+        pt.x = LOWORD(lParam);
+        pt.y = HIWORD(lParam);
+        ClientToScreen(hDlg,&pt);
+        mx = pt.x;
+        my = pt.y;
+        GetWindowRect(GetDlgItem(hDlg,IDC_CURRENT),&rect);
+        if (mx >= rect.left && mx <= rect.right &&
+            my >= rect.top && my <= rect.bottom)
+        {
+            TransferCurrentToSupply(hDlg,mx,my);
+        }
+        break;
 
     case WM_VSCROLL:
         DoScroll(LOWORD(wParam),HIWORD(wParam),hDlg,(HWND)lParam);

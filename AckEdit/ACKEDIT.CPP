@@ -3075,7 +3075,9 @@ void HandleGenericKeypresses(WPARAM wParam)
             //If pressing Ctrl+O, open file
             if(GetAsyncKeyState(VK_CONTROL))
             {
-                if (!ACKFileOpen(MainAppWnd->GetHandle(),ResFileName,sizeof(ResFileName),
+                //Currently broken
+
+                /*if (!ACKFileOpen(MainAppWnd->GetHandle(),ResFileName,sizeof(ResFileName),
                         "Resource Files (*.dtf)\0*.dtf\0All Files (*.*)\0*.*\0",
                         "Open Resource File","dtf"))
                 {
@@ -3101,7 +3103,7 @@ void HandleGenericKeypresses(WPARAM wParam)
                     InvalidateRect(MainAppWnd->GetHandle(),NULL,TRUE);
                     InvalidateRect(MainAppWnd->GetChildHandle(),NULL,TRUE);
                     }
-                }
+                }*/
             }
             break;
 
@@ -3109,7 +3111,9 @@ void HandleGenericKeypresses(WPARAM wParam)
             //If pressing Ctrl+Shift+S, save as
             if(GetAsyncKeyState(VK_CONTROL) && GetAsyncKeyState(VK_SHIFT))
             {
-                strcpy(szName,ResFileName);
+                //Currently broken
+
+                /*strcpy(szName,ResFileName);
                 if (!ACKFileSave(MainAppWnd->GetHandle(),szName,sizeof(szName),
                                  "Resource Files (*.dtf)\0*.dtf\0All Files (*.*)\0*.*\0",
                                  "Save Resource File"))
@@ -3117,7 +3121,7 @@ void HandleGenericKeypresses(WPARAM wParam)
                     SaveResource(MainAppWnd->GetHandle(),szName);
                     strcpy(ResFileName,szName);
                     GetCurrentDirectory(sizeof(szCurPath),szCurPath);
-                }
+                }*/
             }
             //Otherwise, Ctrl+S = save
             else if (GetAsyncKeyState(VK_CONTROL))

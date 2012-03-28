@@ -138,9 +138,9 @@ ht = gWinHalfHeight;
 // no matter how far away it is, we can optimize a little here by not
 // drawing the first few horizon rows (it does actually save time!).
 // Start 5 video rows above the center row
-scrCeil = scr - 1600;
+scrCeil = scr;// - 320;//1600;
 // Start 6 video rows below the center row
-scr += 1920;
+//scr += 1920;
 // Initial right side of view
 Rcol = 319;
 wPtr = &WallDistTable[BegCol];      // Get pointers to avoid indexing
@@ -193,7 +193,7 @@ for (col = BegCol; col < EndCol; col ++)//= 2)
 // Our floor cosine is used to counteract a fisheye effect
     fcv = FloorCosTable[col];
 
-    for (row = 6; row <= ht; row++)
+    for (row = 1; row <= ht; row++)
         {
 
         scan2 = ScaleHt / row;
@@ -272,9 +272,9 @@ for (col = BegCol; col < EndCol; col ++)//= 2)
 }
 
 //------------------------------------------------------------------------
-// Draws the floor and ceiling horizontally.
+// Draws the floor and ceiling horizontally. MEH-deprecated
 //------------------------------------------------------------------------
-void AckDrawCeilingOnlyNS(void)
+/*void AckDrawCeilingOnlyNS(void)
 {
     int     col,row,ht,Rcol,EndCol,BegCol;
     int     Scale_Fac,ScaleHt;
@@ -428,11 +428,12 @@ for (col = BegCol; col < EndCol; col ++)//= 2)
     }
 
 }
-
+*/
 //------------------------------------------------------------------------
 // Draws the floor and ceiling horizontally.
 //------------------------------------------------------------------------
-void AckDrawFloorOnlyNS(void)
+//MEH Deprecated
+/*void AckDrawFloorOnlyNS(void)
 {
     int     col,row,ht,Rcol,EndCol,BegCol;
     int     Scale_Fac,ScaleHt;
@@ -585,7 +586,7 @@ for (col = BegCol; col < EndCol; col ++)//= 2)
 
 }
 
-
+*/
 //------------------------------------------------------------------------
 // The function performs the same process as AckDrawFloorHz except here
 // we include light shading with distance.
@@ -637,9 +638,9 @@ ht = gWinHalfHeight;
 // no matter how far away it is, we can optimize a little here by not
 // drawing the first few horizon rows (it does actually save time!).
 // Start 5 video rows above the center row
-scrCeil = scr - 1600;
+scrCeil = scr;// - 1600;
 // Start 6 video rows below the center row
-scr += 1920;
+//scr += 320;
 // Initial right side of view
 Rcol = 319;
 wPtr = &WallDistTable[BegCol];      // Get pointers to avoid indexing
@@ -692,9 +693,10 @@ for (col = BegCol; col < EndCol; col ++)//= 2) //MEH For higher resolution, only
     fcv = FloorCosTable[col];
     LineNum = 0;
 
-    for (row = 6; row <= ht; row++)
+    for (row = 1; row <= ht; row++)
         {
-        stPtr = scantables[LineNum++];
+        if(LineNum < 96)
+            stPtr = scantables[LineNum++];
 
         scan2 = ScaleHt / row;
 // Get the distance for the current column and row position
@@ -724,7 +726,7 @@ for (col = BegCol; col < EndCol; col ++)//= 2) //MEH For higher resolution, only
 // Make sure it's really a bitmap and then get the actual pixel to display
             if (bmp != NULL)
                 ch = bmp[bPos];
-
+//printf("%d\n", row);// Crashes at row 97
             ch = stPtr[ch]; // Get shaded value for pixel
 
 // Place the pixel in this column as well as the next. Since we have a
@@ -776,7 +778,8 @@ for (col = BegCol; col < EndCol; col ++)//= 2) //MEH For higher resolution, only
 //------------------------------------------------------------------------
 // Draw ceiling texture bitmaps only. Floor is assumed to be a solid color.
 //------------------------------------------------------------------------
-void AckDrawCeilingOnly(void)
+//MEH Deprecated
+/*void AckDrawCeilingOnly(void)
 {
     int     col,row,ht,Rcol,EndCol,BegCol;
     int     Scale_Fac,ScaleHt;
@@ -937,11 +940,12 @@ for (col = BegCol; col < EndCol; col ++)//= 2)
 
 }
 
-
+*/
 //------------------------------------------------------------------------
 // Draw floor textured bitmaps only. Ceiling is a solid color.
 //------------------------------------------------------------------------
-void AckDrawFloorOnly(void)
+//MEH Deprecated
+/*void AckDrawFloorOnly(void)
 {
     int     col,row,ht,Rcol,EndCol,BegCol;
     int     Scale_Fac,ScaleHt;
@@ -1098,7 +1102,7 @@ for (col = BegCol; col < EndCol; col ++)//= 2)
 
 }
 
-
+*/
 
 
 //------------------------------------------------------------------------
@@ -1147,9 +1151,9 @@ ht = gWinHalfHeight;
 // no matter how far away it is, we can optimize alittle here by not
 // drawing the first few horizon rows (it does actually save time!).
 // Start 5 video rows above the center row
-scrCeil = scr - 1600;
+scrCeil = scr;// - 1600;
 // Start 6 video rows below the center row
-scr += 1920;
+scr += 320;
 // Initial right side of view
 Rcol = 319;
 wPtr = &WallDistTable[BegCol];      // Get pointers to avoid indexing
@@ -1191,7 +1195,7 @@ for (col = BegCol; col < EndCol; col ++)//= 2)
 // Our floor cosine is used to counteract a fisheye effect
     fcv = FloorCosTable[col];
 
-    for (row = 6; row <= ht; row++)
+    for (row = 1; row <= ht; row++)
         {
         scan2 = ScaleHt / row;
 // Get the distance for the current column and row position

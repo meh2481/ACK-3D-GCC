@@ -8,8 +8,8 @@ ACKMENU MENU
 {
  POPUP "&File"
  {
-  MENUITEM "&Open Resource ...\tCtrl+O", CM_FILEOPEN
-  MENUITEM "Save &as ...\tCtrl+Shift+S", CM_FILESAVE_AS_
+  MENUITEM "&Open Resource ...\t(broken)", CM_FILEOPEN, GRAYED
+  MENUITEM "Save &as ...\t(broken)", CM_FILESAVE_AS_, GRAYED
   MENUITEM "&Save\tCtrl+S", CM_FILESAVE
   MENUITEM "&Exit\tAlt+F4", CM_FILEEXIT
  }
