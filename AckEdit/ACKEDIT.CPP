@@ -1985,13 +1985,26 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
             InvalidateRect(hWnd,NULL,FALSE);
             break;
 
-        //MEH
+        //MEH Grab bitmap # if pressing MMB (For now. Later show row, col, that sorta thing)
         case WM_MBUTTONDOWN:
             mx = LOWORD(lParam);
             my = HIWORD(lParam);
             ShowBitmapNumber(hWndChild,mx,my);
             break;
 
+        //MEH Allow click & drag to keep placing bitmaps, by falling through here
+        case WM_MOUSEMOVE:
+            //Just for ease-of-use, make sure user doesn't have L/R mouse buttons swapped.
+            if(!((GetAsyncKeyState(VK_LBUTTON) < 0) || (GetSystemMetrics(SM_SWAPBUTTON) && GetAsyncKeyState(VK_RBUTTON) < 0)))
+            {
+                //Also allow user to remove bitmaps by holding down RMB
+                if(((GetAsyncKeyState(VK_RBUTTON) < 0) || (GetSystemMetrics(SM_SWAPBUTTON) && GetAsyncKeyState(VK_LBUTTON) < 0)))
+                    SetBitmap(hWnd,LOWORD(lParam),HIWORD(lParam),0);
+                break;
+            }
+            //Of course, not for objects, since you place these one at a time
+            if(nEditType == EDIT_OBJECTS)
+                break;
         case WM_LBUTTONDOWN:
             mx = LOWORD(lParam);
             my = HIWORD(lParam);
@@ -2782,6 +2795,7 @@ LRESULT  CALLBACK _export ChildWndProc( HWND hWnd, UINT iMessage, WPARAM wParam,
                                  LPARAM lParam )
 {
     HDC     hDC;
+    int     tempCurrent;
 
 switch (iMessage)
     {
@@ -2799,6 +2813,22 @@ switch (iMessage)
 
     case WM_LBUTTONDOWN:
         SelectBitmap(hWnd,HIWORD(lParam));
+        break;
+
+    //MEH Delete bitmaps by right-clicking them
+    case WM_RBUTTONUP:
+        tempCurrent = (short)(CurrentTopBitmap + (HIWORD(lParam) / 66));
+        //If this is our currently selected bitmap/object, delete it
+        if(tempCurrent == CurrentBitmap)
+        {
+            DeleteBitmap(MainAppWnd->GetHandle(),hWnd);
+        }
+        //Otherwise, select it
+        else
+        {
+            CurrentBitmap = tempCurrent;
+            InvalidateRect(hWnd, NULL, TRUE);
+        }
         break;
 
     case WM_DESTROY:
