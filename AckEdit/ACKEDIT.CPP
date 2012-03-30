@@ -2,7 +2,6 @@
 
 #define  STRICT
 #include <windows.h>
-#pragma hdrstop
 #include <stdlib.h>
 #include <string.h>
 //#include "wing.h"
@@ -247,7 +246,6 @@ void MainWindow::CreateAll( void )
     short   xPos;
     int     windx,windy;
     HBITMAP hbm;
-    int     Counter;
 
 
 GridSize = 32;
@@ -478,8 +476,6 @@ void DrawMap(HWND hWnd,HDC hdc,short wt,short ht)
 
     short   MapPosn,x,y,mx,my,OrgPos,bx,by,x2,y2,x3,y3;
     int     len,offset;
-    RECT    rect;
-    POINT   point;
     POINT   pts[4];
     WORD    nMapCode;
     HBRUSH  NewBrush,OldBrush;
@@ -843,7 +839,7 @@ void PaintChild(HWND hWnd)
 {
     PAINTSTRUCT ps;
     RECT        rect;
-    short       y,y1,yOffset,nIndex,OrgIndex,bx,by;
+    short       y,y1,yOffset,nIndex,OrgIndex,bx;
     UCHAR       *pPtr = NULL;//,*pBuf;
     NEWOBJECT   *pObj;
     UCHAR       cIsObjFlag = 0; //If this is an object, go ahead and draw transparent instead of black
@@ -929,7 +925,7 @@ while (y < y1)
 
         HICON ic = CreateIcon(Main::hInstance, 64, 64, 1, 32, NULL, (BYTE*)(GenericUseBitmapBuffer));
         if(ic == NULL)
-            printf("Icon null: %d\n", GetLastError());
+            printf("Error: Could not create icon to draw.\n");
         DrawIconEx(ps.hdc, 2, y, ic, 64, 64, NULL, NULL, DI_NORMAL);
         DestroyIcon(ic);
 
@@ -982,7 +978,6 @@ EndPaint( hWnd, &ps );
 //****************************************************************************
 //
 //****************************************************************************
-#pragma argsused
 void AckPaint(HWND hWnd,HDC hdc)
 {
 
@@ -1548,7 +1543,6 @@ void ResizeMapBuffer(HWND hWnd,LPARAM lParam)
     HBITMAP hbm;
     short   ht,wt;
     short   gWt,gHt;
-    int Counter;
 
 wt = LOWORD(lParam);
 ht = HIWORD(lParam);
@@ -1991,16 +1985,28 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
             InvalidateRect(hWnd,NULL,FALSE);
             break;
 
+        //MEH
+        case WM_MBUTTONDOWN:
+            mx = LOWORD(lParam);
+            my = HIWORD(lParam);
+            ShowBitmapNumber(hWndChild,mx,my);
+            break;
+
         case WM_LBUTTONDOWN:
             mx = LOWORD(lParam);
             my = HIWORD(lParam);
-            if (wParam & MK_CONTROL)
+            if (wParam & MK_CONTROL && wParam & MK_SHIFT)
+            {
+                ShowBitmapNumber(hWndChild,mx,my);
+            }
+
+            else if (wParam & MK_CONTROL)
                 {
                 GrabSquare(hWndChild,mx,my);
                 break;
                 }
 
-            if (wParam & MK_SHIFT)
+            else if (wParam & MK_SHIFT)
                 {
                 my = (short)(yCurrent + (my / GridSize));
                 mx = (short)(xCurrent + (mx / GridSize));
@@ -2832,8 +2838,6 @@ switch (iMessage)
 return 0;
 }
 
-#pragma argsused
-#pragma option -w-aus
 //****************************************************************************
 //
 //****************************************************************************
@@ -2955,8 +2959,8 @@ void ReadInPallette()
 // to no matter the window. That kinda explains itself, doesn't it?
 void HandleGenericKeypresses(WPARAM wParam)
 {
-    char            szName[128];
-    short           mx;
+    //char            szName[128];
+    //short           mx;
 
     switch(wParam)
     {
@@ -2993,7 +2997,7 @@ void HandleGenericKeypresses(WPARAM wParam)
         //MEH Pressing 1, 2, 3 will change view type
         case VK_1:
             //If they're pressing Control+1 or Control+2, though, change view size
-            if(GetAsyncKeyState(VK_CONTROL))
+            if(GetAsyncKeyState(VK_CONTROL) < 0)
             {
                 StretchFactor = 1;
                 SetWindowPos(hwndApp,NULL,0,0,320,200,SWP_NOMOVE|SWP_NOZORDER|SWP_NOCOPYBITS);
@@ -3016,7 +3020,7 @@ void HandleGenericKeypresses(WPARAM wParam)
 
         case VK_2:
             //Change to view size = 2 if they're pressing Ctrl+2
-            if(GetAsyncKeyState(VK_CONTROL))
+            if(GetAsyncKeyState(VK_CONTROL) < 0)
             {
                 StretchFactor = 2;
                 SetWindowPos(hwndApp,NULL,0,0,640,400,SWP_NOMOVE|SWP_NOZORDER|SWP_NOCOPYBITS);
@@ -3055,7 +3059,7 @@ void HandleGenericKeypresses(WPARAM wParam)
 
         //Fill in border of map with Ctrl+B
         case VK_B:
-            if(GetAsyncKeyState(VK_CONTROL) && MessageBox(MainAppWnd->GetHandle(),"Fill border with current bitmap?","Warning",MB_OKCANCEL) == IDOK)
+            if(GetAsyncKeyState(VK_CONTROL) < 0 && MessageBox(MainAppWnd->GetHandle(),"Fill border with current bitmap?","Warning",MB_OKCANCEL) == IDOK)
             {
                 FillBorder();
                 InvalidateRect(MainAppWnd->GetHandle(),NULL,TRUE);
@@ -3064,7 +3068,7 @@ void HandleGenericKeypresses(WPARAM wParam)
 
         //Fill in whole map with Ctrl+M
         case VK_M:
-            if(GetAsyncKeyState(VK_CONTROL) && MessageBox(MainAppWnd->GetHandle(),"Fill ENTIRE map with current bitmap?","Warning",MB_OKCANCEL) == IDOK)
+            if(GetAsyncKeyState(VK_CONTROL) < 0 && MessageBox(MainAppWnd->GetHandle(),"Fill ENTIRE map with current bitmap?","Warning",MB_OKCANCEL) == IDOK)
             {
                 FillEntireMap(CurrentBitmap);
                 InvalidateRect(MainAppWnd->GetHandle(),NULL,TRUE);
@@ -3073,7 +3077,7 @@ void HandleGenericKeypresses(WPARAM wParam)
 
         case VK_O:
             //If pressing Ctrl+O, open file
-            if(GetAsyncKeyState(VK_CONTROL))
+            if(GetAsyncKeyState(VK_CONTROL) < 0)
             {
                 //Currently broken
 
@@ -3109,7 +3113,7 @@ void HandleGenericKeypresses(WPARAM wParam)
 
             case VK_S:
             //If pressing Ctrl+Shift+S, save as
-            if(GetAsyncKeyState(VK_CONTROL) && GetAsyncKeyState(VK_SHIFT))
+            if(GetAsyncKeyState(VK_CONTROL) < 0 && GetAsyncKeyState(VK_SHIFT) < 0)
             {
                 //Currently broken
 
@@ -3124,7 +3128,7 @@ void HandleGenericKeypresses(WPARAM wParam)
                 }*/
             }
             //Otherwise, Ctrl+S = save
-            else if (GetAsyncKeyState(VK_CONTROL))
+            else if (GetAsyncKeyState(VK_CONTROL) < 0)
             {
                 SetCurrentDirectory(szCurPath);
                 SaveResource(MainAppWnd->GetHandle(),ResFileName);
@@ -3134,7 +3138,7 @@ void HandleGenericKeypresses(WPARAM wParam)
             //Clear the map if they press Ctrl+X
             case VK_X:
                 //OH LOOK I'M ACTUALLY USING C++'S METHOD OF PARSING STATEMENTS SEQUENTIALLY
-                if (GetAsyncKeyState(VK_CONTROL) && MessageBox(MainAppWnd->GetHandle(),"Clear ENTIRE map?", "Warning",MB_OKCANCEL) == IDOK)
+                if (GetAsyncKeyState(VK_CONTROL) < 0 && MessageBox(MainAppWnd->GetHandle(),"Clear ENTIRE map?", "Warning",MB_OKCANCEL) == IDOK)
                 {
                     FillEntireMap(0);
                     InvalidateRect(MainAppWnd->GetHandle(),NULL,TRUE);
@@ -3143,5 +3147,75 @@ void HandleGenericKeypresses(WPARAM wParam)
     }
 }
 
+void ShowBitmapNumber(HWND hWndChild,short xPos,short yPos)
+{
+    short   gsLeft,gsRight;
+    short   nCode = 0;
+    int     mPos;
 
+mPos = GetGridPos(xPos,yPos);
+
+switch (nViewType)
+    {
+    case VIEW_WALLS:
+        if (nEditType == EDIT_OBJECTS)
+            {
+            nCode = ObjGrid[mPos];
+            break;
+            }
+
+        xPos = (short)(xPos % GridSize);
+        yPos = (short)(yPos % GridSize);
+        gsLeft = 4;
+        gsRight = (short)(GridSize - 4);
+        if (yPos > gsLeft && yPos < gsRight)
+            {
+            if (xPos < gsLeft)
+                {
+                nCode = ae->xGrid[mPos];
+                }
+            else
+                {
+                if (xPos >= gsLeft)
+                    {
+                    nCode = ae->xGrid[mPos+1];
+                    }
+                }
+            }
+
+        if (xPos > gsLeft && xPos < gsRight)
+            {
+            if (yPos < gsLeft)
+                {
+                nCode = ae->yGrid[mPos];
+                }
+            else
+                {
+                if (yPos >= gsRight)
+                    {
+                    nCode = ae->yGrid[mPos+GRID_WIDTH];
+                    }
+                }
+            }
+        break;
+
+    case VIEW_FLOOR:
+        nCode = FloorMap[mPos];
+        break;
+
+    case VIEW_CEILING:
+        nCode = CeilMap[mPos];
+        break;
+
+    default:
+        break;
+    }
+
+    if(nCode)
+    {
+        char ctext[32];
+        sprintf(ctext, "Selected Bmp: %d", nCode & 0xFF);
+        MessageBox(hWndChild, ctext, "ACK Editor", MB_OK);
+    }
+}
 

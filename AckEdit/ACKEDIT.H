@@ -28,6 +28,8 @@ LRESULT CALLBACK _export ChildWndProc( HWND hWnd, UINT iMessage,
 LRESULT CALLBACK _export AckWndProc( HWND hWnd, UINT iMessage,
                                  WPARAM wParam, LPARAM lParam);
 
+//MEH
+void ShowBitmapNumber(HWND hWndChild,short xPos,short yPos);    //Displays a message box with the bitmap number clicked on
 
 
 // Various operations for cursor control

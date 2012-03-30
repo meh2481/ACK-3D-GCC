@@ -257,6 +257,10 @@ void ShowColumn(char bTrans, char bLightShaded)
     UCHAR* CurCol = &(gScrnBuffer[g_iCurScreenSpot]);
     CurCol=&CurCol[VIEW_WIDTH * gWinHeight/2];
     UCHAR* BmpCol = gCurSlice->bMap[bNumber];
+    if(BmpCol == NULL)
+        return;             //TODO: DERP! Sometimes this is true for doors, and would cause crashes if this wasn't here.
+                            // WHY?!? (Example: exit maze door in cemetery level at an angle)
+                            // Probably some kind of problem in ACKRAY.C, function x/yRayCast().
     BmpCol=&BmpCol[BITMAP_HEIGHT / 2];
     BmpCol = &BmpCol[gCurSlice->bColumn * BITMAP_WIDTH];
     //CurCol += ((200 - iWallHeight) / 2) * 320;
