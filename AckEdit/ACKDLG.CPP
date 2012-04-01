@@ -66,6 +66,12 @@ extern unsigned char GenericUseBitmapBuffer[4*64*64];   //Declared in ACKEDIT.CP
 unsigned char GenericUseBitmapBuffer2[64*64];
 extern   PalletteSlot pallette[256];
 
+//Use to let mouse wheel scroll current/supply bmps
+#define     LAST_USED_CURRENT   0
+#define     LAST_USED_SUPPLY    1
+unsigned char cLastScrollboxUsed = LAST_USED_SUPPLY;
+// --MEH
+
 //**************************************************************************
 //
 //**************************************************************************
@@ -384,12 +390,16 @@ void DoScroll(short nCode,short nSBPos,HWND hDlg,HWND hWndScroll)
 
 
 if (hWndScroll == GetDlgItem(hDlg,IDC_VSCROLLSUPPLY))
+{
     nPos = nSupplyTop;
+    cLastScrollboxUsed = LAST_USED_SUPPLY;
+}
 else
-    {
+{
     nPos = nCurrentTop;
     bSupply = FALSE;
-    }
+    cLastScrollboxUsed = LAST_USED_CURRENT;
+}
 
 switch (nCode)
     {
@@ -846,6 +856,7 @@ switch (iMessage)
         SetScrollRange(GetDlgItem(hDlg,IDC_VSCROLLCURRENT),SB_CTL,0,MAX_OBJ_BITMAPS-3,FALSE);
         SetScrollPos(GetDlgItem(hDlg,IDC_VSCROLLSUPPLY),SB_CTL,0,FALSE);
         SetScrollPos(GetDlgItem(hDlg,IDC_VSCROLLCURRENT),SB_CTL,0,FALSE);
+        cLastScrollboxUsed = LAST_USED_SUPPLY;
         return(TRUE);
 
     case WM_LBUTTONUP:    //MEH Left-clicking, rather than double-clicking, moves bitmaps. I HATE double-clicking.
@@ -859,6 +870,7 @@ switch (iMessage)
             my >= rect.top && my <= rect.bottom)
             {
             TransferSupplyToCurrent(hDlg,mx,my);
+            cLastScrollboxUsed = LAST_USED_SUPPLY;
             }
         else
             {
@@ -867,6 +879,7 @@ switch (iMessage)
                 my >= rect.top && my <= rect.bottom)
                 {
                 TransferCurrentToSupply(hDlg,mx,my);
+                cLastScrollboxUsed = LAST_USED_CURRENT;
                 }
             }
         break;
@@ -882,6 +895,7 @@ switch (iMessage)
             my >= rect.top && my <= rect.bottom)
         {
             DeleteSupplyBitmap(hDlg,mx,my);
+            cLastScrollboxUsed = LAST_USED_SUPPLY;
         }
         break;
 
@@ -897,6 +911,21 @@ switch (iMessage)
             my >= rect.top && my <= rect.bottom)
         {
             TransferCurrentToSupply(hDlg,mx,my);
+            cLastScrollboxUsed = LAST_USED_CURRENT;
+        }
+        break;
+
+    //MEH Mousewheel makes current bitmaps scroll
+    case WM_MOUSEWHEEL:
+        if((short)(HIWORD(wParam)) > 0)  //Rotated wheel up
+        {
+            DoScroll(SB_LINEUP, 0, hDlg,
+                     GetDlgItem(hDlg,(cLastScrollboxUsed == LAST_USED_CURRENT)?(IDC_VSCROLLCURRENT):(IDC_VSCROLLSUPPLY)));
+        }
+        else    //Rotated wheel down
+        {
+            DoScroll(SB_LINEDOWN, 0, hDlg,
+                     GetDlgItem(hDlg,(cLastScrollboxUsed == LAST_USED_CURRENT)?(IDC_VSCROLLCURRENT):(IDC_VSCROLLSUPPLY)));
         }
         break;
 

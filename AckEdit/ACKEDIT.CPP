@@ -1049,12 +1049,12 @@ switch (nScrollCode)
     case SB_LINEDOWN:
         if (nDir)
             {
-            if (pos < nMaxHt)
+            if (pos < nMaxHt-1)
                 pos++;
             }
         else
             {
-            if (pos < nMaxWt)
+            if (pos < nMaxWt-1)
                 pos++;
             }
         break;
@@ -1068,14 +1068,14 @@ switch (nScrollCode)
         if (nDir)
             {
             pos += nHt;
-            if (pos > nMaxHt)
-                pos = nMaxHt;
+            if (pos >= nMaxHt)
+                pos = nMaxHt - 1;
             }
         else
             {
             pos += nWt;
-            if (pos > nMaxWt)
-                pos = nMaxWt;
+            if (pos >= nMaxWt)
+                pos = nMaxWt - 1;
             }
         break;
 
@@ -1093,10 +1093,10 @@ switch (nScrollCode)
         pos = nPos;
         if (pos < 0)
             pos = 0;
-        if (nDir == 1 && pos > nMaxHt)
-            pos = nMaxHt;
-        if (nDir == 0 && pos > nMaxWt)
-            pos = nMaxWt;
+        if (nDir == 1 && pos >= nMaxHt)
+            pos = nMaxHt - 1;
+        if (nDir == 0 && pos >= nMaxWt)
+            pos = nMaxWt - 1;
         break;
 
 
@@ -1886,9 +1886,21 @@ void UpdateChildText(HWND hWnd)
     char    szBuf[50];
 
 if (nEditType == EDIT_WALLS)
+{
     wsprintf(szBuf,"Wall: %d",CurrentBitmap);
+    //MEH Also update the scroll range
+    SetScrollRange(hWnd,SB_VERT,0,252,TRUE);
+}
 else
+{
+    //Force scroll position to be in range
+    if(CurrentTopBitmap > 250)
+        CurrentTopBitmap = 250;
+    if(CurrentBitmap > 253)
+        CurrentBitmap = 253;
     wsprintf(szBuf,"Obj: %d",CurrentBitmap);
+    SetScrollRange(hWnd,SB_VERT,0,250,TRUE);
+}
 
 SetWindowText(hWnd,szBuf);
 }
@@ -1983,6 +1995,28 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
 
         case WM_VSCROLL:
             ScrollMap(hWnd,LOWORD(wParam),HIWORD(wParam),1);
+            break;
+
+        //MEH Mousewheel scrolls up and down too
+        case WM_MOUSEWHEEL:
+            if((short)(HIWORD(wParam)) > 0)  //Rotated wheel up
+            {
+                if(GetAsyncKeyState(VK_SHIFT) < 0 || GetAsyncKeyState(VK_CONTROL) < 0)  //If pressing shift or ctrl, scroll horizontally
+                {
+                    ScrollMap(hWnd, SB_LINEUP, 0, 0);
+                }
+                else
+                    ScrollMap(hWnd, SB_LINEUP, 0, 1);
+            }
+            else    //Rotated wheel down
+            {
+                if(GetAsyncKeyState(VK_SHIFT) < 0 || GetAsyncKeyState(VK_CONTROL) < 0)  //If pressing shift or ctrl, scroll horizontally
+                {
+                    ScrollMap(hWnd, SB_LINEDOWN, 0, 0);
+                }
+                else
+                    ScrollMap(hWnd, SB_LINEDOWN, 0, 1);
+            }
             break;
 
         case WM_HSCROLL:
@@ -2783,7 +2817,7 @@ void ScrollBitmaps(HWND hWnd,int nScrollCode,int nPos)
 switch (nScrollCode)
     {
     case SB_LINEDOWN:
-        if (pos < 253)
+        if (pos < 252)
             pos++;
         break;
 
@@ -2794,14 +2828,15 @@ switch (nScrollCode)
 
     case SB_PAGEDOWN:
         pos += 4;
-        if (pos > 253)
-            pos = 253;
+        if (pos > 252)
+            pos = 252;
         break;
 
     case SB_PAGEUP:
         pos -= 4;
         if (pos < 1)
             pos = 1;
+        break;
 
     case SB_THUMBTRACK:
     case SB_THUMBPOSITION:
@@ -2813,6 +2848,10 @@ switch (nScrollCode)
     default:
         break;
     }
+
+//MEH Object list isn't as large for some reason. Whatever.
+if(nEditType == EDIT_OBJECTS && pos > 250)
+    pos = 250;
 
 CurrentTopBitmap = (short)pos;
 SetScrollPos(hWnd,SB_VERT,pos,TRUE);
@@ -2836,7 +2875,7 @@ LRESULT  CALLBACK _export ChildWndProc( HWND hWnd, UINT iMessage, WPARAM wParam,
 switch (iMessage)
     {
     case WM_CREATE:
-        SetScrollRange(hWnd,SB_VERT,0,253,TRUE);
+        SetScrollRange(hWnd,SB_VERT,0,252,TRUE);
         break;
 
     case WM_PAINT:
@@ -2869,6 +2908,18 @@ switch (iMessage)
 
     case WM_DESTROY:
         PostQuitMessage( 0 );
+        break;
+
+    //MEH Allow mousewheel to scroll bitmap/object list
+    case WM_MOUSEWHEEL:
+        if((short)(HIWORD(wParam)) > 0)  //Rotated wheel up
+        {
+            ScrollBitmaps(hWnd, SB_LINEUP, 0);
+        }
+        else    //Rotated wheel down
+        {
+            ScrollBitmaps(hWnd, SB_LINEDOWN, 0);
+        }
         break;
 
     case WM_VSCROLL:
