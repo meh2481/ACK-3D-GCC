@@ -1160,6 +1160,7 @@ void SetBitmap(HWND hWnd,short xPos,short yPos,short nCode)
     int     mPos;
     NEWOBJECT  *pObj;
     BOOL    bSetAll = FALSE;
+    BOOL    bRedraw = FALSE;    //MEH If we haven't changed anything, don't redraw
     unsigned short nMask;
 
 mPos = GetGridPos(xPos,yPos);
@@ -1184,6 +1185,7 @@ switch (nViewType)
             //--MEH
 
             ObjGrid[mPos] = nCode;
+            bRedraw = TRUE;
             if (nCode)
                 {
                 pObj = ae->ObjList[nCode];
@@ -1212,8 +1214,10 @@ switch (nViewType)
         if (nCode)
             {
             nMask = 0xFF00;
-            if (!nWallFlags) nMask = 0;
-            else nCode |= nWallFlags;
+            if (!nWallFlags)
+                nMask = 0;
+            else
+                nCode |= nWallFlags;
             }
         else
             nMask = 0;
@@ -1223,6 +1227,9 @@ switch (nViewType)
             {
             if (xPos < gsLeft)
                 {
+                //MEH Only redraw if we have to
+                if(ae->xGrid[mPos] != nCode)
+                    bRedraw = TRUE;
                 ae->xGrid[mPos] &= nMask;
                 ae->xGrid[mPos] |= nCode;
                 }
@@ -1230,6 +1237,9 @@ switch (nViewType)
                 {
                 if (xPos >= gsLeft)
                     {
+                    //MEH Only redraw if we have to
+                    if(ae->xGrid[mPos+1] != nCode)
+                        bRedraw = TRUE;
                     ae->xGrid[mPos+1] &= nMask;
                     ae->xGrid[mPos+1] |= nCode;
                     }
@@ -1244,6 +1254,9 @@ switch (nViewType)
             {
             if (yPos < gsLeft)
                 {
+                //MEH Only redraw if we have to
+                if(ae->yGrid[mPos] != nCode)
+                    bRedraw = TRUE;
                 ae->yGrid[mPos] &= nMask;
                 ae->yGrid[mPos] |= nCode;
                 }
@@ -1251,6 +1264,9 @@ switch (nViewType)
                 {
                 if (yPos >= gsRight)
                     {
+                    //MEH Only redraw if we have to
+                    if(ae->yGrid[mPos+GRID_WIDTH] != nCode)
+                        bRedraw = TRUE;
                     ae->yGrid[mPos+GRID_WIDTH] &= nMask;
                     ae->yGrid[mPos+GRID_WIDTH] |= nCode;
                     }
@@ -1272,14 +1288,20 @@ switch (nViewType)
             ae->yGrid[mPos] |= nCode;
             ae->yGrid[mPos+GRID_WIDTH] &= nMask;
             ae->yGrid[mPos+GRID_WIDTH] |= nCode;
+            bRedraw = TRUE;
             }
         break;
 
     case VIEW_FLOOR:
+        //MEH Only redraw if we have to
+        if(FloorMap[mPos] != nCode)
+            bRedraw = TRUE;
         FloorMap[mPos] = nCode;
         break;
 
     case VIEW_CEILING:
+        if(CeilMap[mPos] != nCode)
+            bRedraw = TRUE;
         CeilMap[mPos] = nCode;
         break;
 
@@ -1288,6 +1310,9 @@ switch (nViewType)
     }
 
 bModified = TRUE;
+
+if(!bRedraw)
+    return; //Don't redraw if we don't have to
 InvalidateRect(hWnd,NULL,TRUE);
 InvalidateRect(hwndApp,NULL,FALSE);
 }
@@ -1934,13 +1959,18 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
 
         case WM_CLOSE:
             if (bModified)
+            {
+                int iResult = MessageBox(hWnd,"Map has been modified. Save changes before exit?", "Exit", MB_YESNOCANCEL);
+                if(iResult == IDYES)
                 {
-                if (MessageBox(hWnd,"Map has been modified.\nExit anyway?",
-                        "Exit",MB_YESNO) != IDYES)
-                    {
-                    return(0);
-                    }
+                    SetCurrentDirectory(szCurPath);
+                    SaveResource(hWnd,ResFileName);
                 }
+                else if(iResult == IDCANCEL)
+                {
+                    break;
+                }
+            }
             DestroyWindow(hWnd);
             return(0);
 
@@ -2260,13 +2290,19 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
 
                 case CM_FILEEXIT:
                     if (bModified)
+                    {
+                        //MEH Standard yes/no/cancel message box for close w / w/o saving
+                        int iResult = MessageBox(hWnd,"Map has been modified. Save changes before exit?", "Exit", MB_YESNOCANCEL);
+                        if(iResult == IDYES)
                         {
-                        if (MessageBox(hWnd,"Map has been modified.\nExit anyway?",
-                            "Exit",MB_YESNO) != IDYES)
-                            {
-                            break;
-                            }
+                            SetCurrentDirectory(szCurPath);
+                            SaveResource(hWnd,ResFileName);
                         }
+                        else if(iResult == IDCANCEL)
+                        {
+                            break;
+                        }
+                    }
                     PostQuitMessage(0);
                     break;
 
