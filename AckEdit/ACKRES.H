@@ -78,3 +78,4 @@
 #define DIALOG_3            135
 #define IDC_DOORSECRET      136
 #define CM_WALLS_SECRET     137
+#define CM_FILENEWMAP           138

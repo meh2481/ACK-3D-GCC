@@ -1647,9 +1647,6 @@ if (nEditType == EDIT_WALLS)
     if (ae->bMaps[CurrentBitmap] == NULL)
         return;
 
-    if (MessageBox(hWnd,"Delete Current Bitmap?","Warning",MB_OKCANCEL) != IDOK)
-        return;
-
     for (mPos = 0; mPos < 4096; mPos++)
         {
         if (CurrentBitmap == (ae->xGrid[mPos] & 0xFF))
@@ -1667,9 +1664,6 @@ if (nEditType == EDIT_WALLS)
 else
     {
     if (ae->ObjList[CurrentBitmap] == NULL)
-        return;
-
-    if (MessageBox(hWnd,"Delete Current Object?","Warning",MB_OKCANCEL) != IDOK)
         return;
 
     for (mPos = 0; mPos < 4096; mPos++)
@@ -2304,6 +2298,11 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         }
                     break;
 
+                //MEH Allow user to wipe out map easily, since it's kinda mundane atm
+                case CM_FILENEWMAP:
+                    CreateNewMap(hWnd, hWndChild);
+                    break;
+
                 case CM_FILESAVE:
                      SetCurrentDirectory(szCurPath);
                      SaveResource(hWnd,ResFileName);
@@ -2420,7 +2419,12 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                     break;
 
                 case CM_BITMAPDELETE:
-                    DeleteBitmap(hWnd,hWndChild);
+                    if(nEditType == EDIT_OBJECTS)
+                        sprintf(szName, "Delete current object?");
+                    else
+                        sprintf(szName, "Delete current bitmap?");
+                    if (MessageBox(hWnd,szName,"Warning",MB_OKCANCEL) == IDOK)
+                        DeleteBitmap(MainAppWnd->GetHandle(),hWnd);
                     break;
 
                 case CM_VIEWWALLS:
@@ -2896,7 +2900,13 @@ switch (iMessage)
         //If this is our currently selected bitmap/object, delete it
         if(tempCurrent == CurrentBitmap)
         {
-            DeleteBitmap(MainAppWnd->GetHandle(),hWnd);
+            char cTempText[64];
+            if(nEditType == EDIT_OBJECTS)
+                sprintf(cTempText, "Delete current object?");
+            else
+                sprintf(cTempText, "Delete current bitmap?");
+            if (MessageBox(hWnd,cTempText,"Warning",MB_OKCANCEL) == IDOK)
+                DeleteBitmap(MainAppWnd->GetHandle(),hWnd);
         }
         //Otherwise, select it
         else
@@ -3192,6 +3202,12 @@ void HandleGenericKeypresses(WPARAM wParam)
             }
             break;
 
+        //Create new map with Ctrl+N
+        case VK_N:
+            if(GetAsyncKeyState(VK_CONTROL) < 0)
+                CreateNewMap(MainAppWnd->GetHandle(), MainAppWnd->GetChildHandle());
+            break;
+
         case VK_O:
             //If pressing Ctrl+O, open file
             if(GetAsyncKeyState(VK_CONTROL) < 0)
@@ -3229,28 +3245,28 @@ void HandleGenericKeypresses(WPARAM wParam)
             break;
 
             case VK_S:
-            //If pressing Ctrl+Shift+S, save as
-            if(GetAsyncKeyState(VK_CONTROL) < 0 && GetAsyncKeyState(VK_SHIFT) < 0)
-            {
-                //Currently broken
-
-                /*strcpy(szName,ResFileName);
-                if (!ACKFileSave(MainAppWnd->GetHandle(),szName,sizeof(szName),
-                                 "Resource Files (*.dtf)\0*.dtf\0All Files (*.*)\0*.*\0",
-                                 "Save Resource File"))
+                //If pressing Ctrl+Shift+S, save as
+                if(GetAsyncKeyState(VK_CONTROL) < 0 && GetAsyncKeyState(VK_SHIFT) < 0)
                 {
-                    SaveResource(MainAppWnd->GetHandle(),szName);
-                    strcpy(ResFileName,szName);
-                    GetCurrentDirectory(sizeof(szCurPath),szCurPath);
-                }*/
-            }
-            //Otherwise, Ctrl+S = save
-            else if (GetAsyncKeyState(VK_CONTROL) < 0)
-            {
-                SetCurrentDirectory(szCurPath);
-                SaveResource(MainAppWnd->GetHandle(),ResFileName);
-            }
-            break;
+                    //Currently broken
+
+                    /*strcpy(szName,ResFileName);
+                    if (!ACKFileSave(MainAppWnd->GetHandle(),szName,sizeof(szName),
+                                     "Resource Files (*.dtf)\0*.dtf\0All Files (*.*)\0*.*\0",
+                                     "Save Resource File"))
+                    {
+                        SaveResource(MainAppWnd->GetHandle(),szName);
+                        strcpy(ResFileName,szName);
+                        GetCurrentDirectory(sizeof(szCurPath),szCurPath);
+                    }*/
+                }
+                //Otherwise, Ctrl+S = save
+                else if (GetAsyncKeyState(VK_CONTROL) < 0)
+                {
+                    SetCurrentDirectory(szCurPath);
+                    SaveResource(MainAppWnd->GetHandle(),ResFileName);
+                }
+                break;
 
             //Clear the map if they press Ctrl+X
             case VK_X:
@@ -3336,3 +3352,73 @@ switch (nViewType)
     }
 }
 
+//MEH Clear out this map, ready for a new one
+void CreateNewMap(HWND hWnd, HWND hWndChild)
+{
+    if(MessageBox(hWnd,"Create new map?", "Ack Editor", MB_YESNO) == IDYES)
+    {
+        if(bModified)
+        {
+            int iResult = MessageBox(hWnd,"Current map has been modified. Save changes?", "New Map", MB_YESNOCANCEL);
+            if(iResult == IDYES)
+            {
+                SetCurrentDirectory(szCurPath);
+                SaveResource(hWnd,ResFileName);
+            }
+            else if(iResult == IDCANCEL)
+            {
+                return;
+            }
+        }
+
+        //-------------------Now clear everything out
+        //First delete all the bitmaps, except the first
+        nEditType = EDIT_WALLS;
+        for(int i = 2; i < MAX_WALLBMPS; i++)
+        {
+            CurrentBitmap = i;
+            DeleteBitmap(hWnd,hWndChild);
+        }
+
+        //Delete all objects
+        nEditType = EDIT_OBJECTS;
+        for(int i = 0; i < MAX_OBJECTS+1; i++)
+        {
+            CurrentBitmap = i;
+            DeleteBitmap(hWnd,hWndChild);
+        }
+
+        //Delete all the object supply bitmaps
+        for(int i = 0; i < MAX_OBJBMPS; i++)
+        {
+            if(ae->oMaps[i] == NULL)
+                continue;
+            AckFree(ae->oMaps[i]);
+            ae->oMaps[i] = NULL;
+            RemoveFileName(TYPE_OBJECT,i);
+        }
+
+        //Fill in the border with bitmap 1
+        nEditType = EDIT_WALLS;
+        nViewType = VIEW_WALLS;
+        CurrentBitmap = 1;
+        //After clearing the map, of course
+        FillEntireMap(0);
+        FillBorder();
+
+        //Clear the ceiling
+        nViewType = VIEW_CEILING;
+        FillEntireMap(0);
+
+        //Fill the whole floor with bitmap 1
+        nViewType = VIEW_FLOOR;
+        FillEntireMap(1);
+
+        //Set variables to good initial defaults
+        CurrentBitmap = 1;
+        CurrentTopBitmap = 1;
+        nEditType = EDIT_WALLS;
+        nViewType = VIEW_WALLS;
+        bModified = TRUE;
+    }
+}

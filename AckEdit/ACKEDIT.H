@@ -30,6 +30,7 @@ LRESULT CALLBACK _export AckWndProc( HWND hWnd, UINT iMessage,
 
 //MEH
 void ShowBitmapNumber(HWND hWndChild,short xPos,short yPos);    //Displays a message box with the bitmap number clicked on
+void CreateNewMap(HWND hWnd, HWND hWndChild);                   //Wipe out this map, so it's easy to make a new one
 
 
 // Various operations for cursor control

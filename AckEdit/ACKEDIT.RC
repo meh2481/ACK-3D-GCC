@@ -10,6 +10,7 @@ ACKMENU MENU
  {
   MENUITEM "&Open Resource ...\t(broken)", CM_FILEOPEN, GRAYED
   MENUITEM "Save &as ...\t(broken)", CM_FILESAVE_AS_, GRAYED
+  MENUITEM "&New Map\tCtrl+N", CM_FILENEWMAP
   MENUITEM "&Save\tCtrl+S", CM_FILESAVE
   MENUITEM "&Exit\tAlt+F4", CM_FILEEXIT
  }
