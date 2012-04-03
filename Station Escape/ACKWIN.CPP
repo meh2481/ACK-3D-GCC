@@ -26,6 +26,10 @@ extern  unsigned short CeilMap[];
 extern  unsigned short *ObjGrid;
 };
 
+//MEH
+extern int         nWindowW;
+extern int         nWindowH;
+
 #include "ackres.h"
 #ifndef SPEED_AMOUNT
     #define SPEED_AMOUNT 2
@@ -115,6 +119,10 @@ if (result)
 AckCloseResource();
 //
 AckRegisterStructure(ae);
+
+//MEH
+SetCursorPos((int)nWindowW / 2, (int)nWindowH / 2);
+ShowCursor(FALSE);
 
 return(0);
 }
@@ -293,16 +301,18 @@ TurnAmt = (short)(INT_ANGLE_6 + nTurnSpeed);
 
 if (kbPressed[kbLeftArrow])
     {
-    ae->PlayerAngle -= TurnAmt;
-    if (ae->PlayerAngle < 0)
-        ae->PlayerAngle += (short)INT_ANGLE_360;
+    MoveAngle = (short)(ae->PlayerAngle - INT_ANGLE_90);
+    if (MoveAngle < 0)
+        MoveAngle += (short)INT_ANGLE_360;
+    nResult = AckMovePOV(MoveAngle,Amt);
     }
 
 if (kbPressed[kbRightArrow])
     {
-    ae->PlayerAngle += TurnAmt;
-    if (ae->PlayerAngle >= INT_ANGLE_360)
-        ae->PlayerAngle -= (short)INT_ANGLE_360;
+    MoveAngle = (short)(ae->PlayerAngle + INT_ANGLE_90);
+    if (MoveAngle >= INT_ANGLE_360)
+        MoveAngle -= (short)INT_ANGLE_360;
+    nResult = AckMovePOV(MoveAngle,Amt);
     }
 
 if (kbPressed[kbDownArrow])
@@ -318,6 +328,21 @@ if (kbPressed[kbDownArrow])
 
 if (kbPressed[kbUpArrow])
     nResult = AckMovePOV(ae->PlayerAngle,Amt);
+
+//MEH Make moving the mouse pan the view
+POINT ptCursor;
+GetCursorPos(&ptCursor);
+int iDistMoved = (int)ptCursor.x - (int)nWindowW / 2;
+if(iDistMoved != 0)
+{
+    ae->PlayerAngle += iDistMoved;
+    if(ae->PlayerAngle >= INT_ANGLE_360)
+        ae->PlayerAngle -= INT_ANGLE_360;
+    if(ae->PlayerAngle < 0)
+        ae->PlayerAngle += INT_ANGLE_360;
+}
+SetCursorPos((int)nWindowW / 2, (int)nWindowH / 2);
+
 
 
 HDC hdc = GetDC(hwndApp);
@@ -367,19 +392,20 @@ switch (iMessage)
     case WM_KEYDOWN:
         switch (wParam)
             {
-            case VK_UP:
+            //MEH WASD instead of arrows
+            case VK_W:
                 kbPressed[kbUpArrow] = 1;
                 nMoveSpeed += (short)SPEED_AMOUNT;
                 break;
-            case VK_DOWN:
+            case VK_S:
                 kbPressed[kbDownArrow] = 1;
                 nMoveSpeed += (short)SPEED_AMOUNT;
                 break;
-            case VK_LEFT:
+            case VK_A:
                 kbPressed[kbLeftArrow] = 1;
                 nTurnSpeed += (short)SPEED_AMOUNT;
                 break;
-            case VK_RIGHT:
+            case VK_D:
                 kbPressed[kbRightArrow] = 1;
                 nTurnSpeed += (short)SPEED_AMOUNT;
                 break;
@@ -407,19 +433,19 @@ switch (iMessage)
     case WM_KEYUP:
         switch (wParam)
             {
-            case VK_UP:
+            case VK_W:
                 nMoveSpeed = 0;
                 kbPressed[kbUpArrow] = 0;
                 break;
-            case VK_DOWN:
+            case VK_S:
                 nMoveSpeed = 0;
                 kbPressed[kbDownArrow] = 0;
                 break;
-            case VK_LEFT:
+            case VK_A:
                 nTurnSpeed = 0;
                 kbPressed[kbLeftArrow] = 0;
                 break;
-            case VK_RIGHT:
+            case VK_D:
                 nTurnSpeed = 0;
                 kbPressed[kbRightArrow] = 0;
                 break;

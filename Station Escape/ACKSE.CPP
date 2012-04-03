@@ -174,8 +174,9 @@ if(hpalApp)
 DeleteObject(hOffscreenDC);
 DeleteObject(hOffscreenBitmap);
 
-// Shutdown WinG DLL
-//WinG.Free();
+//MEH Show cursor again
+ShowCursor(TRUE);
+
 return(result);
 }
 
@@ -659,6 +660,7 @@ LRESULT CALLBACK _export AckWndProc(HWND hWnd,UINT iMessage,
 {
   HDC         hDC;
   PAINTSTRUCT ps;
+  POINT       ptCursor;
 
 switch (iMessage)
   {
@@ -719,6 +721,15 @@ switch (iMessage)
       break;
       }
 
+    //MEH End game if pressing Esc
+    if(wParam == VK_ESCAPE)
+    {
+        if (nTimerID)
+            KillTimer(hWnd,nTimerID);
+        nTimerID = 0;
+        PostQuitMessage(0);
+    }
+
 // Fall through here
   case WM_KEYUP:
     nIntroCount = 0;
@@ -730,19 +741,28 @@ switch (iMessage)
     break;
 
   case WM_LBUTTONDOWN:
-    nIntroCount = 0;
-    ProcessMouse(hWnd,1,LOWORD(lParam),HIWORD(lParam));
-    SetCapture(hWnd);
+    //nIntroCount = 0;
+    ShootBomb();
+    //SetCapture(hWnd);
     break;
 
   case WM_MOUSEMOVE:
-    if (wParam & MK_LBUTTON)
-      ProcessMouse(hWnd,1,LOWORD(lParam),HIWORD(lParam));
+    //if (wParam & MK_LBUTTON)
+    //  ProcessMouse(hWnd,1,LOWORD(lParam),HIWORD(lParam));
+    /*if(HIWORD(lParam) == nWindowH / 2 &&
+       LOWORD(lParam) == nWindowW / 2)  //We just set the mouse cursor pos
+       break;
+    //ae->PlayerAngle += LOWORD(lParam) - nWindowW / 2;
+    if(ae->PlayerAngle > INT_ANGLE_360)
+        ae->PlayerAngle -= INT_ANGLE_360;
+    if(ae->PlayerAngle < 0)
+        ae->PlayerAngle += INT_ANGLE_360;*/
+    //SetCursorPos(nWindowW / 2, nWindowH / 2);
     break;
 
   case WM_LBUTTONUP:
-    ProcessMouse(hWnd,0,LOWORD(lParam),HIWORD(lParam));
-    ReleaseCapture();
+    //ProcessMouse(hWnd,0,LOWORD(lParam),HIWORD(lParam));
+    //ReleaseCapture();
     break;
 
   case WM_PALETTECHANGED:
