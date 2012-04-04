@@ -100,35 +100,7 @@ for (i = 320; i < 640; i++)
         }
     }
 
-}/*void ProcessBackDrop(UCHAR *bPtr)
-{
-        int     i,j,pos;
-        UCHAR   *aPtr;
-
-for (i = 0; i < 320; i++)
-    {
-    pos = i + 4;
-    aPtr = BackArray[i];
-    for (j = 0; j < 100; j++)
-                {
-        *aPtr++ = bPtr[pos];
-        pos += 320;
-        }
-    }
-
-for (i = 320; i < 640; i++)
-    {
-    pos = (i - 320) + 32004;
-    aPtr = BackArray[i];
-    for (j = 0; j < 100; j++)
-        {
-                *aPtr++ = bPtr[pos];
-                pos += 320;
-                }
-    }
-
-}*/
-
+}
 
 //***************************************************************************
 // Loads a background image (mountains) and processes the image into the
@@ -140,10 +112,8 @@ for (i = 320; i < 640; i++)
 int LoadBackDrop(void)
 {
         UCHAR   *bPtr;
-//printf("Loading backdrop...\n");
 if (ResScrollBack)
     {
-        //printf("Scrollback: %d\n",ResScrollBack);
     bPtr = AckReadPCX((char *)ResScrollBack);
 
     if (bPtr == NULL)

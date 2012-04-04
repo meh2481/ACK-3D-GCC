@@ -1,12 +1,8 @@
 // Example source for using ACK-3D in Windows
 // (c) 1995 ACK Software (Lary Myers)
-//#define  STRICT
 #include <windows.h>
-//#pragma hdrstop
 #include <stdlib.h>
 #include <string.h>
-//#include "wing.h"
-//#include "wingdll.h"
 #include "ackwin.h"
 #include "ackse.h"
 #include <stdio.h>
@@ -23,7 +19,6 @@
 #include "ack3d.h"
 extern "C" {
 #include "keys.h"
-//#include "ack3d.h"
 void AckDoubleBuffer(UCHAR *Src,UCHAR *Dest);
 extern  UCHAR   colordat[];
 };
@@ -32,21 +27,16 @@ extern  UCHAR   colordat[];
 ACKENG      *ae = 0;        // Interface structure
 HWND        hwndApp;
 UCHAR       kbPressed[128];
-//WinGdll     WinG;
-header      BufferHeader;
 void        *pAckBuffer = 0;
 HDC         AckBuffer = 0;
-HPALETTE    hpalApp;
+//HPALETTE    hpalApp;
 RGBQUAD     ColorTable[256];
-pal         LogicalPalette = {0x300,256};
 HBITMAP     gbmOldMonoBitmap = 0;
 int         StretchFactor = 1;
 int         nBitmapW;
 int         nBitmapH;        // WinG bitmap dimensions.
 int         nWindowW;
 int         nWindowH;
-short       nMoveSpeed;
-short       nTurnSpeed;
 short       nIntroCount;
 short       nInfoMode;
 HINSTANCE   hInstGlobal;
@@ -118,35 +108,40 @@ if (!hPrevInstance)
   if (!Register(hThisInstance))
     return(-1);
 
-// Prime the ACK-3D engine with our startup parameters
-if (InitACKEngine())
-  return(-1);
+//MEH Hide the cursor and set it to the center of the viewport window
+SetCursorPos((int)nWindowW / 2, (int)nWindowH / 2);
+ShowCursor(FALSE);
 
 hInstGlobal = hThisInstance;
 
-ReadInPallette();//MEH read in the pallette data from "pallette.txt"
+//---------------Begin ACK-3D specific, rather than Windows-specific, code
+// Prime the ACK-3D engine with our startup parameters
+if (InitACKEngine())
+  return(-1);
 
 // Open our default resource file and load bitmaps, etc.
 AckOpenResource("pics.dtf");
 result = AckProcessInfoFile();
 if (result)
   {
-  wsprintf(szBuf,"Error %d in resource",result);
-  MessageBox(NULL,szBuf,"Error",MB_OK);
+  printf("ACK-3D Error: %d in resource file",result);
   AckCloseResource();
   return(-1);
   }
-
-srand(GetTickCount());
-memcpy(SavePal,colordat,768);
-//pIntroBuf = AckReadPCX((char *)2);
 LoadBackDrop(); //MEH WHY WASN'T THIS CALLED HERE??!?! RGH
 AckCloseResource();
+AckSetupPalRanges(ae, ranges);
+//---------------MEH End ACK-3D - specific code
+
+ReadInPallette();//MEH read in the pallette data from "pallette.txt"
+
+srand(GetTickCount());
+
 bUpdateTime = FALSE;
 nTimerCount = 0;
 nRepairObjectCount = 0;
 nSecondsLeft = (60 * 60) + (60 * 30);
-AckSetupPalRanges(ae, ranges);
+
 
 // Create the actual window to display the rendered view
 if (!CreateAll(hThisInstance))
@@ -167,9 +162,6 @@ if (AckBuffer)
   DeleteObject(hbm);
   DeleteDC(AckBuffer);
   }
-
-if(hpalApp)
-  DeleteObject(hpalApp);
 
 DeleteObject(hOffscreenDC);
 DeleteObject(hOffscreenBitmap);
@@ -210,12 +202,6 @@ BOOL CreateAll(HINSTANCE hInst)
 {
   int     windx, windy;
   HMENU   hMenu;
-
-//if (!WinG.Load())
-//  {
-//  MessageBox(0,"Can't find WING32.DLL","Error!",MB_OK);
-//  return(FALSE);
-//  }
 
 nBitmapW = 319;                 // Default size (window client size to use)
 nBitmapH = 199;
@@ -283,7 +269,7 @@ for (;;)
     }
   else
     {
-        //MEH Enough of this 1000 fps! Time for limited fps
+        //MEH Enough of this huge framerate! Time for limited fps
         int iNewTick = GetTickCount();
         if(iNewTick - iCurTicks > 30) //~30 fps
         {
@@ -610,14 +596,10 @@ if(!hOffscreenDC)
     hOffscreenBitmap = CreateCompatibleBitmap(hdc, 320, 200);
     SelectObject(hOffscreenDC, hOffscreenBitmap);
 }
-//PatBlt(hOffscreenDC, 0,0,nBitmapW,nBitmapH, BLACKNESS);
 HICON ic = CreateIcon(hInstGlobal, 320, 200, 1, 32, NULL, (BYTE*)(OffscreenBuffer));
 if(ic == NULL)
     printf("Icon NULL\n");
 DrawIconEx(hOffscreenDC, 0, 0, ic, 320, 200, NULL, NULL, DI_NORMAL);
-//DrawIcon(hOffscreenDC, 0, 0, LoadIcon(NULL, IDI_APPLICATION));
-//BitBlt(hdc,0,0,nBitmapW,nBitmapH,hOffscreenDC,0,0,SRCCOPY);
-//PatBlt(AckBuffer, 0,0,nBitmapW,nBitmapH, BLACKNESS);
 if (StretchFactor != 1)
   {
   StretchBlt(hdc,0,0,nWindowW,nWindowH, // Use the current window size
@@ -741,42 +723,14 @@ switch (iMessage)
     break;
 
   case WM_LBUTTONDOWN:
-    //nIntroCount = 0;
     ShootBomb();
-    //SetCapture(hWnd);
     break;
 
   case WM_MOUSEMOVE:
-    //if (wParam & MK_LBUTTON)
-    //  ProcessMouse(hWnd,1,LOWORD(lParam),HIWORD(lParam));
-    /*if(HIWORD(lParam) == nWindowH / 2 &&
-       LOWORD(lParam) == nWindowW / 2)  //We just set the mouse cursor pos
-       break;
-    //ae->PlayerAngle += LOWORD(lParam) - nWindowW / 2;
-    if(ae->PlayerAngle > INT_ANGLE_360)
-        ae->PlayerAngle -= INT_ANGLE_360;
-    if(ae->PlayerAngle < 0)
-        ae->PlayerAngle += INT_ANGLE_360;*/
-    //SetCursorPos(nWindowW / 2, nWindowH / 2);
     break;
 
   case WM_LBUTTONUP:
-    //ProcessMouse(hWnd,0,LOWORD(lParam),HIWORD(lParam));
-    //ReleaseCapture();
     break;
-
-  case WM_PALETTECHANGED:
-    if (hWnd == (HWND)wParam)
-      break;
-    // Fall through here
-  case WM_QUERYNEWPALETTE:
-    hDC = GetDC(hWnd);
-    if (hpalApp)
-      SelectPalette(hDC,hpalApp,FALSE);
-
-    RealizePalette(hDC);
-    ReleaseDC(hWnd,hDC);
-    return FALSE;
 
   case WM_SYSCOMMAND:
     switch (wParam)
@@ -856,7 +810,6 @@ void ReadInPallette()
     std::ifstream infile("pallette.txt");
     if(infile.fail())
         return;
-//printf("reading in pallette\n");
     for(int i = 0; i < 256; i++)
     {
         unsigned int r, g, b;
@@ -866,7 +819,6 @@ void ReadInPallette()
         p.g = (unsigned char)g;
         p.b = (unsigned char)r;
         p.a = 255;
-        //printf("%d, %d, %d\n", p.r, p.g, p.b);
         pallette[i] = p;
     }
     infile.close();

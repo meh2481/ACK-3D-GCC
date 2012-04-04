@@ -2,13 +2,9 @@
 // These routines are not necessarily tied to the ACK Map Editor, but are
 // more generic in nature.
 // (c) 1995 ACK Software (Lary Myers)
-#define  STRICT
 #include <windows.h>
-//#pragma hdrstop
 #include <stdlib.h>
 #include <string.h>
-//#include "wing.h"
-//#include "wingdll.h"
 #include "ackwin.h"
 #include "ack3d.h"
 #include <stdio.h>
@@ -31,33 +27,24 @@ extern int         nWindowW;
 extern int         nWindowH;
 
 #include "ackres.h"
-#ifndef SPEED_AMOUNT
-    #define SPEED_AMOUNT 2
-#endif
-
 
 extern    ACKENG        *ae;            // Interface structure
-extern    short         nMoveSpeed;
-extern    short         nTurnSpeed;
 extern    HINSTANCE     hInstGlobal;
 extern    BOOL          bNoShow;        // Do not display if TRUE
 extern    short         nViewType;      // Current view in grid window
 extern    short         nEditType;      // Editing walls or objects
 extern    HWND          hwndApp;
 extern    UCHAR         kbPressed[];
-//extern    WinGdll       WinG;
-extern    header        BufferHeader;
 extern    void          *pBuffer;
 extern    HDC           Buffer;
 extern    void          *pAckBuffer;
 extern    HDC           AckBuffer;
 extern    void          *pMapBuffer;
 extern    HDC           MapBuffer;
-extern    HPALETTE      hpalApp;
+//extern    HPALETTE      hpalApp;
 extern    int           nBitmapW;
 extern    int           nBitmapH;                       //WinG bitmap dimensions.
 extern    RGBQUAD       ColorTable[];
-extern    pal           LogicalPalette;
 extern    short         nRepairObjectCount;
 
 //****************************************************************************
@@ -72,7 +59,7 @@ short InitACKEngine(void)
 ae = (ACKENG *)AckMalloc(sizeof(ACKENG));
 if (ae == NULL)
     {
-    MessageBox(NULL,"Unable to allocate memory","ACK Error",MB_OK);
+    printf("Unable to allocate memory for ACK-3D\n");
     return(-1);
     }
 memset(ae,0,sizeof(ACKENG));
@@ -98,21 +85,14 @@ ae->PlayerHeight = DEFAULT_PLAYER_HEIGHT;
 result = AckOpenResource("KIT.OVL");
 if (result)
     {
-    MessageBox(NULL,"Error Opening KIT.OVL","ACK Error",MB_OK);
+    printf("ACK-3D Error: Cannot open KIT.OVL\n");
     return(-1);
     }
 
-//
-//if (ae->ScreenBuffer != NULL)
-//    {
-//    AckFree(ae->ScreenBuffer);
-//    ae->ScreenBuffer = NULL;
-//    }
-//
 result = AckInitialize(ae);
 if (result)
     {
-    MessageBox(NULL,"Error Initializing","ACK Error",MB_OK);
+    printf("ACK-3D Error: Unable to initialize ACK engine\n");
     return(-1);
     }
 
@@ -120,68 +100,8 @@ AckCloseResource();
 //
 AckRegisterStructure(ae);
 
-//MEH
-SetCursorPos((int)nWindowW / 2, (int)nWindowH / 2);
-ShowCursor(FALSE);
-
 return(0);
 }
-
-//****************************************************************************
-// Use this routine to create the screen palette based on the RGB contents
-// of the colordat[] array used by the ACK engine. The global LogicalPalette
-// array is assumed to contain the entries for setting the palette.
-//****************************************************************************
-void CreateAckPalette(void)
-{
-        int i;
-        int nColors;
-    UCHAR   col;
-
-#ifdef _USE_SYSTEM_PALETTE
-   HDC Screen;
-   RGBQUAD *pColorTable;
-
-    Screen = GetDC(0);
-    GetSystemPaletteEntries(Screen,0,256,LogicalPalette.aEntries);
-    ReleaseDC(0,Screen);
-
-    for (i=0; i<256; i++)
-        {
-        ColorTable[i].rgbRed = LogicalPalette.aEntries[i].peRed;
-        ColorTable[i].rgbGreen = LogicalPalette.aEntries[i].peGreen;
-        ColorTable[i].rgbBlue = LogicalPalette.aEntries[i].peBlue;
-        ColorTable[i].rgbReserved = 0;
-        }
-
-#else
-
-    ClearSystemPalette();
-
-    nColors = 0;
-
-    for (i=0; i<256; i++)
-        {
-        col = colordat[nColors++];
-        col <<= 2;
-        ColorTable[i].rgbRed = col;
-        col = colordat[nColors++];
-        col <<= 2;
-        ColorTable[i].rgbGreen = col;
-        col = colordat[nColors++];
-        col <<= 2;
-        ColorTable[i].rgbBlue = col;
-        ColorTable[i].rgbReserved = 0;
-        }
-
-#endif
-
-if (hpalApp)
-    DeleteObject(hpalApp);
-
-hpalApp = CreateIdentityPalette(ColorTable, 256);
-}
-
 
 //****************************************************************************
 // Use this routine when a window WM_SIZE message is received. Pass the new
@@ -195,8 +115,6 @@ void AckDoSize(HWND hWnd,LPARAM lParam)
     HBITMAP hbm;
     int Counter;
 
-//nBitmapW = LOWORD(lParam);
-//nBitmapH = HIWORD(lParam);
 nBitmapW = 319; // We'll hard-code the size for now since the Map Editor
 nBitmapH = 199; // is a non-sizable window.
 // Make sure the width is on an even boundary for the size it is set to.
@@ -204,13 +122,6 @@ nBitmapW = ((nBitmapW+3)/4)*4;
 
 if (AckBuffer)
     {
-        /*BufferHeader.Header.biWidth = nBitmapW;
-        BufferHeader.Header.biHeight = -nBitmapH;   // -height for top-down display
-
-        hbm = CreateBitmap(320, 200, 1, 8, &pAckBuffer);
-        //hbm = WinG.pCreateBitmap(AckBuffer,
-        //        (BITMAPINFO *)&BufferHeader, &pAckBuffer); */
-
         hbm = (HBITMAP)SelectObject(AckBuffer, hbm);
         DeleteObject(hbm);
 
@@ -218,7 +129,6 @@ if (AckBuffer)
 
     if (ae != NULL)
         {
-//        ae->ScreenBuffer = (UCHAR *)pAckBuffer;
         ae->WinEndX = (short)nBitmapW;
         ae->WinEndY = (short)nBitmapH;
         if (ae->WinEndX > 319)
@@ -230,47 +140,15 @@ if (AckBuffer)
     }
 else
     {
-        /*if (WinG.pRecommendDIBFormat((BITMAPINFO *)&BufferHeader))
-        {
-                BufferHeader.Header.biBitCount = 8;
-                BufferHeader.Header.biCompression = BI_RGB;
-            }
-        else
-            {
-                BufferHeader.Header.biSize = sizeof(BITMAPINFOHEADER);
-                BufferHeader.Header.biPlanes = 1;
-                BufferHeader.Header.biBitCount = 8;
-                BufferHeader.Header.biCompression = BI_RGB;
-                BufferHeader.Header.biSizeImage = 0;
-                BufferHeader.Header.biClrUsed = 0;
-                BufferHeader.Header.biClrImportant = 0;
-        //    }
 
-    BufferHeader.Header.biWidth = nBitmapW;
-    BufferHeader.Header.biHeight = -nBitmapH; */
-
-    CreateAckPalette();
-
-    /*for (Counter = 0;Counter < 256;Counter++)
-        {
-            BufferHeader.aColors[Counter].rgbRed   = ColorTable[Counter].rgbRed;
-            BufferHeader.aColors[Counter].rgbGreen = ColorTable[Counter].rgbGreen;
-            BufferHeader.aColors[Counter].rgbBlue  = ColorTable[Counter].rgbBlue;
-            BufferHeader.aColors[Counter].rgbReserved = 0;
-        } */
-
-    AckBuffer = GetDC(FindWindow("ACK3DVIEW", NULL));//CreateDC(TEXT("DISPLAY"),NULL,NULL,NULL);
+    AckBuffer = GetDC(FindWindow("ACK3DVIEW", NULL));
     hbm = CreateBitmap(320, 200, 1, 8, &pAckBuffer);
-    //hbm = WinG.pCreateBitmap(AckBuffer,
-    //                            (BITMAPINFO *)&BufferHeader, &pAckBuffer);
 
     SelectObject(AckBuffer, hbm);
 
     PatBlt(AckBuffer, 0,0,nBitmapW,nBitmapH, BLACKNESS);
     if (ae != NULL)
         {
-//        ae->ScreenBuffer = (UCHAR *)pAckBuffer;
-//printf("created AckBuffer\n");
         AckRegisterStructure(ae);
         }
     }
@@ -285,7 +163,7 @@ else
 //****************************************************************************
 void DoCycle(void)
 {
-    short   Amt,TurnAmt,MoveAngle;
+    short   Amt,MoveAngle;
     short   nResult;
 
 if (bNoShow)
@@ -295,9 +173,6 @@ nResult = 0;
 Amt = 16;
 if (kbPressed[kbCtrl])
     Amt = 32;
-
-Amt += nMoveSpeed;
-TurnAmt = (short)(INT_ANGLE_6 + nTurnSpeed);
 
 if (kbPressed[kbLeftArrow])
     {
@@ -323,7 +198,7 @@ if (kbPressed[kbDownArrow])
     nResult = AckMovePOV(MoveAngle,Amt);
     }
 
-    //Open any doors for the player
+    //Open any doors for the player - here's the spot to do it if we want automatic doors
     //AckCheckDoorOpen(ae->xPlayer,ae->yPlayer,ae->PlayerAngle);
 
 if (kbPressed[kbUpArrow])
@@ -343,28 +218,12 @@ if(iDistMoved != 0)
 }
 SetCursorPos((int)nWindowW / 2, (int)nWindowH / 2);
 
-
-
+//Draw the view
 HDC hdc = GetDC(hwndApp);
 AckPaint(hwndApp, hdc);
 ReleaseDC(hwndApp, hdc);
 
-nMoveSpeed -= (short)3;
-// Keep the movement within reasonable bounds. This process
-// will simulate acceleration and deceleration of the POV.
-if (nMoveSpeed < 0)
-    nMoveSpeed = 0;
-if (nMoveSpeed > 16)
-    nMoveSpeed = 16;
-nTurnSpeed -= (short)3;
-// Do the same thing with turn speed. By experimenting with
-// the number above, various acceleration and deceleration
-// levels can be achieved.
-if (nTurnSpeed < 0)
-    nTurnSpeed = 0;
-if (nTurnSpeed > 90)
-    nTurnSpeed = 90;
-
+//TODO: This is specific to Station Escape, and it doesn't work too well. Replace later
 if (nResult == POV_OBJECT)
     {
     nResult = AckGetObjectHit();
@@ -395,19 +254,15 @@ switch (iMessage)
             //MEH WASD instead of arrows
             case VK_W:
                 kbPressed[kbUpArrow] = 1;
-                nMoveSpeed += (short)SPEED_AMOUNT;
                 break;
             case VK_S:
                 kbPressed[kbDownArrow] = 1;
-                nMoveSpeed += (short)SPEED_AMOUNT;
                 break;
             case VK_A:
                 kbPressed[kbLeftArrow] = 1;
-                nTurnSpeed += (short)SPEED_AMOUNT;
                 break;
             case VK_D:
                 kbPressed[kbRightArrow] = 1;
-                nTurnSpeed += (short)SPEED_AMOUNT;
                 break;
             case VK_CONTROL:
                 kbPressed[kbCtrl] = 1;
@@ -427,26 +282,21 @@ switch (iMessage)
             default:
                 break;
             }
-//        DoCycle();
         break;
 
     case WM_KEYUP:
         switch (wParam)
             {
             case VK_W:
-                nMoveSpeed = 0;
                 kbPressed[kbUpArrow] = 0;
                 break;
             case VK_S:
-                nMoveSpeed = 0;
                 kbPressed[kbDownArrow] = 0;
                 break;
             case VK_A:
-                nTurnSpeed = 0;
                 kbPressed[kbLeftArrow] = 0;
                 break;
             case VK_D:
-                nTurnSpeed = 0;
                 kbPressed[kbRightArrow] = 0;
                 break;
             case VK_CONTROL:
@@ -467,58 +317,8 @@ switch (iMessage)
             default:
                 break;
             }
-//        DoCycle();
         break;
     }
 
 }
 
-//****************************************************************************
-// Use this routine to process the location of the mouse within the 3D window.
-// It will check the mouse position to determine if the left button is being
-// pressed near the edges of the window and then will emulate a key being
-// pressed accordingly. The DoCycle routine will then handle the emulated
-// key as if the keyboard were actually pressed.
-//****************************************************************************
-void ProcessMouse(HWND hWnd,short nType,short xPos,short yPos)
-{
-    short   xMax,yMax;
-    RECT    rect;
-
-memset(kbPressed,0,128);    // Clear out all previous key presses
-
-if (!nType)                 // For now, a mouse released will just return
-    {
-    nMoveSpeed = nTurnSpeed = 0;
-    return;
-    }
-
-GetClientRect(hWnd,&rect);
-xMax = (short)rect.right;
-yMax = (short)rect.bottom;
-
-if (yPos < 60)          // Simulate an up arrow if near the top of the window
-    {
-    kbPressed[kbUpArrow] = 1;
-    nMoveSpeed += (short)SPEED_AMOUNT;
-    }
-if (yPos > (yMax-60))   // Simulate down arrow if near the bottom
-    {
-    kbPressed[kbDownArrow] = 1;
-    nMoveSpeed += (short)SPEED_AMOUNT;
-    }
-if (xPos < 60)          // Simulate left arrow if near left edge
-    {
-    kbPressed[kbLeftArrow] = 1;
-    nTurnSpeed += (short)SPEED_AMOUNT;
-    }
-
-if (xPos > (xMax-60))   // Simulate right arrow if near right edge
-    {
-    kbPressed[kbRightArrow] = 1;
-    nTurnSpeed += (short)SPEED_AMOUNT;
-    }
-
-//DoCycle();              // Update the 3D window
-
-}
