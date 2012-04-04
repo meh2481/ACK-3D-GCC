@@ -427,7 +427,7 @@ switch (iMessage)
             default:
                 break;
             }
-        DoCycle();
+//        DoCycle();
         break;
 
     case WM_KEYUP:
@@ -467,7 +467,7 @@ switch (iMessage)
             default:
                 break;
             }
-        DoCycle();
+//        DoCycle();
         break;
     }
 
@@ -519,6 +519,6 @@ if (xPos > (xMax-60))   // Simulate right arrow if near right edge
     nTurnSpeed += (short)SPEED_AMOUNT;
     }
 
-DoCycle();              // Update the 3D window
+//DoCycle();              // Update the 3D window
 
 }
