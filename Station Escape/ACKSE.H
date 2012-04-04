@@ -9,10 +9,7 @@ LRESULT  CALLBACK _export AckWndProc( HWND hWnd, UINT iMessage, WPARAM wParam,
 
 int LoadBackDrop(void);
 int AckProcessInfoFile(void);
-int DoInfoDlg(HINSTANCE hInst, HWND hWnd);
 
-#define IM_HELP     1       // Display help dialog box
-#define IM_BACK     2       // Display background story
 #define IM_TIMEOUT  3       // Ran out of time
 #define IM_WON      4       // Won the game!
 

@@ -11,8 +11,8 @@
 #define IDM_RES1    1100
 #define IDM_RES2    1101
 #define IDM_RES3    1102
-#define IDM_HELP    1103
-#define IDM_BACK    1104
+//#define IDM_HELP    1103
+//#define IDM_BACK    1104
 #define IDM_RES4    1105
 #define IDM_RES5    1106
 
@@ -243,9 +243,6 @@ AppendMenu(hMenu,MF_STRING,IDM_RES2,"480 x 300");
 AppendMenu(hMenu,MF_STRING,IDM_RES3,"640 x 400");
 AppendMenu(hMenu,MF_STRING,IDM_RES4,"800 x 600");
 AppendMenu(hMenu,MF_STRING,IDM_RES5,"1280 x 800");
-AppendMenu(hMenu,MF_SEPARATOR,0,NULL);
-AppendMenu(hMenu,MF_STRING,IDM_HELP,"&Help");
-AppendMenu(hMenu,MF_STRING,IDM_BACK,"&Background story");
 return(TRUE);
 }
 
@@ -533,7 +530,8 @@ bInStatus = TRUE;
 if (!nSecondsLeft)
   {
   nInfoMode = IM_TIMEOUT;
-  DoInfoDlg(hInstGlobal,hWnd);
+  printf("Game over. Ran out of time.\n");
+//  DoInfoDlg(hInstGlobal,hWnd);
   bResult = TRUE;
   }
 
@@ -543,7 +541,8 @@ if (nRepairObjectCount == REPAIR_OBJECTS_NEEDED)
   if (nPos == REPAIR_POSITION)
     {
     nInfoMode = IM_WON;
-    DoInfoDlg(hInstGlobal,hWnd);
+    printf("You win! YAY!\n");
+//    DoInfoDlg(hInstGlobal,hWnd);
     bResult = TRUE;
     }
   }
@@ -676,26 +675,12 @@ switch (iMessage)
     break;
 
   case WM_KEYDOWN:
-    if (wParam == VK_F1)
+    /*if (wParam == VK_F1)
       {
       nInfoMode = IM_HELP;
-      DoInfoDlg(hInstGlobal,hWnd);
+//      DoInfoDlg(hInstGlobal,hWnd);
       break;
-      }
-
-    if (wParam == VK_F2)
-      {
-      ae->SysFlags ^= SYS_SOLID_FLOOR;
-      AckRegisterStructure(ae);
-      break;
-      }
-
-    if (wParam == VK_F3)
-      {
-      ae->SysFlags ^= SYS_SOLID_CEIL;
-      AckRegisterStructure(ae);
-      break;
-      }
+      }*/
 
     if (wParam == VK_TAB)
       {
@@ -784,15 +769,15 @@ switch (iMessage)
           }
           break;
 
-      case IDM_HELP:
-        nInfoMode = IM_HELP;
-        DoInfoDlg(hInstGlobal,hWnd);
-        break;
+//      case IDM_HELP:
+//        nInfoMode = IM_HELP;
+//        DoInfoDlg(hInstGlobal,hWnd);
+//        break;
 
-      case IDM_BACK:
-        nInfoMode = IM_BACK;
-        DoInfoDlg(hInstGlobal,hWnd);
-        break;
+//      case IDM_BACK:
+//        nInfoMode = IM_BACK;
+//        DoInfoDlg(hInstGlobal,hWnd);
+//        break;
 
       default:
         break;

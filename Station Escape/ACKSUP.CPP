@@ -24,8 +24,8 @@ extern  UCHAR   *BackArray[];
 extern  ACKENG  *ae;
 extern  short   nInfoMode;
 
-BOOL CALLBACK _export FAR PASCAL InfoDlgProc(HWND hDlg, UINT iMessage,
-        WPARAM wParam, LPARAM lParam);
+//BOOL CALLBACK _export FAR PASCAL InfoDlgProc(HWND hDlg, UINT iMessage,
+//        WPARAM wParam, LPARAM lParam);
 
 // Globals
     extern  char    LineBuffer[];
@@ -39,12 +39,12 @@ BOOL CALLBACK _export FAR PASCAL InfoDlgProc(HWND hDlg, UINT iMessage,
 //**************************************************************************
 //
 //**************************************************************************
-int DoInfoDlg(HINSTANCE hInst, HWND hWnd)
+/*int DoInfoDlg(HINSTANCE hInst, HWND hWnd)
 {
     DLGPROC   lpfnInfoDlgProc;
     int       iReturn;
 
-lpfnInfoDlgProc = (DLGPROC)MakeProcInstance((FARPROC)InfoDlgProc, hInst);
+//lpfnInfoDlgProc = (DLGPROC)MakeProcInstance((FARPROC)InfoDlgProc, hInst);
 
 iReturn = DialogBox(hInst,MAKEINTRESOURCE(DLGINFO),hWnd,lpfnInfoDlgProc);
 
@@ -55,7 +55,7 @@ if (iReturn < 0)
 
 
 return(iReturn);
-}
+}*/
 
 
 
@@ -132,7 +132,7 @@ return(0);
 //**************************************************************************
 //
 //**************************************************************************
-short ReadTextFile(HWND hDlg,char *szName)
+/*short ReadTextFile(HWND hDlg,char *szName)
 {
     short   handle;
     FILE    *fp;
@@ -169,26 +169,26 @@ fclose(fp);
 
 return(0);
 }
-
+*/
 //**************************************************************************
 //
 //**************************************************************************
-void SetupHelpDlg(HWND hDlg)
+/*void SetupHelpDlg(HWND hDlg)
 {
     HWND    hDlgItem;
 
 hDlgItem = GetDlgItem(hDlg,IDC_ST_HEADER);
 SetWindowText(hDlgItem,"Help for Station Escape");
 
-ReadTextFile(hDlg,"SEHELP.TXT");
+//ReadTextFile(hDlg,"SEHELP.TXT");
 
-}
+}*/
 
 //**************************************************************************
 // General purpose information dialog box. Here we will fill in the header
 // and footer static controls as well as a listbox with various information.
 //**************************************************************************
-BOOL CALLBACK _export FAR PASCAL InfoDlgProc(HWND hDlg, UINT iMessage,
+/*BOOL CALLBACK _export FAR PASCAL InfoDlgProc(HWND hDlg, UINT iMessage,
         WPARAM wParam, LPARAM lParam)
 {
 
@@ -198,19 +198,19 @@ switch (iMessage)
         switch (nInfoMode)
             {
             case IM_HELP:
-                SetupHelpDlg(hDlg);
+//                SetupHelpDlg(hDlg);
                 break;
 
             case IM_BACK:
-                ReadTextFile(hDlg,"SEBACK.TXT");
+//                ReadTextFile(hDlg,"SEBACK.TXT");
                 break;
 
             case IM_TIMEOUT:
-                ReadTextFile(hDlg,"SETIME.TXT");
+//                ReadTextFile(hDlg,"SETIME.TXT");
                 break;
 
             case IM_WON:
-                ReadTextFile(hDlg,"SEWON.TXT");
+//                ReadTextFile(hDlg,"SEWON.TXT");
                 break;
 
             default:
@@ -239,7 +239,7 @@ switch (iMessage)
     }
 
 return(TRUE);
-}
+}*/
 
 //**** End of Source ****
 

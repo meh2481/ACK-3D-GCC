@@ -11,15 +11,6 @@
 
 extern "C" {
 #include "keys.h"
-
-extern  short   rsHandle;
-extern  ULONG   *rbaTable;
-extern  short   Resolution;
-extern  UCHAR   colordat[];
-extern  UCHAR   *BackArray[];
-extern  unsigned short FloorMap[];
-extern  unsigned short CeilMap[];
-extern  unsigned short *ObjGrid;
 };
 
 //MEH
@@ -29,22 +20,13 @@ extern int         nWindowH;
 #include "ackres.h"
 
 extern    ACKENG        *ae;            // Interface structure
-extern    HINSTANCE     hInstGlobal;
 extern    BOOL          bNoShow;        // Do not display if TRUE
-extern    short         nViewType;      // Current view in grid window
-extern    short         nEditType;      // Editing walls or objects
 extern    HWND          hwndApp;
 extern    UCHAR         kbPressed[];
-extern    void          *pBuffer;
-extern    HDC           Buffer;
 extern    void          *pAckBuffer;
 extern    HDC           AckBuffer;
-extern    void          *pMapBuffer;
-extern    HDC           MapBuffer;
-//extern    HPALETTE      hpalApp;
 extern    int           nBitmapW;
 extern    int           nBitmapH;                       //WinG bitmap dimensions.
-extern    RGBQUAD       ColorTable[];
 extern    short         nRepairObjectCount;
 
 //****************************************************************************
@@ -109,7 +91,6 @@ return(0);
 // size is hard-coded to a 320x200 size window for purposes of the Map Editor.
 // The current ACK engine only supports sizes up to 320x200.
 //****************************************************************************
-//#pragma argsused
 void AckDoSize(HWND hWnd,LPARAM lParam)
 {
     HBITMAP hbm;
