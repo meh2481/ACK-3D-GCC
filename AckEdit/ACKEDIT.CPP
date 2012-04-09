@@ -3402,8 +3402,7 @@ void CreateNewMap(HWND hWnd, HWND hWndChild)
         nEditType = EDIT_WALLS;
         nViewType = VIEW_WALLS;
         CurrentBitmap = 1;
-        //After clearing the map, of course
-        FillEntireMap(0);
+        FillEntireMap(0);   //After clearing the map, since walls with bitmap 1 weren't deleted before as the other walls were
         FillBorder();
 
         //Clear the ceiling

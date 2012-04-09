@@ -37,12 +37,12 @@ int         nBitmapW;
 int         nBitmapH;        // WinG bitmap dimensions.
 int         nWindowW;
 int         nWindowH;
-short       nIntroCount;
+//short       nIntroCount;
 short       nInfoMode;
 HINSTANCE   hInstGlobal;
 BOOL        bNoShow;        // Do not display if TRUE
 BOOL        bInStatus;      // Recursive flag for status checks
-UCHAR       *pIntroBuf;
+//UCHAR       *pIntroBuf;
 short       nSecondsLeft;
 BOOL        bUpdateTime;
 UINT        nTimerID;
@@ -85,7 +85,12 @@ short   nMoveObjectList[] = {
   PalletteSlot pallette[256];
 
   //MEH 24-bit screen buffer, for Win32 reasons
-   unsigned char OffscreenBuffer[4*320*200]; //4 chars per pixel (rgba), 320 pixels by 200 pixels
+   unsigned char* OffscreenBuffer; //For holding our offscreen buffer data
+   #define  TEMP_SCREENWIDTH    800
+   #define  TEMP_SCREENHEIGHT   1280
+   #define  BYTES_PER_PIXEL     4
+
+   POINT ptCurResolution;
 
 HDC hOffscreenDC = 0;
 HBITMAP hOffscreenBitmap;
@@ -102,7 +107,12 @@ int WINAPI WinMain (HINSTANCE hThisInstance,
   HBITMAP hbm;
   char    szBuf[40];
 
-pIntroBuf = NULL;
+  //Allocate memory for our offscreen buffer
+  OffscreenBuffer = (unsigned char*)malloc(TEMP_SCREENHEIGHT * TEMP_SCREENWIDTH * BYTES_PER_PIXEL);
+  ptCurResolution.x = 320;
+  ptCurResolution.y = 200;
+
+//pIntroBuf = NULL;
 // Register our Window class if this is the first time in
 if (!hPrevInstance)
   if (!Register(hThisInstance))
@@ -147,7 +157,7 @@ nSecondsLeft = (60 * 60) + (60 * 30);
 if (!CreateAll(hThisInstance))
   return(-1);
 
-nIntroCount = 0;
+//nIntroCount = 0;
 
 // Here we loop until the application closes
 result = MessageLoop();
@@ -168,6 +178,9 @@ DeleteObject(hOffscreenBitmap);
 
 //MEH Show cursor again
 ShowCursor(TRUE);
+
+//Delete allocated memory for offscreen buffer
+free(OffscreenBuffer);
 
 return(result);
 }
@@ -529,9 +542,7 @@ bInStatus = TRUE;
 
 if (!nSecondsLeft)
   {
-  nInfoMode = IM_TIMEOUT;
   printf("Game over. Ran out of time.\n");
-//  DoInfoDlg(hInstGlobal,hWnd);
   bResult = TRUE;
   }
 
@@ -540,9 +551,7 @@ if (nRepairObjectCount == REPAIR_OBJECTS_NEEDED)
   nPos = (short)((ae->yPlayer & 0xFFC0) + (ae->xPlayer >> 6));
   if (nPos == REPAIR_POSITION)
     {
-    nInfoMode = IM_WON;
     printf("You win! YAY!\n");
-//    DoInfoDlg(hInstGlobal,hWnd);
     bResult = TRUE;
     }
   }
@@ -563,7 +572,7 @@ void AckPaint(HWND hWnd,HDC hdc)
   short   nHours,nMin,nSec,t;
   char    szBuf[40];
 
-if (ae != NULL && nIntroCount == 0)
+if (ae != NULL)
   {
   AckCheckObjectMovement();   // Check object animation
   MoveObjects();              // Application object movement
@@ -571,23 +580,11 @@ if (ae != NULL && nIntroCount == 0)
   }
 
 // Check for any introduction graphics to display
-if (nIntroCount)
-  {
-  nIntroCount = 0;  //Segfaults on memcpy(), and I don't want this anyway.
-  }
+//if (nIntroCount)
+//  {
+//  nIntroCount = 0;  //Segfaults on memcpy(), and I don't want this anyway.
+//  }
 
-//Fill in our screenbuffer from ACK's buffer
-unsigned char* pBufferData = OffscreenBuffer;
-for(int r = 0; r < 320; r++)
-{
-    for(int c = 0; c < 200; c++) //AHAHA JOKE
-    {
-        *pBufferData++ = pallette[ae->ScreenBuffer[c+200*r]].r;
-        *pBufferData++ = pallette[ae->ScreenBuffer[c+200*r]].g;
-        *pBufferData++ = pallette[ae->ScreenBuffer[c+200*r]].b;
-        *pBufferData++ = 255; //Alpha = 255 by default. You could probably do crazy stuff with this, but I'm not going to.
-    }
-}
 //Create our offscreen HDC if we haven't yet
 if(!hOffscreenDC)
 {
@@ -595,18 +592,65 @@ if(!hOffscreenDC)
     hOffscreenBitmap = CreateCompatibleBitmap(hdc, 320, 200);
     SelectObject(hOffscreenDC, hOffscreenBitmap);
 }
-HICON ic = CreateIcon(hInstGlobal, 320, 200, 1, 32, NULL, (BYTE*)(OffscreenBuffer));
-if(ic == NULL)
-    printf("Icon NULL\n");
-DrawIconEx(hOffscreenDC, 0, 0, ic, 320, 200, NULL, NULL, DI_NORMAL);
-if (StretchFactor != 1)
+
+/*if (StretchFactor != 1)
   {
-  StretchBlt(hdc,0,0,nWindowW,nWindowH, // Use the current window size
-                   hOffscreenDC,0,0,nBitmapW,nBitmapH,SRCCOPY);
+    //Fill in our screenbuffer from ACK's buffer
+    unsigned char* pBufferData = OffscreenBuffer;
+
+    //Try out my stretch function instead of StretchBlt()
+    unsigned char* cTempImg = (unsigned char*)malloc(ptCurResolution.y * ptCurResolution.x);    //Create offscreen buffer large enough to hold the image result
+    //Stretch the image
+    StretchImage(ae->ScreenBuffer, cTempImg, 320, 200, ptCurResolution.x, ptCurResolution.y);
+
+    for(int r = 0; r < ptCurResolution.x; r++)
+    {
+        for(int c = 0; c < ptCurResolution.y; c++)
+        {
+            *pBufferData++ = pallette[cTempImg[c+ptCurResolution.y*r]].r;
+            *pBufferData++ = pallette[cTempImg[c+ptCurResolution.y*r]].g;
+            *pBufferData++ = pallette[cTempImg[c+ptCurResolution.y*r]].b;
+            *pBufferData++ = 255; //Alpha = 255 by default. You could probably do crazy stuff with this, but I'm not going to.
+        }
+    }
+
+    //Create icon and draw it
+    HICON ic = CreateIcon(hInstGlobal, ptCurResolution.x, ptCurResolution.y, 1, 32, NULL, (BYTE*)(OffscreenBuffer));
+    if(ic == NULL)
+        printf("Icon NULL\n");
+    else
+        DrawIconEx(hdc, 0, 0, ic, ptCurResolution.x, ptCurResolution.y, NULL, NULL, DI_NORMAL);
+
+    //Free our memory
+    free(cTempImg);
+    if(ic != NULL)
+        DestroyIcon(ic);
   }
 else
-  BitBlt(hdc,0,0,nBitmapW,nBitmapH,hOffscreenDC,0,0,SRCCOPY);
-DestroyIcon(ic);
+{*/
+    //Fill in our screenbuffer from ACK's buffer
+    unsigned char* pBufferData = OffscreenBuffer;
+    for(int r = 0; r < 320; r++)
+    {
+        for(int c = 0; c < 200; c++) //AHAHA JOKE
+        {
+            *pBufferData++ = pallette[ae->ScreenBuffer[c+200*r]].r;
+            *pBufferData++ = pallette[ae->ScreenBuffer[c+200*r]].g;
+            *pBufferData++ = pallette[ae->ScreenBuffer[c+200*r]].b;
+            *pBufferData++ = 255; //Alpha = 255 by default. You could probably do crazy stuff with this, but I'm not going to.
+        }
+    }
+
+    HICON ic = CreateIcon(hInstGlobal, 320, 200, 1, 32, NULL, (BYTE*)(OffscreenBuffer));
+    if(ic == NULL)
+        printf("Icon NULL\n");
+    DrawIconEx(hOffscreenDC, 0, 0, ic, 320, 200, NULL, NULL, DI_NORMAL);
+    if(StretchFactor == 1)
+        BitBlt(hdc,0,0,nBitmapW,nBitmapH,hOffscreenDC,0,0,SRCCOPY);
+    else
+        StretchBlt(hdc,0,0,ptCurResolution.x,ptCurResolution.y,hOffscreenDC,0,0,nBitmapW,nBitmapH,SRCCOPY);
+    DestroyIcon(ic);
+
 if (bUpdateTime)
   {
   bUpdateTime = FALSE;
@@ -625,7 +669,8 @@ if (bUpdateTime)
 void SetNewWindowSize(HWND hWnd)
 {
   int     windx,windy;
-
+ptCurResolution.x = nWindowW;
+ptCurResolution.y = nWindowH;
 windx = windy = GetSystemMetrics(SM_CXBORDER)*2;
 nWindowW += windx;
 nWindowH += windy + GetSystemMetrics(SM_CYCAPTION) - 1;
@@ -675,13 +720,6 @@ switch (iMessage)
     break;
 
   case WM_KEYDOWN:
-    /*if (wParam == VK_F1)
-      {
-      nInfoMode = IM_HELP;
-//      DoInfoDlg(hInstGlobal,hWnd);
-      break;
-      }*/
-
     if (wParam == VK_TAB)
       {
       ShootBomb();
@@ -699,7 +737,7 @@ switch (iMessage)
 
 // Fall through here
   case WM_KEYUP:
-    nIntroCount = 0;
+//    nIntroCount = 0;
     ProcessKeys(iMessage,wParam);
     break;
 
@@ -809,6 +847,106 @@ void ReadInPallette()
     infile.close();
 }
 
+/*
+#include <fstream>
+using std::endl;
+using std::ofstream;
+//MEH stretch this image onto a larger one - WAY TOO SLOW
+void StretchImage(unsigned char* src, unsigned char* dest,
+                  unsigned int srcW, unsigned int srcH, unsigned int destW, unsigned int destH)
+{
+    ofstream ofile("output.txt");
+    ofile << "w: " << destW << ", h: " << destH << endl;
+    //Do some sanity checking first
+    if(srcW > destW ||
+       srcH > destH)
+    {
+        printf("Error in StretchImage(): Cannot stretch an image smaller than the original.\n");
+        return;
+    }
+
+    if(srcW == 0 ||
+       srcH == 0 ||
+       destW == 0 ||
+       destH == 0)
+    {
+        printf("Error in StretchImage(): Cannot stretch an image to/from 0 width or height.\n");
+        return;
+    }
+
+    for(int i = 0; i < destH; i++)
+    {
+        for(int j = 0; j < destW; j++)
+            dest[j + i*destW] = 0;
+    }
+
+    //Grab the target stretch factor x/y
+    float fTargetStretchX = (float)(destW) / (float)(srcW);
+    float fTargetStretchY = (float)(destH) / (float)(srcH);
+
+    ofile << "stretchX: " << fTargetStretchX << " stretchY: " << fTargetStretchY << endl;
+
+    //Our running totals of where we're at
+    float fCurrentX = fTargetStretchX;
+    float fCurrentY = fTargetStretchY;
+
+    unsigned char* pCurrentDest = dest; //Where on the destination image we are
+    unsigned char* pCurrentSrc = src;
+
+    unsigned int iWhereAtY = 0;
+    //unsigned int iWhereAtX = 0;
+    int iTemp = 0;
+
+    //Loop through the source image, copying what we can into the dest image
+    for(int ySrc = 0; ySrc < srcH; ySrc++)  //Loop through y first
+    {
+        //if((int)(pCurrentDest - dest) > 100000 && iTemp < 5)
+        //{
+            ofile << "y: " << ySrc << endl;
+            ofile << "destpos: " << (int)(pCurrentDest - dest) << endl;
+            iTemp++;
+        //}
+        fCurrentX = fTargetStretchX;    //Reset our current x
+        //pCurrentDest = dest + iWhereAtY * destW;    //and our current x dest
+        for(int xSrc = 0; xSrc < srcW; xSrc++)  //Then loop through x
+        {
+            int iCurrentX = fCurrentX;  //No interpolation means we only deal with integer values per pixel
+            //Loop through how many pixels we should write for one pixel of this row
+            for(int i = 0; i < iCurrentX; i++)
+            {
+                //if((int)(pCurrentDest - dest) > 100000 && iTemp < 5)
+                //{
+                    //ofile << xSrc << ", " << ySrc << "xscale: " << fTargetStretchX << " yscale: " << fTargetStretchY << endl;
+                    //ofile << (int)(pCurrentDest - dest) << endl;
+                //}
+                *pCurrentDest = *pCurrentSrc;
+                pCurrentDest++;
+            }
+            pCurrentSrc++;  //Move to next pixel in source
+            fCurrentX -= iCurrentX; //Remove the pixels we wrote
+            fCurrentX += fTargetStretchX;   //Add back in for next pass. Fractional parts should add up to all work out
+        }
+
+        //Copy this past row in the vertical direction yrepeat times
+        //pCurrentDest = dest + (iWhereAtY + 1) * destW;
+        int iCurrentY = fCurrentY;
+        for(int j = 0; j < iCurrentY - 1; j++)
+        {
+
+            for(int i = 0; i < destW; i++)
+            {
+                *pCurrentDest = *(pCurrentDest - destW);
+                pCurrentDest++;
+            }
+
+        }
+        //Add back in our stretch leftover stuff
+        fCurrentY -= iCurrentY;
+        fCurrentY += fTargetStretchY;
+        //iWhereAtY++;
+    }
+
+}*/
 
 
 

@@ -30,8 +30,10 @@
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
+			<Add option="`sdl-config --cflags`" />
 		</Compiler>
 		<Linker>
+			<Add option="`sdl-config --libs` -lSDL" />
 			<Add library="gdi32" />
 			<Add library="user32" />
 			<Add library="kernel32" />
