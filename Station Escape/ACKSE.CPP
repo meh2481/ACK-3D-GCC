@@ -1,20 +1,28 @@
 // Example source for using ACK-3D in Windows
 // (c) 1995 ACK Software (Lary Myers)
-#include <windows.h>
+//#include <windows.h>
 #include <stdlib.h>
 #include <string.h>
 #include "ackwin.h"
 #include "ackse.h"
 #include <stdio.h>
 #include <fstream> //MEH for file streams. Much easier for me to use
+//MEH Use SDL now! Yay!
+#ifdef __APPLE__
+#include <SDL/SDL.h>
+#include <SDL/SDL_rotozoom.h>
+#else
+#include <SDL.h>
+#include <SDL_rotozoom.h>
+#endif
 
-#define IDM_RES1    1100
+/*#define IDM_RES1    1100
 #define IDM_RES2    1101
 #define IDM_RES3    1102
 //#define IDM_HELP    1103
 //#define IDM_BACK    1104
 #define IDM_RES4    1105
-#define IDM_RES5    1106
+#define IDM_RES5    1106*/
 
 #include "ack3d.h"
 extern "C" {
@@ -24,29 +32,30 @@ extern  UCHAR   colordat[];
 };
 
 // Some globals to use
+SDL_Surface* MainScreen;
 ACKENG      *ae = 0;        // Interface structure
-HWND        hwndApp;
+//HWND        hwndApp;
 UCHAR       kbPressed[128];
 void        *pAckBuffer = 0;
-HDC         AckBuffer = 0;
+//HDC         AckBuffer = 0;
 //HPALETTE    hpalApp;
-RGBQUAD     ColorTable[256];
-HBITMAP     gbmOldMonoBitmap = 0;
+//RGBQUAD     ColorTable[256];
+//HBITMAP     gbmOldMonoBitmap = 0;
 int         StretchFactor = 1;
-int         nBitmapW;
-int         nBitmapH;        // WinG bitmap dimensions.
+//int         nBitmapW;
+//int         nBitmapH;        // WinG bitmap dimensions.
 int         nWindowW;
 int         nWindowH;
 //short       nIntroCount;
 short       nInfoMode;
-HINSTANCE   hInstGlobal;
-BOOL        bNoShow;        // Do not display if TRUE
-BOOL        bInStatus;      // Recursive flag for status checks
+//HINSTANCE   hInstGlobal;
+bool        bNoShow;        // Do not display if true
+bool        bInStatus;      // Recursive flag for status checks
 //UCHAR       *pIntroBuf;
 short       nSecondsLeft;
-BOOL        bUpdateTime;
+//bool        bUpdateTime;
 UINT        nTimerID;
-WORD        nTimerCount;
+//WORD        nTimerCount;
 short       nRepairObjectCount;
 UCHAR       SavePal[768];
 
@@ -86,43 +95,91 @@ short   nMoveObjectList[] = {
 
   //MEH 24-bit screen buffer, for Win32 reasons
    unsigned char* OffscreenBuffer; //For holding our offscreen buffer data
-   #define  TEMP_SCREENWIDTH    800
-   #define  TEMP_SCREENHEIGHT   1280
+   #define  ACK3D_SCREENWIDTH    320
+   #define  ACK3D_SCREENHEIGHT   200
    #define  BYTES_PER_PIXEL     4
 
-   POINT ptCurResolution;
+   SDL_Rect rcResolution;
 
-HDC hOffscreenDC = 0;
-HBITMAP hOffscreenBitmap;
+//HDC hOffscreenDC = 0;
+//HBITMAP hOffscreenBitmap;
 
 //****************************************************************************
 // The main program window
 //****************************************************************************
-int WINAPI WinMain (HINSTANCE hThisInstance,
+/*int WINAPI WinMain (HINSTANCE hThisInstance,
                      HINSTANCE hPrevInstance,
                      LPSTR lpszArgument,
-                     int nCmdShow)
+                     int nCmdShow)*/
+#undef main
+int main(int argc, char* argv[])
 {
   int     result;
-  HBITMAP hbm;
+//  HBITMAP hbm;
   char    szBuf[40];
 
+    //Initialize SDL
+    if ( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0 )
+    {
+        printf( "Unable to init SDL: %s\n", SDL_GetError() );
+        return 1;
+    }
+
+    // make sure SDL cleans up before exit
+    atexit(SDL_Quit);
+
+    //Grab the maximum supported screen resolution
+    SDL_Rect **modes;
+    modes=SDL_ListModes(NULL, SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_FULLSCREEN);
+
+    if(modes == (SDL_Rect **)0){
+      printf("No modes available for fullscreen\n");
+      return -1;
+    }
+
+    rcResolution.w = 800;
+    rcResolution.h = 600;     //800x600 is reasonable default
+
+    if(modes != (SDL_Rect **)-1)    //And if it supports all resolutions, use 800x600
+    {
+        //Find the lowest resolution above or at 320x200
+        int iNumModes = 0;
+        for(int i = 0; modes[i]; i++)
+            iNumModes++;
+        for(int i = iNumModes-1; i >= 0; i--)
+        {
+            if(modes[i]->w >= 320 && modes[i]->h >= 200)
+            {
+                rcResolution.w = modes[i]->w;
+                rcResolution.h = modes[i]->h;
+                break;  //Done, found one larger than or equal to 320x200
+            }
+        }
+    }
+
+    printf("Resolution: %dx%d\n", rcResolution.w, rcResolution.h);
+    //Create our handle to the screen
+    MainScreen = SDL_SetVideoMode(rcResolution.w, rcResolution.h, 32, SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_FULLSCREEN);
+    if ( !MainScreen )
+    {
+        printf("Unable to set video resolution: %s\n", SDL_GetError());
+        return 1;
+    }
+
   //Allocate memory for our offscreen buffer
-  OffscreenBuffer = (unsigned char*)malloc(TEMP_SCREENHEIGHT * TEMP_SCREENWIDTH * BYTES_PER_PIXEL);
-  ptCurResolution.x = 320;
-  ptCurResolution.y = 200;
+  OffscreenBuffer = (unsigned char*)malloc(ACK3D_SCREENWIDTH * ACK3D_SCREENHEIGHT * BYTES_PER_PIXEL);
 
 //pIntroBuf = NULL;
 // Register our Window class if this is the first time in
-if (!hPrevInstance)
-  if (!Register(hThisInstance))
-    return(-1);
+//if (!hPrevInstance)
+//  if (!Register(hThisInstance))
+//    return(-1);
 
 //MEH Hide the cursor and set it to the center of the viewport window
-SetCursorPos((int)nWindowW / 2, (int)nWindowH / 2);
-ShowCursor(FALSE);
+SDL_WarpMouse(rcResolution.w / 2, rcResolution.h / 2);
+SDL_ShowCursor(SDL_DISABLE);
 
-hInstGlobal = hThisInstance;
+//hInstGlobal = hThisInstance;
 
 //---------------Begin ACK-3D specific, rather than Windows-specific, code
 // Prime the ACK-3D engine with our startup parameters
@@ -142,20 +199,19 @@ LoadBackDrop(); //MEH WHY WASN'T THIS CALLED HERE??!?! RGH
 AckCloseResource();
 AckSetupPalRanges(ae, ranges);
 //---------------MEH End ACK-3D - specific code
-
 ReadInPallette();//MEH read in the pallette data from "pallette.txt"
 
-srand(GetTickCount());
+srand(SDL_GetTicks());
 
-bUpdateTime = FALSE;
-nTimerCount = 0;
+//bUpdateTime = false;
+//nTimerCount = 0;
 nRepairObjectCount = 0;
 nSecondsLeft = (60 * 60) + (60 * 30);
 
 
 // Create the actual window to display the rendered view
-if (!CreateAll(hThisInstance))
-  return(-1);
+//if (!CreateAll(hThisInstance))
+//  return(-1);
 
 //nIntroCount = 0;
 
@@ -166,18 +222,18 @@ result = MessageLoop();
 AckWrapUp(ae);
 
 // Free up our buffers we used from WinG
-if (AckBuffer)
+/*if (AckBuffer)
   {
   hbm = (HBITMAP)SelectObject(AckBuffer, gbmOldMonoBitmap);
   DeleteObject(hbm);
   DeleteDC(AckBuffer);
-  }
+  }*/
 
-DeleteObject(hOffscreenDC);
-DeleteObject(hOffscreenBitmap);
+//DeleteObject(hOffscreenDC);
+//DeleteObject(hOffscreenBitmap);
 
 //MEH Show cursor again
-ShowCursor(TRUE);
+SDL_ShowCursor(SDL_ENABLE);
 
 //Delete allocated memory for offscreen buffer
 free(OffscreenBuffer);
@@ -188,7 +244,7 @@ return(result);
 //****************************************************************************
 // Registers the window class.
 //****************************************************************************
-BOOL Register(HINSTANCE hInst)
+/*bool Register(HINSTANCE hInst)
 {
   WNDCLASS wndclass;
 
@@ -204,20 +260,20 @@ wndclass.lpszMenuName  = NULL;
 wndclass.lpszClassName = "ACK3DVIEW";
 
 if (!RegisterClass(&wndclass))
-  return(FALSE);
-return(TRUE);
-}
+  return(false);
+return(true);
+}*/
 
 //****************************************************************************
 // Loads the WinG DLL and creates the display window for the application.
 //****************************************************************************
-BOOL CreateAll(HINSTANCE hInst)
+/*bool CreateAll(HINSTANCE hInst)
 {
   int     windx, windy;
   HMENU   hMenu;
 
-nBitmapW = 319;                 // Default size (window client size to use)
-nBitmapH = 199;
+//nBitmapW = 319;                 // Default size (window client size to use)
+//nBitmapH = 199;
 
 windx = windy = GetSystemMetrics(SM_CXBORDER)*2;
 windx += nBitmapW;
@@ -242,13 +298,13 @@ hwndApp = CreateWindow ("ACK3DVIEW",       // Class name
 if (!hwndApp)
   {
   MessageBox(NULL,"Unable to create 3D window","ERROR",MB_OK);
-  return(FALSE);
+  return(false);
   }
 
 // Now we'll display the window and setup the WinG buffer when we
 // receive the WM_SIZE message.
 ShowWindow(hwndApp,SW_NORMAL);
-hMenu = GetSystemMenu(hwndApp,FALSE);
+hMenu = GetSystemMenu(hwndApp,false);
 // Add in the menu items for the game window
 AppendMenu(hMenu,MF_SEPARATOR,0,NULL);
 AppendMenu(hMenu,MF_STRING,IDM_RES1,"320 x 200");
@@ -256,40 +312,43 @@ AppendMenu(hMenu,MF_STRING,IDM_RES2,"480 x 300");
 AppendMenu(hMenu,MF_STRING,IDM_RES3,"640 x 400");
 AppendMenu(hMenu,MF_STRING,IDM_RES4,"800 x 600");
 AppendMenu(hMenu,MF_STRING,IDM_RES5,"1280 x 800");
-return(TRUE);
-}
+return(true);
+}*/
 
 //****************************************************************************
 // Here is where we loop until the application terminates.
 //****************************************************************************
 int MessageLoop(void)
 {
-    int iCurTicks = GetTickCount();
-  MSG msg;
+    int iCurTicks = SDL_GetTicks();
+    SDL_Event event;
 
 for (;;)
   {
-  if (PeekMessage(&msg, NULL, 0, 0,PM_REMOVE))
-    {
-    if (msg.message == WM_QUIT)
-      break;
+    SDL_PollEvent(&event);
+    if (event.type == SDL_QUIT)
+        break;
 
-    TranslateMessage(&msg);
-    DispatchMessage(&msg);
-    }
-  else
-    {
-        //MEH Enough of this huge framerate! Time for limited fps
-        int iNewTick = GetTickCount();
-        if(iNewTick - iCurTicks > 30) //~30 fps
-        {
-            iCurTicks = iNewTick;
-            DoCycle();  // Display the 3D window
-        }
+    //See if game should end
+    if(CheckStatus())
+        break;
 
+    //Also exit if pressing Escape
+    if(event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE)
+        break;
+
+    //Process this event
+    AckWndProc(event);
+
+    //MEH Enough of this huge framerate! Time for limited fps
+    int iNewTick = SDL_GetTicks();
+    if(iNewTick - iCurTicks > 30) //~30 fps
+    {
+        iCurTicks = iNewTick;
+        DoCycle();  // Display the 3D window
     }
   }
-return msg.wParam;
+return 0;
 }
 
 //****************************************************************************
@@ -297,18 +356,18 @@ return msg.wParam;
 //****************************************************************************
 void LightOnOff(short nMode)
 {
-  BOOL    bSet = FALSE;
+  bool    bSet = false;
 
 if (!nMode && ae->LightFlag == SHADING_OFF)
   {
   ae->LightFlag = SHADING_ON;
-  bSet = TRUE;
+  bSet = true;
   }
 
 if (nMode && ae->LightFlag == SHADING_ON)
   {
   ae->LightFlag = SHADING_OFF;
-  bSet = TRUE;
+  bSet = true;
   }
 
 if (bSet)
@@ -528,22 +587,33 @@ pBomb->mPos = (short)((pBomb->y & 0xFFC0) + (pBomb->x >> (short)6));
 }
 
 //****************************************************************************
-// Checks the status of the game and detrmines if the the game should be
-// timed out or if the player has won.
+// Checks the status of the game and determines if the the game should be
+// timed out or if the player has won. Returns true if game should end.
 //****************************************************************************
-void CheckStatus(HWND hWnd)
+bool CheckStatus()
 {
-  BOOL    bResult = FALSE;
   short   nPos;
+  static int iCurTick = SDL_GetTicks();
+  int iLastTick;
 
 if (bInStatus)
-  return;
-bInStatus = TRUE;
+  return false; //Keep going
+bInStatus = true;
+
+//See if another second has elapsed
+iLastTick = iCurTick;
+iCurTick = SDL_GetTicks();
+if(iCurTick - iLastTick >= 1000)    //Another second has elapsed
+{
+    if (nSecondsLeft)
+      nSecondsLeft--;   //Decrement seconds
+    iCurTick += (iLastTick - iCurTick); //Hang on to how much we went over
+}
 
 if (!nSecondsLeft)
   {
   printf("Game over. Ran out of time.\n");
-  bResult = TRUE;
+  return true;
   }
 
 if (nRepairObjectCount == REPAIR_OBJECTS_NEEDED)
@@ -552,22 +622,18 @@ if (nRepairObjectCount == REPAIR_OBJECTS_NEEDED)
   if (nPos == REPAIR_POSITION)
     {
     printf("You win! YAY!\n");
-    bResult = TRUE;
+    return true;
     }
   }
-
-if (bResult)
-  {
-  PostQuitMessage(0);
-  }
-bInStatus = FALSE;
+  bInStatus = false;
+return false;       //Keep going
 }
 
 //****************************************************************************
 // Displays the current scene in the opened window.
 //****************************************************************************
-#pragma argsused
-void AckPaint(HWND hWnd,HDC hdc)
+//#pragma argsused
+void AckPaint()
 {
   short   nHours,nMin,nSec,t;
   char    szBuf[40];
@@ -586,12 +652,12 @@ if (ae != NULL)
 //  }
 
 //Create our offscreen HDC if we haven't yet
-if(!hOffscreenDC)
+/*if(!hOffscreenDC)
 {
     hOffscreenDC = CreateCompatibleDC(hdc);
     hOffscreenBitmap = CreateCompatibleBitmap(hdc, 320, 200);
     SelectObject(hOffscreenDC, hOffscreenBitmap);
-}
+}*/
 
 /*if (StretchFactor != 1)
   {
@@ -641,7 +707,53 @@ else
         }
     }
 
-    HICON ic = CreateIcon(hInstGlobal, 320, 200, 1, 32, NULL, (BYTE*)(OffscreenBuffer));
+    Uint32 rmask, gmask, bmask, amask;
+
+    // SDL interprets each pixel as a 32-bit number, so our masks must depend on the endianness (byte order) of the machine
+    #if SDL_BYTEORDER == SDL_BIG_ENDIAN
+        rmask = 0xff000000;
+        gmask = 0x00ff0000;
+        bmask = 0x0000ff00;
+        amask = 0x000000ff;
+    #else
+        rmask = 0x000000ff;
+        gmask = 0x0000ff00;
+        bmask = 0x00ff0000;
+        amask = 0xff000000;
+    #endif
+    SDL_Surface* tempSurface = SDL_CreateRGBSurface(MainScreen->flags, 320, 200, 32, rmask, gmask, bmask, amask);
+
+    SDL_LockSurface(tempSurface);
+
+    //Copy over
+    for(int r = 0; r < 320 * 200 * 4; r++)
+    {
+        ((unsigned char*)tempSurface->pixels)[r] = OffscreenBuffer[r];
+    }
+
+    SDL_UnlockSurface(tempSurface);
+
+    //Use SDL_rotozoom to fill screen
+    SDL_Surface* tempZoomed = zoomSurface(tempSurface,
+                                          (float)(rcResolution.w) / (float)(ACK3D_SCREENWIDTH),
+                                          (float)(rcResolution.h) / (float)(ACK3D_SCREENHEIGHT),
+                                          SMOOTHING_OFF);
+
+
+    /*SDL_Surface* bmp = SDL_LoadBMP("cb.bmp");
+    if (!bmp)
+    {
+        printf("Unable to load bitmap: %s\n", SDL_GetError());
+    }*/
+
+    // centre the bitmap on screen
+    SDL_Rect dstrect;
+    dstrect.x = 0;//(rcResolution.w - tempSurface->w) / 2;
+    dstrect.y = 0;//(rcResolution.h - tempSurface->h) / 2;
+
+    SDL_BlitSurface(tempZoomed, 0, MainScreen, &dstrect);  //draw the temp surface to the screen
+
+    /*HICON ic = CreateIcon(hInstGlobal, 320, 200, 1, 32, NULL, (BYTE*)(OffscreenBuffer));
     if(ic == NULL)
         printf("Icon NULL\n");
     DrawIconEx(hOffscreenDC, 0, 0, ic, 320, 200, NULL, NULL, DI_NORMAL);
@@ -649,24 +761,27 @@ else
         BitBlt(hdc,0,0,nBitmapW,nBitmapH,hOffscreenDC,0,0,SRCCOPY);
     else
         StretchBlt(hdc,0,0,ptCurResolution.x,ptCurResolution.y,hOffscreenDC,0,0,nBitmapW,nBitmapH,SRCCOPY);
-    DestroyIcon(ic);
+    DestroyIcon(ic);*/
 
-if (bUpdateTime)
-  {
-  bUpdateTime = FALSE;
+//if (bUpdateTime)
+//  {
+//  bUpdateTime = false;
   nHours = (short)(nSecondsLeft / 3600);
   t = (short)(nHours * 3600);
   nMin = (short)((nSecondsLeft - t) / 60);
   nSec = (short)(nSecondsLeft - t - (nMin * 60));
-  wsprintf(szBuf,"Station Escape - %02d:%02d:%02d",nHours,nMin,nSec);
-  SetWindowText(hWnd,szBuf);
-  }
+  sprintf(szBuf,"Station Escape - %02d:%02d:%02d",nHours,nMin,nSec);
+  //SetWindowText(hWnd,szBuf);
+//  }
+SDL_Flip(MainScreen);   //Flip the double-buffered window to the screen
+SDL_FreeSurface(tempSurface);
+SDL_FreeSurface(tempZoomed);
 }
 
 //****************************************************************************
 // Adjust the actual window size to account for borders and a caption bar
 //****************************************************************************
-void SetNewWindowSize(HWND hWnd)
+/*void SetNewWindowSize(HWND hWnd)
 {
   int     windx,windy;
 ptCurResolution.x = nWindowW;
@@ -676,21 +791,20 @@ nWindowW += windx;
 nWindowH += windy + GetSystemMetrics(SM_CYCAPTION) - 1;
 SetWindowPos(hWnd,NULL,0,0,nWindowW,nWindowH,
              SWP_NOMOVE|SWP_NOZORDER|SWP_NOCOPYBITS);
-}
+}*/
 
 //****************************************************************************
 // Message handler for the 3D window
 //****************************************************************************
-LRESULT CALLBACK _export AckWndProc(HWND hWnd,UINT iMessage,
-                                    WPARAM wParam,LPARAM lParam)
+void AckWndProc( SDL_Event event )
 {
-  HDC         hDC;
-  PAINTSTRUCT ps;
-  POINT       ptCursor;
+  //HDC         hDC;
+  //PAINTSTRUCT ps;
+//  POINT       ptCursor;
 
-switch (iMessage)
+switch (event.type)
   {
-  case WM_CREATE:
+  /*case WM_CREATE:
     nTimerID = SetTimer(hWnd,1,1000,NULL);
     break;
 
@@ -702,11 +816,11 @@ switch (iMessage)
     break;
 
   case WM_TIMER:
-    nTimerCount++;
-    bUpdateTime = TRUE;
+//    nTimerCount++;
+//    bUpdateTime = true;
     if (nSecondsLeft)
       nSecondsLeft--;
-    CheckStatus(hWnd);
+    CheckStatus();
     break;
 
   case WM_SIZE:
@@ -717,35 +831,38 @@ switch (iMessage)
     BeginPaint(hWnd,&ps);
     AckPaint(hWnd,ps.hdc);
     EndPaint(hWnd,&ps);
-    break;
+    break;*/
 
-  case WM_KEYDOWN:
-    if (wParam == VK_TAB)
+  case SDL_KEYDOWN:
+    if (event.key.keysym.sym == SDLK_TAB)
       {
       ShootBomb();
       break;
       }
 
     //MEH End game if pressing Esc
-    if(wParam == VK_ESCAPE)
+    /*if(wParam == VK_ESCAPE)   //elsewhere
     {
         if (nTimerID)
             KillTimer(hWnd,nTimerID);
         nTimerID = 0;
         PostQuitMessage(0);
-    }
+    }*/
 
 // Fall through here
-  case WM_KEYUP:
+  case SDL_KEYUP:
 //    nIntroCount = 0;
-    ProcessKeys(iMessage,wParam);
+    ProcessKeys(event);
     break;
 
-  case WM_RBUTTONDOWN:
-    AckCheckDoorOpen(ae->xPlayer,ae->yPlayer,ae->PlayerAngle);
+  case SDL_MOUSEBUTTONDOWN:
+    if(event.button.button == SDL_BUTTON_RIGHT)
+        AckCheckDoorOpen(ae->xPlayer,ae->yPlayer,ae->PlayerAngle);
+    if(event.button.button == SDL_BUTTON_LEFT)
+        ShootBomb();
     break;
 
-  case WM_LBUTTONDOWN:
+  /*case WM_LBUTTONDOWN:
     ShootBomb();
     break;
 
@@ -820,12 +937,11 @@ switch (iMessage)
       default:
         break;
       }
-    return DefWindowProc( hWnd, iMessage, wParam, lParam );
+    return DefWindowProc( hWnd, iMessage, wParam, lParam );*/
 
   default:
-    return DefWindowProc( hWnd, iMessage, wParam, lParam );
+    break;//return DefWindowProc( hWnd, iMessage, wParam, lParam );
   }
-return 0;
 }
 
 void ReadInPallette()
@@ -838,9 +954,9 @@ void ReadInPallette()
         unsigned int r, g, b;
         PalletteSlot p = {0, 0, 0};
         infile >> r >> g >> b;
-        p.r = (unsigned char)b; //Flip blue and red, because Windows wants the icon data in BGRA format
+        p.r = (unsigned char)r;
         p.g = (unsigned char)g;
-        p.b = (unsigned char)r;
+        p.b = (unsigned char)b;
         p.a = 255;
         pallette[i] = p;
     }

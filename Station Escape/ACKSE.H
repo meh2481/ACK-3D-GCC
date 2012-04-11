@@ -1,12 +1,29 @@
 // Header file for Station Escape Demo Program
 // (c) 1995 Ack Software (Lary Myers)
 
-BOOL Register(HINSTANCE hInst);
-BOOL CreateAll(HINSTANCE hInst);
-int MessageLoop(void);
-LRESULT  CALLBACK _export AckWndProc( HWND hWnd, UINT iMessage, WPARAM wParam,
-                                 LPARAM lParam );
+#ifndef ACKSE_H
+#define ACKSE_H
 
+#ifdef __APPLE__
+#include <SDL/SDL.h>
+#else
+#include <SDL.h>
+#endif
+
+//Define stuff that's generally defined in windows.h
+/*typedef struct POINTTYPE {
+    int x, y;
+} POINT;*/
+typedef unsigned short WORD;
+typedef unsigned char UCHAR;
+#define UINT unsigned int
+
+
+//bool Register(HINSTANCE hInst);
+//bool CreateAll(HINSTANCE hInst);
+int MessageLoop(void);
+void AckWndProc( SDL_Event event );
+bool CheckStatus(void);
 int LoadBackDrop(void);
 int AckProcessInfoFile(void);
 
@@ -30,3 +47,6 @@ void ReadInPallette(void);
 //MEH Stretch an image. But it's too slow.
 //void StretchImage(unsigned char* src, unsigned char* dest,
 //                  unsigned int srcW, unsigned int srcH, unsigned int destW, unsigned int destH);
+
+
+#endif  // defined ACKSE_H

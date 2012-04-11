@@ -1,6 +1,6 @@
 // This source file contains the functions needed to process floors.
 // (c) 1995 ACK Software (Lary Myers)
-#include <windows.h>
+//#include <windows.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <conio.h>

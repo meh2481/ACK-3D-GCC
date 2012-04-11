@@ -1,7 +1,9 @@
 // Header file for example program
+/*#ifndef ACKEXAM_H
+#define ACKEXAM_H
 
-BOOL Register(HINSTANCE hInst);
-BOOL CreateAll(HINSTANCE hInst);
+bool Register(HINSTANCE hInst);
+bool CreateAll(HINSTANCE hInst);
 int MessageLoop(void);
 LRESULT	 CALLBACK _export AckWndProc( HWND hWnd, UINT iMessage, WPARAM wParam,
 				 LPARAM lParam );
@@ -9,3 +11,4 @@ LRESULT	 CALLBACK _export AckWndProc( HWND hWnd, UINT iMessage, WPARAM wParam,
 int LoadBackDrop(void);
 int AckProcessInfoFile(void);
 
+#endif*/

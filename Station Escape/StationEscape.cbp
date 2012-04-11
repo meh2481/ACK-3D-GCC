@@ -11,6 +11,7 @@
 				<Option object_output=".\.objs\Debug" />
 				<Option type="1" />
 				<Option compiler="gcc" />
+				<Option parameters="&gt; output.txt" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
@@ -33,7 +34,7 @@
 			<Add option="`sdl-config --cflags`" />
 		</Compiler>
 		<Linker>
-			<Add option="`sdl-config --libs` -lSDL" />
+			<Add option="`sdl-config --libs` -lSDL -lSDL_gfx" />
 			<Add library="gdi32" />
 			<Add library="user32" />
 			<Add library="kernel32" />

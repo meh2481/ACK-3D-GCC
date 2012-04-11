@@ -4,13 +4,13 @@
 
 
 #if USE_WINDOWS_CALLS
-    #define      STRICT
+    //#define      STRICT
     #include <windows.h>
     #define LSEEK _llseek
     #define LREAD _lread
 #else
-//    #define LSEEK lseek
-//    #define LREAD read
+    #define LSEEK lseek
+    #define LREAD read
 #endif
 
 #pragma hdrstop

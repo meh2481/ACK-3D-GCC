@@ -1,7 +1,7 @@
 // Support routines for ACK applications
 // (c) 1995 ACK Software (Lary Myers)
 #define  STRICT
-#include <windows.h>
+//#include <windows.h>
 #pragma hdrstop
 #include <stdlib.h>
 #include <stdio.h>
@@ -24,7 +24,7 @@ extern  UCHAR   *BackArray[];
 extern  ACKENG  *ae;
 extern  short   nInfoMode;
 
-//BOOL CALLBACK _export FAR PASCAL InfoDlgProc(HWND hDlg, UINT iMessage,
+//bool CALLBACK _export FAR PASCAL InfoDlgProc(HWND hDlg, UINT iMessage,
 //        WPARAM wParam, LPARAM lParam);
 
 // Globals
@@ -188,7 +188,7 @@ SetWindowText(hDlgItem,"Help for Station Escape");
 // General purpose information dialog box. Here we will fill in the header
 // and footer static controls as well as a listbox with various information.
 //**************************************************************************
-/*BOOL CALLBACK _export FAR PASCAL InfoDlgProc(HWND hDlg, UINT iMessage,
+/*bool CALLBACK _export FAR PASCAL InfoDlgProc(HWND hDlg, UINT iMessage,
         WPARAM wParam, LPARAM lParam)
 {
 
@@ -216,29 +216,29 @@ switch (iMessage)
             default:
                 break;
             }
-        return(TRUE);
+        return(true);
 
     case WM_COMMAND:
         switch (wParam)
             {
             case IDOK:
-                EndDialog(hDlg, TRUE);
+                EndDialog(hDlg, true);
             break;
 
         case IDCANCEL:
-            EndDialog(hDlg, FALSE);
+            EndDialog(hDlg, false);
             break;
 
             default:
-                return(FALSE);
+                return(false);
             }
         break;
 
     default:
-        return(FALSE);
+        return(false);
     }
 
-return(TRUE);
+return(true);
 }*/
 
 //**** End of Source ****

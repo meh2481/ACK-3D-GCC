@@ -101,7 +101,7 @@ enum kbScanCodes
     kbPeriod = 0x34,
     kbSlash = 0x35
 };
-
+/*
 #ifndef VK_A
 #define VK_A 65
 #define VK_B 66
@@ -129,4 +129,5 @@ enum kbScanCodes
 #define VK_X 88
 #define VK_Y 89
 #define VK_Z 90
-#endif
+#endif*/
+

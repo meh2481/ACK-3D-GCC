@@ -2,7 +2,7 @@
 // These routines are not necessarily tied to the ACK Map Editor, but are
 // more generic in nature.
 // (c) 1995 ACK Software (Lary Myers)
-#include <windows.h>
+//#include <windows.h>
 #include <stdlib.h>
 #include <string.h>
 #include "ackwin.h"
@@ -18,16 +18,16 @@ extern int         nWindowW;
 extern int         nWindowH;
 
 #include "ackres.h"
-
 extern    ACKENG        *ae;            // Interface structure
-extern    BOOL          bNoShow;        // Do not display if TRUE
-extern    HWND          hwndApp;
+extern    bool          bNoShow;        // Do not display if true
+//extern    HWND          hwndApp;
 extern    UCHAR         kbPressed[];
 extern    void          *pAckBuffer;
-extern    HDC           AckBuffer;
-extern    int           nBitmapW;
-extern    int           nBitmapH;                       //WinG bitmap dimensions.
+//extern    HDC           AckBuffer;
+//extern    int           nBitmapW;
+//extern    int           nBitmapH;                       //WinG bitmap dimensions.
 extern    short         nRepairObjectCount;
+extern    SDL_Rect      rcResolution;
 
 //****************************************************************************
 // Here is a generic ACK Initialization proceedure, with Windows modifications
@@ -91,7 +91,7 @@ return(0);
 // size is hard-coded to a 320x200 size window for purposes of the Map Editor.
 // The current ACK engine only supports sizes up to 320x200.
 //****************************************************************************
-void AckDoSize(HWND hWnd,LPARAM lParam)
+/*void AckDoSize(HWND hWnd,LPARAM lParam)
 {
     HBITMAP hbm;
     int Counter;
@@ -134,7 +134,7 @@ else
         }
     }
 }
-
+*/
 
 //****************************************************************************
 // Use this routine to process a drawing cycle of the engine. The best place
@@ -186,9 +186,9 @@ if (kbPressed[kbUpArrow])
     nResult = AckMovePOV(ae->PlayerAngle,Amt);
 
 //MEH Make moving the mouse pan the view
-POINT ptCursor;
-GetCursorPos(&ptCursor);
-int iDistMoved = (int)ptCursor.x - (int)nWindowW / 2;
+int xCursor, yCursor;
+SDL_GetMouseState(&xCursor, &yCursor);
+int iDistMoved = xCursor - rcResolution.w / 2;
 if(iDistMoved != 0)
 {
     ae->PlayerAngle += iDistMoved;
@@ -197,12 +197,12 @@ if(iDistMoved != 0)
     if(ae->PlayerAngle < 0)
         ae->PlayerAngle += INT_ANGLE_360;
 }
-SetCursorPos((int)nWindowW / 2, (int)nWindowH / 2);
+SDL_WarpMouse(rcResolution.w / 2, rcResolution.h / 2);
 
 //Draw the view
-HDC hdc = GetDC(hwndApp);
-AckPaint(hwndApp, hdc);
-ReleaseDC(hwndApp, hdc);
+//HDC hdc = GetDC(hwndApp);
+AckPaint();
+//ReleaseDC(hwndApp, hdc);
 
 //TODO: This is specific to Station Escape, and it doesn't work too well. Replace later
 if (nResult == POV_OBJECT)
@@ -224,40 +224,40 @@ if (nResult == POV_OBJECT)
 // then look at this keyboard array to determine if the POV should be moved
 // or rotated.
 //****************************************************************************
-void ProcessKeys(UINT iMessage,WPARAM wParam)
+void ProcessKeys(SDL_Event event)
 {
 
-switch (iMessage)
+switch (event.type)
     {
-    case WM_KEYDOWN:
-        switch (wParam)
+    case SDL_KEYDOWN:
+        switch (event.key.keysym.sym)
             {
             //MEH WASD instead of arrows
-            case VK_W:
+            case SDLK_w:
                 kbPressed[kbUpArrow] = 1;
                 break;
-            case VK_S:
+            case SDLK_s:
                 kbPressed[kbDownArrow] = 1;
                 break;
-            case VK_A:
+            case SDLK_a:
                 kbPressed[kbLeftArrow] = 1;
                 break;
-            case VK_D:
+            case SDLK_d:
                 kbPressed[kbRightArrow] = 1;
                 break;
-            case VK_CONTROL:
+            case SDLK_LCTRL:
                 kbPressed[kbCtrl] = 1;
                 break;
-            case VK_ESCAPE:
+            case SDLK_ESCAPE:
                 kbPressed[kbEsc] = 1;
                 break;
-            case VK_SPACE:
+            case SDLK_SPACE:
                 AckCheckDoorOpen(ae->xPlayer,ae->yPlayer,ae->PlayerAngle);
                 break;
-            case VK_SHIFT:
+            case SDLK_LSHIFT:
                 kbPressed[kbLeftShift] = 1;
                 break;
-            case VK_TAB:
+            case SDLK_TAB:
                 kbPressed[kbAlt] = 1;
                 break;
             default:
@@ -265,34 +265,34 @@ switch (iMessage)
             }
         break;
 
-    case WM_KEYUP:
-        switch (wParam)
+    case SDL_KEYUP:
+        switch (event.key.keysym.sym)
             {
-            case VK_W:
+            case SDLK_w:
                 kbPressed[kbUpArrow] = 0;
                 break;
-            case VK_S:
+            case SDLK_s:
                 kbPressed[kbDownArrow] = 0;
                 break;
-            case VK_A:
+            case SDLK_a:
                 kbPressed[kbLeftArrow] = 0;
                 break;
-            case VK_D:
+            case SDLK_d:
                 kbPressed[kbRightArrow] = 0;
                 break;
-            case VK_CONTROL:
+            case SDLK_LCTRL:
                 kbPressed[kbCtrl] = 0;
                 break;
-            case VK_ESCAPE:
+            case SDLK_ESCAPE:
                 kbPressed[kbEsc] = 0;
                 break;
-            case VK_SPACE:
+            case SDLK_SPACE:
                 kbPressed[kbSpace] = 0;
                 break;
-            case VK_SHIFT:
+            case SDLK_LSHIFT:
                 kbPressed[kbLeftShift] = 0;
                 break;
-            case VK_TAB:
+            case SDLK_TAB:
                 kbPressed[kbAlt] = 0;
                 break;
             default:
