@@ -1,6 +1,6 @@
 // Function to process and ACK resource file
 
-#define USE_WINDOWS_CALLS   1   // Set to 1 for Windows, 0 for DOS
+#define USE_WINDOWS_CALLS   0   // Set to 1 for Windows, 0 for DOS
 
 
 #if USE_WINDOWS_CALLS
@@ -16,12 +16,12 @@
 #pragma hdrstop
 #include <stdlib.h>
 #include <stdio.h>
-#include <dos.h>
-#include <mem.h>
+//#include <dos.h>
+//#include <mem.h>
 #include <io.h>
 #include <fcntl.h>
-#include <process.h>
-#include <sys\stat.h>
+//#include <process.h>
+//#include <sys\stat.h>
 #include <string.h>
 #include "ack3d.h"
 

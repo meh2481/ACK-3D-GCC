@@ -1,22 +1,23 @@
 
-#include <windows.h>
+//#include <windows.h>
+#include "windowsredef.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <dos.h>
-#include <mem.h>
-#include <io.h>
-#include <fcntl.h>
+//#include <dos.h>
+//#include <mem.h>
+//#include <io.h>
+//#include <fcntl.h>
 #include <time.h>
 #include <string.h>
-#include <sys\stat.h>
+//#include <sys\stat.h>
 
 #include "ack3d.h"
 #include "ackeng.h"
 #include "ackext.h"
 
 char *GetExtent(char *s);
-UCHAR *AckReadBBM(char *s);
-UCHAR *AckReadPCX(char *s);
+//UCHAR *AckReadBBM(char *s);
+//UCHAR *AckReadPCX(char *s);
 short BlankSlice(short,UCHAR *);
 
 //------------------------------------------------------------------------
@@ -63,8 +64,8 @@ buf = NULL;
 if (ae->bmLoadType == BMLOAD_BBM)
     buf = AckReadBBM(BitmapName);
 
-if (ae->bmLoadType == BMLOAD_PNG)
-	buf = AckReadPNG(BitmapName);
+if (ae->bmLoadType == BMLOAD_GIF)
+	buf = AckReadGIF(BitmapName);
 
 if (ae->bmLoadType == BMLOAD_PCX)
 	buf = AckReadPCX(BitmapName);

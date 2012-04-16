@@ -229,7 +229,7 @@ typedef struct {
 
 // These defines indicate how bitmaps will be loaded. they are used with the bmLoadType field.
 #define BMLOAD_BBM	0	// Bitmaps will be loaded using BBM format
-#define BMLOAD_PNG	1	// Bitmaps will be loaded using GIF format
+#define BMLOAD_GIF	1	// Bitmaps will be loaded using GIF format
 #define BMLOAD_PCX	2	// Bitmaps will be loaded using PCX format
 
 //MEH defines
@@ -337,7 +337,7 @@ short AckSetupObject(ACKENG *ae,short oNum,short oType,OBJSEQ *os);
 UCHAR *AckReadBBM(char *FileName);
 
 // Reads a 256 color GIF file and returns a buffer.
-UCHAR *AckReadPNG(char *FileName);
+UCHAR *AckReadGIF(char *FileName);
 
 // Reads in a 256 color PCX file and returns a buffer.
 UCHAR *AckReadPCX(char *filename);

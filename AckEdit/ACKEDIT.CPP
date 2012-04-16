@@ -1814,11 +1814,10 @@ short GetLoadType(char *szName)
 {
     short   nType = BMLOAD_BBM;
 
-if (strstr(szName,".PCX") || strstr(szName,".pcx"))
+if (strstr(szName,".PCX"))
     nType = BMLOAD_PCX;
-else
-    if (strstr(szName,".PNG") || strstr(szName,".png"))
-        nType = BMLOAD_PNG;
+else if (strstr(szName,".GIF"))
+    nType = BMLOAD_GIF;
 
 return(nType);
 }
@@ -2393,15 +2392,16 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                             }
 
                         if (!ACKFileOpen(hWnd,szName,sizeof(szName),
-                            "PCX files (*.pcx)\0*.pcx\0BBM Bitmaps (*.bbm)\0*.bbm\0All Files (*.*)\0*.*\0",
+                            "GIF Images (*.gif)\0*.gif\0PCX files (*.pcx)\0*.pcx\0BBM Bitmaps (*.bbm)\0*.bbm\0All Files (*.*)\0*.*\0",
                             "Open Bitmap File","bbm"))
                             {
-                            if (strstr(szName,".PCX") || strstr(szName,".pcx"))
+                            if (strstr(szName,".PCX"))
                                 ae->bmLoadType = BMLOAD_PCX;
-                            else if (strstr(szName,".PNG") || strstr(szName,".png"))
-                                ae->bmLoadType = BMLOAD_PNG;
+                            else if (strstr(szName,".GIF"))
+                                ae->bmLoadType = BMLOAD_GIF;
                             //MEH Free bitmap data AFTER we know the user wants to
-                            AckFree(ae->bMaps[CurrentBitmap]);
+                            if(ae->bMaps[CurrentBitmap] != NULL)
+                                AckFree(ae->bMaps[CurrentBitmap]);
                             ae->bMaps[CurrentBitmap] = NULL;
                             //----
                             AckLoadBitmap(ae,CurrentBitmap,TYPE_WALL,szName);
@@ -2802,6 +2802,33 @@ void SelectBitmap(HWND hWnd,short yPos)
                 AckCreateObject(ae,CurrentBitmap);
                 AckSetObjectType(ae,CurrentBitmap,NO_CREATE);
             }
+        }
+        if (nEditType == EDIT_WALLS && ae->bMaps[CurrentBitmap] == NULL)    //If this bitmap is blank, load it by clicking
+        {
+            bNoShow = TRUE;
+            char            szName[128];
+            szName[0] = '\0';
+
+            if (!ACKFileOpen(hWnd,szName,sizeof(szName),
+                "GIF Images (*.gif)\0*.gif\0PCX files (*.pcx)\0*.pcx\0BBM Bitmaps (*.bbm)\0*.bbm\0All Files (*.*)\0*.*\0",
+                "Open Bitmap File","bbm"))
+            {
+                if (strstr(szName,".PCX"))
+                    ae->bmLoadType = BMLOAD_PCX;
+                else if (strstr(szName,".GIF"))
+                    ae->bmLoadType = BMLOAD_GIF;
+                //MEH Free bitmap data AFTER we know the user wants to
+                if(ae->bMaps[CurrentBitmap] != NULL)
+                    AckFree(ae->bMaps[CurrentBitmap]);
+                ae->bMaps[CurrentBitmap] = NULL;
+                //----
+                AckLoadBitmap(ae,CurrentBitmap,TYPE_WALL,szName);
+                ae->bmLoadType = BMLOAD_BBM;
+                AddFileName(TYPE_WALL,szName);
+                InvalidateRect(MainAppWnd->GetChildHandle(),NULL,TRUE);
+            }
+            bNoShow = FALSE;
+            return; //stop here, so don't open dialog
         }
         DoOptionsDlg(hInstGlobal,MainAppWnd->GetHandle());
         SetCurrentDirectory(szCurPath);

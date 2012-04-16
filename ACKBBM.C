@@ -9,19 +9,20 @@
 // (the "old" type) are not supported. use the "new" deluxe paint .lbm type
 // and do not choose "old".
 //=============================================================================
-#include <windows.h>
+//#include <windows.h>
+#include "windowsredef.h"
 #include <stdio.h>
 #include <conio.h>
-#include <process.h>
+//#include <process.h>
 //#include <bios.h>
-#include <fcntl.h>
+//#include <fcntl.h>
 #include <malloc.h>
-#include <mem.h>
+//#include <mem.h>
 
 #include "ack3d.h"
 #include "ackeng.h"
 #include "ackext.h"
-#include "iff.h"
+#include "bbm.h"
 
 extern  int  errno;
 
@@ -40,9 +41,9 @@ unsigned char      *pplanes= &cplanes[0][0];  // for a form pbm
         UCHAR       rdBuffer[MAX_BUF_POS+2];
 
 //=============================================================================
-//
+// MEH I can't seem to see this being used anywhere...
 //=============================================================================
-void CloseFile(FILE *fp)
+/*void CloseFile(FILE *fp)
 {
 
 fclose(fp);
@@ -53,7 +54,7 @@ if (rsHandle)
         rsHandle = 0;
     }
 
-}
+}*/
 
 unsigned char *AckReadBBM(char *picname)
    {

@@ -5,11 +5,11 @@
 #pragma hdrstop
 #include <stdlib.h>
 #include <stdio.h>
-#include <dos.h>
-#include <mem.h>
-#include <io.h>
-#include <fcntl.h>
-#include <sys\stat.h>
+//#include <dos.h>
+//#include <mem.h>
+//#include <io.h>
+//#include <fcntl.h>
+//#include <sys\stat.h>
 #include <string.h>
 #include "ackse.h"
 #include "ackres.h"

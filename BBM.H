@@ -1,3 +1,7 @@
+
+#ifndef BBM_H
+#define BBM_H
+
 #ifndef NULL
 #define NULL 0
 #endif
@@ -95,3 +99,4 @@ void ByteFlipShort(short *);
 short iffswab(unsigned short);
 short swab(unsigned short);
 
+#endif  //defined BBM_H

@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
 
     printf("Resolution: %dx%d\n", rcResolution.w, rcResolution.h);
     //Create our handle to the screen
-    MainScreen = SDL_SetVideoMode(rcResolution.w, rcResolution.h, 32, SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_FULLSCREEN);
+    MainScreen = SDL_SetVideoMode(rcResolution.w, rcResolution.h, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);//|SDL_FULLSCREEN);
     if ( !MainScreen )
     {
         printf("Unable to set video resolution: %s\n", SDL_GetError());

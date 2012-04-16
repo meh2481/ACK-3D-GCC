@@ -35,6 +35,9 @@
 			</Target>
 		</Build>
 		<Unit filename="ACK3D.H" />
+		<Unit filename="ACKBBM.C">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="ACKBKGD.C">
 			<Option compilerVar="CC" />
 		</Unit>
@@ -52,7 +55,7 @@
 		<Unit filename="ACKFLOOR.C">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="ACKIFF.C">
+		<Unit filename="ACKGIF.C">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="ACKINIT.C">
@@ -68,9 +71,6 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="ACKPCX.C">
-			<Option compilerVar="CC" />
-		</Unit>
-		<Unit filename="ACKPNG.C">
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="ACKPOV.C">
@@ -93,7 +93,8 @@
 		<Unit filename="ACKWRAP.C">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="IFF.H" />
+		<Unit filename="BBM.H" />
+		<Unit filename="windowsredef.h" />
 		<Extensions>
 			<code_completion />
 			<debugger />

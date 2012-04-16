@@ -60,6 +60,7 @@
 		<Unit filename="EditorConfig.cpp" />
 		<Unit filename="KEYS.H" />
 		<Unit filename="WINPAL.CPP" />
+		<Unit filename="fileio.h" />
 		<Extensions>
 			<code_completion />
 			<debugger />

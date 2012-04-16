@@ -1,11 +1,12 @@
 // This source file contains the functions needed to read in PCX files.
 // (c) 1995 ACK Software (Lary Myers)
-#include <windows.h>
+//#include <windows.h>
+#include "windowsredef.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <dos.h>
+//#include <dos.h>
 
 //typedef unsigned short USHORT;
 

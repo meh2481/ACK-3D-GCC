@@ -2,16 +2,17 @@
 // The main function AckInitialize() must be called first before any of the
 // other ACK-3D functions are called. The internal functions defined in this file
 // perform all of the set up work of loading tables and resource files.
-#include <windows.h>
+//#include <windows.h>
+#include "windowsredef.h"
 #include <stdlib.h>
 #include <stdio.h>
-#include <dos.h>
-#include <mem.h>
-#include <io.h>
-#include <fcntl.h>
+//#include <dos.h>
+//#include <mem.h>
+//#include <io.h>
+//#include <fcntl.h>
 #include <time.h>
 #include <string.h>
-#include <sys\stat.h>
+//#include <sys\stat.h>
 
 #include "ack3d.h"
 #include "ackeng.h"

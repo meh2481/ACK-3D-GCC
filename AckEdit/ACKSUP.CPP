@@ -4,13 +4,16 @@
 #pragma hdrstop
 #include <stdlib.h>
 #include <stdio.h>
-#include <dos.h>
-#include <mem.h>
-#include <io.h>
-#include <fcntl.h>
-#include <process.h>
-#include <sys\stat.h>
+//#include <dos.h>
+//#include <mem.h>
+//#include <io.h>
+//#include <fcntl.h>
+//#include <process.h>
+//#include <sys\stat.h>
 #include <string.h>
+#include "fileio.h" //MEH For LREAD and such
+
+#include <errno.h>
 //#include "wing.h"
 //#include "wingdll.h"
 
@@ -277,7 +280,7 @@ int ReadLine(void)
 len = 0;
 while (len < 200)
     {
-    if (_lread(rsHandle,&LineBuffer[len],1) != 1)
+    if (LREAD(rsHandle,&LineBuffer[len],1) != 1)
         break;
 
     ch = LineBuffer[len];
@@ -342,9 +345,9 @@ if (lb == NULL)
 
 rnum = atoi(lb);            // Resource number
 
-pos = _llseek(rsHandle,0L,SEEK_CUR);
+pos = LSEEK(rsHandle,0L,SEEK_CUR);
 result = AckLoadWall(ae,(short)wnum,(char *)rnum);
-_llseek(rsHandle,pos,SEEK_SET);
+LSEEK(rsHandle,pos,SEEK_SET);
 
 bMapIndex[wnum] = rnum;
 bMapType[wnum] = ae->bmLoadType;
@@ -370,9 +373,9 @@ if (lb == NULL)
     return(-2);
 
 rnum = atoi(lb);            // Resource number
-pos = _llseek(rsHandle,0L,SEEK_CUR);
+pos = LSEEK(rsHandle,0L,SEEK_CUR);
 result = AckLoadObject(ae,(short)onum,(char *)rnum);
-_llseek(rsHandle,pos,SEEK_SET);
+LSEEK(rsHandle,pos,SEEK_SET);
 
 oMapIndex[onum] = rnum;
 oMapType[onum] = ae->bmLoadType;
@@ -599,7 +602,7 @@ nOperation = OP_WAIT;
 SetOperationCursor();
 LineNumber = 0;
 // Position to start of info file within resource file
-_llseek(rsHandle,rbaTable[0],SEEK_SET);
+LSEEK(rsHandle,rbaTable[0],SEEK_SET);
 
 mode = result = 0;
 
@@ -672,6 +675,7 @@ while (!result)
 
 
         default:
+//            printf("%s\n",LineBuffer);
             if (!strnicmp(LineBuffer,"WALLS:",6))
                 {
                 mode = 4;
@@ -687,9 +691,9 @@ while (!result)
             if (!strnicmp(LineBuffer,"MAPFILE:",8))
                 {
                 MapResource = atoi(&LineBuffer[8]);
-                pos = _llseek(rsHandle,0L,SEEK_CUR);
+                pos = LSEEK(rsHandle,0L,SEEK_CUR);
                 result = AckReadMapFile(ae,(char *)MapResource);
-                _llseek(rsHandle,pos,SEEK_SET);
+                LSEEK(rsHandle,pos,SEEK_SET);
                 break;
                 }
 
@@ -834,8 +838,8 @@ return(result);
 //±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 short WriteLine(short nType,short nParm1,short nParm2,short handle,long *rba,char *szText)
 {
-    short   len;
-    char    szString[20];
+    short len;
+    char szString[20];
 
 switch (nType)
     {
@@ -919,10 +923,10 @@ return(result);
 //±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 short SaveMap(short handle,long *rbaPos)
 {
-    short   count,i;
-    long    rba;
-    int     mLen,aLen;
-    UCHAR   *mPtr;
+    short count,i;
+    long rba;
+    int mLen,aLen;
+    UCHAR *mPtr;
 
 // Write the map grids below, keeping track of the Relative Byte Address
 
@@ -972,8 +976,8 @@ for (i = 0; i < GRID_MAX; i++)
     if (mPtr)
         {
         count++;
-        _lwrite(handle,(char *)&i,2);          // Write the position of this wall
-        _lwrite(handle,(char *)mPtr,MAX_MULTI);  // Write the bitmap numbers for this wall
+        _lwrite(handle,(char *)&i,2); // Write the position of this wall
+        _lwrite(handle,(char *)mPtr,MAX_MULTI); // Write the bitmap numbers for this wall
 
     *rbaPos += (MAX_MULTI+2);
     i++;
@@ -982,8 +986,8 @@ for (i = 0; i < GRID_MAX; i++)
 
 if (count)
     {
-    _llseek(handle,rba,SEEK_SET);           // Seek back to the count
-    _lwrite(handle,(char *)&count,2);       // And write the new count
+    _llseek(handle,rba,SEEK_SET); // Seek back to the count
+    _lwrite(handle,(char *)&count,2); // And write the new count
     _llseek(handle,*rbaPos,SEEK_SET);
     }
 
@@ -991,14 +995,11 @@ if (count)
 return(0);
 }
 
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
-//
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 short TransferFile(short handle,short InHandle,short index,long *rba)
 {
-    unsigned short  len,rlen,LenToRead;
-    unsigned long   ulen;
-    UCHAR   *pBuffer;
+    unsigned short len,rlen,LenToRead;
+    unsigned long ulen;
+    UCHAR *pBuffer;
 
 if (!index)
     return(-1);
@@ -1039,10 +1040,10 @@ return(0);
 //±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 short TransferFileName(short handle,char *Name,long *rba)
 {
-    unsigned short  len,rlen,LenToRead;
-    unsigned long   ulen;
-    short   FileHandle;
-    UCHAR   *pBuffer;
+    unsigned short len,rlen,LenToRead;
+    unsigned long ulen;
+    short FileHandle;
+    UCHAR *pBuffer;
 
 LenToRead = 32768;
 pBuffer = (UCHAR *)AckMalloc(LenToRead);
@@ -1184,20 +1185,20 @@ return(rba);
 //±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 short SaveTempInfo(HWND hWnd)
 {
-    short   handle;
+    int   handle;
     long    rba;
 
-handle = _lcreat("ACKTEMP.ATF",0);
-if (handle == HFILE_ERROR)
+handle = LOPEN("ACKTEMP.ATF", O_WRONLY|O_CREAT|O_TRUNC);
+if (handle == L_HFILE_ERROR)
     {
-    MessageBox(hWnd,"Error creating temporary resource!","ERROR",MB_OK);
+    MessageBox(hWnd,"Error creating temporary resource!1","ERROR",MB_OK);
     return(-1);
     }
 
 rba = 0;
 SaveInfoFile(handle,rba);
 
-_lclose(handle);
+LCLOSE(handle);
 return(0);
 }
 
@@ -1207,13 +1208,13 @@ return(0);
 //±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 short SaveResource(HWND hWnd,char *szName)
 {
-    short   i,handle,InHandle,index;
-    short   speed;
-    long    rba;
-    BOOL    bGotMemory = FALSE;
-    char    szString[256];
-    NEWOBJECT   *pObj;
-    OBJSEQ      *pSeq;
+    short i,handle,InHandle,index;
+    short speed;
+    long rba;
+    BOOL bGotMemory = FALSE;
+    char szString[256];
+    NEWOBJECT *pObj;
+    OBJSEQ *pSeq;
 
 // Create a temporary file to transfer from old resource to new
 // resource (which could be the same name).
@@ -1257,11 +1258,11 @@ if (InHandle == HFILE_ERROR)
 _lread(InHandle,(char *)TempRBA,sizeof(long) * 500);
 
 index = 1;
-rbaTable[index++] = rba;    // Map file is at index 1
+rbaTable[index++] = rba; // Map file is at index 1
 
 SaveMap(handle,&rba);
 
-rbaTable[index++] = rba;    // Scrolling bkgnd at index 2
+rbaTable[index++] = rba; // Scrolling bkgnd at index 2
 
 if (!BackGndFile[0])
     TransferFile(handle,InHandle,ResScrollBack,&rba);
@@ -1304,7 +1305,7 @@ for (i = 1; i < MAX_OBJBMPS; i++)
         }
     }
 
-rbaTable[index] = rba;      // Save last one for later length checking
+rbaTable[index] = rba; // Save last one for later length checking
 
 _llseek(handle,0L,SEEK_SET);
 _lwrite(handle,(char *)rbaTable,sizeof(long) * 500);
@@ -1342,7 +1343,6 @@ SetOperationCursor();
 bModified = FALSE;
 return(0);
 }
-
 
 //±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 //

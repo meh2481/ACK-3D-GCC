@@ -16,7 +16,7 @@
 extern "C" {
 #include "keys.h"
 
-extern  short   rsHandle;
+//extern  short   rsHandle;
 extern  ULONG   *rbaTable;
 extern  short   Resolution;
 extern  UCHAR   colordat[];

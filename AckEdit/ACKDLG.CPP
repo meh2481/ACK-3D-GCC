@@ -779,14 +779,14 @@ if (i > 254)
 
 *szName = '\0';
 if (!ACKFileOpen(hWnd,szName,sizeof(szName),
-     "PCX files (*.pcx)\0*.pcx\0Object Bitmaps (*.bbm)\0*.bbm\0All Files (*.*)\0*.*\0",
+     "GIF Images (*.gif)\0*.gif\0PCX files (*.pcx)\0*.pcx\0Object Bitmaps (*.bbm)\0*.bbm\0All Files (*.*)\0*.*\0",
      "Open Bitmap File","bbm"))
     {
     AckCloseResource();
-    if (strstr(szName,".PCX") || strstr(szName,".pcx"))
+    if (strstr(szName,".PCX"))
         ae->bmLoadType = BMLOAD_PCX;
-    else if (strstr(szName,".PNG") || strstr(szName,".png"))
-        ae->bmLoadType = BMLOAD_PNG;
+    else if (strstr(szName,".GIF"))
+        ae->bmLoadType = BMLOAD_GIF;
     AckLoadBitmap(ae,i,TYPE_OBJECT,szName);
     ae->bmLoadType = BMLOAD_BBM;
     temp = CurrentBitmap;

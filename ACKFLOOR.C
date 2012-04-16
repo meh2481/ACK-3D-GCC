@@ -4,13 +4,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <conio.h>
-#include <dos.h>
-#include <mem.h>
-#include <io.h>
-#include <fcntl.h>
+//#include <dos.h>
+//#include <mem.h>
+//#include <io.h>
+//#include <fcntl.h>
 #include <time.h>
 #include <string.h>
-#include <sys\stat.h>
+//#include <sys\stat.h>
 #include <limits.h>
 
 #include "ack3d.h"

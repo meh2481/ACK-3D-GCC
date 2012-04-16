@@ -145,7 +145,7 @@ These defines used in object flags
 #define RES_MEDIUM  2	    /* Resolution is low only for floor,ceil */
 
 #define BMLOAD_BBM  0	    /* Bitmaps will be loaded using BBM format */
-#define BMLOAD_PNG  1	    /* Bitmaps will be loaded using GIF format */
+#define BMLOAD_GIF  1	    /* Bitmaps will be loaded using GIF format */
 #define BMLOAD_PCX  2	    /* Bitmaps will be loaded using PCX format */
 
 //MEH defines
@@ -295,7 +295,7 @@ UCHAR *AckReadBBM(char *FileName);
 UCHAR *AckReadPCX(char *FileName);
 /* Reads in a .pcx file and returns a buffer */
 
-UCHAR *AckReadPNG(char *FileName);
+UCHAR *AckReadGIF(char *FileName);
 /* Reads a 256 color GIF file and returns a buffer */
 
 short AckLoadAndSetPalette(char *FileName);
