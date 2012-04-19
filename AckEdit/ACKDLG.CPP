@@ -783,9 +783,9 @@ if (!ACKFileOpen(hWnd,szName,sizeof(szName),
      "Open Bitmap File","bbm"))
     {
     AckCloseResource();
-    if (strstr(szName,".PCX"))
+    if (strstr(szName,".pcx") || strstr(szName,".PCX"))
         ae->bmLoadType = BMLOAD_PCX;
-    else if (strstr(szName,".GIF"))
+    else if (strstr(szName,".gif") || strstr(szName,".GIF"))
         ae->bmLoadType = BMLOAD_GIF;
     AckLoadBitmap(ae,i,TYPE_OBJECT,szName);
     ae->bmLoadType = BMLOAD_BBM;

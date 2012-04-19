@@ -332,7 +332,7 @@ for (len = 0; len < VIEW_WIDTH; len++)
     {
     sa = &Slice[len];                        // Initialize array of slice structures
     memset(sa,0,sizeof(SLICE));              // Set all data to 0
-    for (ca = 0; ca < 8; ca++)
+    for (ca = 0; ca < 32; ca++)
         {
         saNext = (SLICE*)AckMalloc(sizeof(SLICE));   // Create a slice structure to link in
         if (saNext == NULL)

@@ -22,6 +22,9 @@ void HandleGenericKeypresses(WPARAM wParam);
 void UpdateParentText(HWND hWnd);
 void UpdateChildText(HWND hWnd);
 
+//MEH so can call inside MainWindow::WndProc()
+void ScrollBitmaps(HWND hWnd,int nScrollCode,int nPos);
+
 extern              short   rsHandle;
 extern              ULONG   *rbaTable;
 extern              short   Resolution;
@@ -1165,6 +1168,14 @@ void SetBitmap(HWND hWnd,short xPos,short yPos,short nCode)
 
 mPos = GetGridPos(xPos,yPos);
 
+//MEH Quick test first, to be sure that this is an actual bitmap we can place!
+if(nEditType != EDIT_OBJECTS && nCode)
+{
+    UCHAR* test = ae->bMaps[nCode];
+    if(test == NULL)
+        return;
+}
+
 switch (nViewType)
     {
     case VIEW_WALLS:
@@ -1814,9 +1825,9 @@ short GetLoadType(char *szName)
 {
     short   nType = BMLOAD_BBM;
 
-if (strstr(szName,".PCX"))
+if (strstr(szName,".pcx") || strstr(szName,".PCX"))
     nType = BMLOAD_PCX;
-else if (strstr(szName,".GIF"))
+else if (strstr(szName,".gif") || strstr(szName,".GIF"))
     nType = BMLOAD_GIF;
 
 return(nType);
@@ -1994,6 +2005,13 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
         case WM_MOUSEWHEEL:
             if((short)(HIWORD(wParam)) > 0)  //Rotated wheel up
             {
+                //If the screen is set to track the player, scroll bitmaps instead
+                if(bTrackPlayer)
+                {
+                    ScrollBitmaps(MainAppWnd->GetChildHandle(), SB_LINEUP, 0);
+                    break;
+                }
+                //Otherwise, scroll the window
                 if(GetAsyncKeyState(VK_SHIFT) < 0 || GetAsyncKeyState(VK_CONTROL) < 0)  //If pressing shift or ctrl, scroll horizontally
                 {
                     ScrollMap(hWnd, SB_LINEUP, 0, 0);
@@ -2003,6 +2021,12 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
             }
             else    //Rotated wheel down
             {
+                //If the screen is set to track the player, scroll bitmaps instead
+                if(bTrackPlayer)
+                {
+                    ScrollBitmaps(MainAppWnd->GetChildHandle(), SB_LINEDOWN, 0);
+                    break;
+                }
                 if(GetAsyncKeyState(VK_SHIFT) < 0 || GetAsyncKeyState(VK_CONTROL) < 0)  //If pressing shift or ctrl, scroll horizontally
                 {
                     ScrollMap(hWnd, SB_LINEDOWN, 0, 0);
@@ -2395,9 +2419,9 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                             "GIF Images (*.gif)\0*.gif\0PCX files (*.pcx)\0*.pcx\0BBM Bitmaps (*.bbm)\0*.bbm\0All Files (*.*)\0*.*\0",
                             "Open Bitmap File","bbm"))
                             {
-                            if (strstr(szName,".PCX"))
+                            if (strstr(szName,".pcx") || strstr(szName,".PCX"))
                                 ae->bmLoadType = BMLOAD_PCX;
-                            else if (strstr(szName,".GIF"))
+                            else if (strstr(szName,".gif") || strstr(szName,".GIF"))
                                 ae->bmLoadType = BMLOAD_GIF;
                             //MEH Free bitmap data AFTER we know the user wants to
                             if(ae->bMaps[CurrentBitmap] != NULL)
@@ -2727,6 +2751,7 @@ switch (iMessage)
         ProcessKeys(iMessage,wParam);
         HandleGenericKeypresses(wParam);
         break;
+
     case WM_KEYUP:
         ProcessKeys(iMessage,wParam);
         InvalidateRect(hWndMap,NULL,FALSE);
@@ -2752,7 +2777,19 @@ switch (iMessage)
         InvalidateRect(hWndMap,NULL,FALSE);
         break;
 
-    case WM_PALETTECHANGED:
+    //MEH Allow mousewheel to scroll bitmap/object list, even with the ACK-3D view window active
+    case WM_MOUSEWHEEL:
+        if((short)(HIWORD(wParam)) > 0)  //Rotated wheel up
+        {
+            ScrollBitmaps(MainAppWnd->GetChildHandle(), SB_LINEUP, 0);
+        }
+        else    //Rotated wheel down
+        {
+            ScrollBitmaps(MainAppWnd->GetChildHandle(), SB_LINEDOWN, 0);
+        }
+        break;
+
+    /*case WM_PALETTECHANGED:
         if (hWnd == (HWND)wParam)
             break;
         // Fall through here
@@ -2762,7 +2799,7 @@ switch (iMessage)
             SelectPalette(hDC,hpalApp,FALSE);
         RealizePalette(hDC);
         ReleaseDC(hWnd,hDC);
-        return FALSE;
+        return FALSE;*/
 
 
     default:
@@ -2813,9 +2850,9 @@ void SelectBitmap(HWND hWnd,short yPos)
                 "GIF Images (*.gif)\0*.gif\0PCX files (*.pcx)\0*.pcx\0BBM Bitmaps (*.bbm)\0*.bbm\0All Files (*.*)\0*.*\0",
                 "Open Bitmap File","bbm"))
             {
-                if (strstr(szName,".PCX"))
+                if (strstr(szName,".pcx") || strstr(szName,".PCX"))
                     ae->bmLoadType = BMLOAD_PCX;
-                else if (strstr(szName,".GIF"))
+                else if (strstr(szName,".gif") || strstr(szName,".GIF"))
                     ae->bmLoadType = BMLOAD_GIF;
                 //MEH Free bitmap data AFTER we know the user wants to
                 if(ae->bMaps[CurrentBitmap] != NULL)
