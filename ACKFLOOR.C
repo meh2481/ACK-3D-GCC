@@ -3,7 +3,7 @@
 //#include <windows.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <conio.h>
+//#include <conio.h>
 //#include <dos.h>
 //#include <mem.h>
 //#include <io.h>
@@ -13,26 +13,26 @@
 //#include <sys\stat.h>
 #include <limits.h>
 
-#include "ack3d.h"
-#include "ackeng.h"
-#include "ackext.h"
+#include "ACK3D.H"
+#include "ACKENG.H"
+#include "ACKEXT.H"
 
 #define MAX_F_VIEWHALFHEIGHT   50
 
-extern  long FloorCosTable[];
+extern  int32_t FloorCosTable[];
 extern    short   gWinStartX;
 extern    short   gWinStartY;
 extern    short   gWinEndX;
 extern    short   gWinHalfHeight;
 extern    UCHAR   *gScrnBufferCenter;
 extern    UCHAR   *gScrnBuffer;
-extern    long    WallDistTable[];
+extern    int32_t    WallDistTable[];
 
 extern    ACKENG* ae;//MEH
 
-    long    zdTable[VIEW_WIDTH][50];
-    long    mFactor;
-    long    dFactor;
+    int32_t    zdTable[VIEW_WIDTH][50];
+    int32_t    mFactor;
+    int32_t    dFactor;
 
 //------------------------------------------------------------------------
 // Internal function called during the initialize process to setup the
@@ -43,9 +43,9 @@ void SetupFloors(ACKENG *ae)
     short   i;//,a;
     int     ht,scanline;//,ht1;
     int     Scale_Fac;
-    long    scan2,f;
-    //long    x,y,dist;
-    //long    Lastx,Lasty;
+    int32_t    scan2,f;
+    //int32_t    x,y,dist;
+    //int32_t    Lastx,Lasty;
 
 for ( i=0; i<12;i++ ) scantables[i] = (char*)ae->PalTable + (7*256);
 for ( i=12;i<24;i++ ) scantables[i] = (char*)ae->PalTable + (6*256);
@@ -100,11 +100,11 @@ void AckDrawFloorHz(void)
     //UCHAR   *Rscr,*Rfscr,*RscrCeil,*Rcscr;
     UCHAR   *ba,*ba1;//,*Rba1;
     short   va;//,va1;
-    long    LastDist,scan2;
-    long    cv,sv,dist,x,y,mPos,bPos,wdist,bcol;
-    //long    Rbcol,Rwdist,xp,yp;
-    long    *wPtr,*RwPtr;
-    long    fcv;
+    int32_t    LastDist,scan2;
+    int32_t    cv,sv,dist,x,y,mPos,bPos,wdist,bcol;
+    //int32_t    Rbcol,Rwdist,xp,yp;
+    int32_t    *wPtr,*RwPtr;
+    int32_t    fcv;
     UCHAR   ch;
     USHORT    bCode;
 
@@ -150,7 +150,7 @@ RwPtr = &WallDistTable[Rcol];
 // row of the floor and ceiling. The value 89 was arrived at based on a
 // reasonable height above the floor that the player is standing. By
 // experimenting with this value, the effect of jumping up and down can
-// be achieved, (as long as the walls and objects are made to jump by the
+// be achieved, (as int32_t as the walls and objects are made to jump by the
 // same amount).
 Scale_Fac = (ae->PlayerHeight - ViewHeight) * 5;
 ScaleHt = ae->PlayerHeight - ViewHeight;
@@ -281,10 +281,10 @@ for (col = BegCol; col < EndCol; col ++)//= 2)
     UCHAR   *scr,*bmp,*scrCeil,*cscr;
     UCHAR   *ba,*ba1;
     short   va;
-    long    LastDist,scan2;
-    long    cv,sv,dist,x,y,mPos,bPos,wdist,bcol;
-    long    *wPtr,*RwPtr;
-    long    fcv;
+    int32_t    LastDist,scan2;
+    int32_t    cv,sv,dist,x,y,mPos,bPos,wdist,bcol;
+    int32_t    *wPtr,*RwPtr;
+    int32_t    fcv;
     UCHAR   ch;
     USHORT    bCode;
 
@@ -328,7 +328,7 @@ RwPtr = &WallDistTable[Rcol];
 // row of the floor and ceiling. The value 89 was arrived at based on a
 // reasonable height above the floor that the player is standing. By
 // experimenting with this value, the effect of jumping up and down can
-// be achieved, (as long as the walls and objects are made to jump by the
+// be achieved, (as int32_t as the walls and objects are made to jump by the
 // same amount).
 Scale_Fac = (ae->PlayerHeight - ViewHeight) * 5;
 ScaleHt = ae->PlayerHeight - ViewHeight;
@@ -441,11 +441,11 @@ for (col = BegCol; col < EndCol; col ++)//= 2)
     //UCHAR   *Rfscr,*RscrCeil,*Rcscr;
     UCHAR   *ba,*ba1;//,*Rba,*Rba1;
     short   va;//,va1;
-    long    LastDist,scan2;
-    long    cv,sv,dist,x,y,mPos,bPos,wdist,bcol;
-    //long    Rbcol,Rwdist,xp,yp;
-    long    *wPtr,*RwPtr;
-    long    fcv;
+    int32_t    LastDist,scan2;
+    int32_t    cv,sv,dist,x,y,mPos,bPos,wdist,bcol;
+    //int32_t    Rbcol,Rwdist,xp,yp;
+    int32_t    *wPtr,*RwPtr;
+    int32_t    fcv;
     UCHAR   ch;
     USHORT    bCode;
 
@@ -489,7 +489,7 @@ RwPtr = &WallDistTable[Rcol];
 // row of the floor and ceiling. The value 89 was arrived at based on a
 // reasonable height above the floor that the player is standing. By
 // experimenting with this value, the effect of jumping up and down can
-// be achieved, (as long as the walls and objects are made to jump by the
+// be achieved, (as int32_t as the walls and objects are made to jump by the
 // same amount).
 Scale_Fac = (ae->PlayerHeight - ViewHeight) * 5;
 ScaleHt = ae->PlayerHeight - ViewHeight;
@@ -600,11 +600,11 @@ void AckDrawFloor(void)
     UCHAR   *ba,*ba1;//,*Rba,*Rba1;
     char    *stPtr;
     short   va,LineNum;
-    long    LastDist,scan2;
-    long    cv,sv,dist,x,y,mPos,bPos,wdist,bcol;
-//    long    Rbcol,Rwdist,xp,yp;
-    long    *wPtr,*RwPtr;
-    long    fcv;
+    int32_t    LastDist,scan2;
+    int32_t    cv,sv,dist,x,y,mPos,bPos,wdist,bcol;
+//    int32_t    Rbcol,Rwdist,xp,yp;
+    int32_t    *wPtr,*RwPtr;
+    int32_t    fcv;
     UCHAR   ch;
     USHORT    bCode;
 
@@ -650,7 +650,7 @@ RwPtr = &WallDistTable[Rcol];
 // row of the floor and ceiling. The value 89 was arrived at based on a
 // reasonable height above the floor that the player is standing. By
 // experimenting with this value, the effect of jumping up and down can
-// be achieved, (as long as the walls and objects are made to jump by the
+// be achieved, (as int32_t as the walls and objects are made to jump by the
 // same amount).
 Scale_Fac = (ae->PlayerHeight - ViewHeight) * 5;
 ScaleHt = ae->PlayerHeight - ViewHeight;
@@ -788,11 +788,11 @@ for (col = BegCol; col < EndCol; col ++)//= 2) //MEH For higher resolution, only
     UCHAR   *ba,*ba1;//,*Rba,*Rba1;
     short   va,LineNum;
     char    *stPtr;
-    long    LastDist,scan2;
-    long    cv,sv,dist,x,y,mPos,bPos,wdist,bcol;
-//    long    Rbcol,Rwdist,xp,yp;
-    long    *wPtr,*RwPtr;//',*xyPtr;
-    long    fcv;
+    int32_t    LastDist,scan2;
+    int32_t    cv,sv,dist,x,y,mPos,bPos,wdist,bcol;
+//    int32_t    Rbcol,Rwdist,xp,yp;
+    int32_t    *wPtr,*RwPtr;//',*xyPtr;
+    int32_t    fcv;
     UCHAR   ch;
     USHORT    bCode;
 
@@ -836,7 +836,7 @@ RwPtr = &WallDistTable[Rcol];
 // row of the floor and ceiling. The value 89 was arrived at based on a
 // reasonable height above the floor that the player is standing. By
 // experimenting with this value, the effect of jumping up and down can
-// be achieved, (as long as the walls and objects are made to jump by the
+// be achieved, (as int32_t as the walls and objects are made to jump by the
 // same amount).
 Scale_Fac = (ae->PlayerHeight - ViewHeight) * 5;
 ScaleHt = ae->PlayerHeight - ViewHeight;
@@ -954,11 +954,11 @@ for (col = BegCol; col < EndCol; col ++)//= 2)
     UCHAR   *ba,*ba1;//,*Rba,*Rba1;
     short   va,LineNum;
     char    *stPtr;
-    long    LastDist,scan2;
-    long    cv,sv,dist,x,y,mPos,bPos,wdist,bcol;
-//    long    Rbcol,Rwdist,xp,yp;
-    long    *wPtr,*RwPtr;
-    long    fcv;
+    int32_t    LastDist,scan2;
+    int32_t    cv,sv,dist,x,y,mPos,bPos,wdist,bcol;
+//    int32_t    Rbcol,Rwdist,xp,yp;
+    int32_t    *wPtr,*RwPtr;
+    int32_t    fcv;
     UCHAR   ch;
     USHORT    bCode;
 
@@ -1002,7 +1002,7 @@ RwPtr = &WallDistTable[Rcol];
 // row of the floor and ceiling. The value 89 was arrived at based on a
 // reasonable height above the floor that the player is standing. By
 // experimenting with this value, the effect of jumping up and down can
-// be achieved, (as long as the walls and objects are made to jump by the
+// be achieved, (as int32_t as the walls and objects are made to jump by the
 // same amount).
 Scale_Fac = (ae->PlayerHeight - ViewHeight) * 5;
 ScaleHt = ae->PlayerHeight - ViewHeight;
@@ -1120,11 +1120,11 @@ void AckDrawOneFloor(void)
 //    UCHAR   *Rscr,*Rfscr,*RscrCeil,*Rcscr;
 //    UCHAR   *ba,*ba1,*Rba,*Rba1;
     short   va;//,va1;
-    long    LastDist,scan2;
-    long    cv,sv,dist,x,y,bPos,wdist;
-//    long    Rbcol,Rwdist,xp,yp;
-    long    *wPtr,*RwPtr;
-    long    fcv;
+    int32_t    LastDist,scan2;
+    int32_t    cv,sv,dist,x,y,bPos,wdist;
+//    int32_t    Rbcol,Rwdist,xp,yp;
+    int32_t    *wPtr,*RwPtr;
+    int32_t    fcv;
     UCHAR   ch;
 //    USHORT    bCode;
 
@@ -1163,7 +1163,7 @@ RwPtr = &WallDistTable[Rcol];
 // row of the floor and ceiling. The value 89 was arrived at based on a
 // reasonable height above the floor that the player is standing. By
 // experimenting with this value, the effect of jumping up and down can
-// be achieved, (as long as the walls and objects are made to jump by the
+// be achieved, (as int32_t as the walls and objects are made to jump by the
 // same amount).
 Scale_Fac = (ae->PlayerHeight - ViewHeight) * 5;
 ScaleHt = ae->PlayerHeight - ViewHeight;

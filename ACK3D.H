@@ -9,12 +9,13 @@
 #define ACK3D_H
 
 #include "string.h"
+#include <stdint.h>
 
 // USED TO RID OURSELVES OF THE MANY CASTING PROBLEMS
 #define CAST(t,f) (t)(f)
 
 // Internal definitions used to simplify field declarations.
-typedef unsigned long	ULONG;
+typedef uint32_t	ULONG;
 typedef unsigned short	USHORT;
 typedef unsigned char	UCHAR;
 
@@ -66,8 +67,8 @@ typedef unsigned char	UCHAR;
 #define POV_YWALL       2       // A Y wall was hit
 #define POV_OBJECT      3       // An object was hit
 #define POV_PLAYER      4       // The player was hit by object
-#define POV_SLIDEX      5       // Sliding along an X wall
-#define POV_SLIDEY      6       // Sliding along a Y wall
+#define POV_SLIDEX      5       // Sliding aint32_t an X wall
+#define POV_SLIDEY      6       // Sliding aint32_t a Y wall
 #define POV_NODOOR      0       // No door was opened
 #define POV_XDOOR       1       // An X door was opened
 #define POV_YDOOR       2       // A Y door was opened
@@ -353,7 +354,7 @@ void AckRegisterStructure(ACKENG *ae);
 void AckBuildView(void);
 
 // Returns the angle (0-1919) between two objects.
-short AckGetObjectAngle(long DeltaX,long DeltaY);
+short AckGetObjectAngle(int32_t DeltaX,int32_t DeltaY);
 
 // Checks if a collision occurs. Used by AckCheckDoorOpen routine.
 short AckCheckHit(short xPlayer,short yPlayer,short ViewAngle);

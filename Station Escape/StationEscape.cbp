@@ -8,17 +8,16 @@
 		<Build>
 			<Target title="Debug">
 				<Option output="StationEscape" prefix_auto="1" extension_auto="1" />
-				<Option object_output=".\.objs\Debug" />
+				<Option object_output="./.objs/Debug" />
 				<Option type="1" />
 				<Option compiler="gcc" />
-				<Option parameters="&gt; output.txt" />
 				<Compiler>
 					<Add option="-g" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
 				<Option output="StationEscape" prefix_auto="1" extension_auto="1" />
-				<Option object_output=".\.objs\Release" />
+				<Option object_output="./.objs/Release" />
 				<Option type="0" />
 				<Option compiler="gcc" />
 				<Compiler>
@@ -35,10 +34,7 @@
 		</Compiler>
 		<Linker>
 			<Add option="`sdl-config --libs` -lSDL -lSDL_gfx" />
-			<Add library="gdi32" />
-			<Add library="user32" />
-			<Add library="kernel32" />
-			<Add library="..\liback.a" />
+			<Add library="../liback.a" />
 		</Linker>
 		<Unit filename="ACK3D.H" />
 		<Unit filename="ACKEXAM.H" />

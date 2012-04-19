@@ -3,8 +3,8 @@
 //#include <windows.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ackwin.h"
-#include "ackse.h"
+#include "ACKWIN.H"
+#include "ACKSE.H"
 #include <stdio.h>
 #include <fstream> //MEH for file streams. Much easier for me to use
 //MEH Use SDL now! Yay!
@@ -24,9 +24,9 @@
 #define IDM_RES4    1105
 #define IDM_RES5    1106*/
 
-#include "ack3d.h"
+#include "ACK3D.H"
 extern "C" {
-#include "keys.h"
+#include "KEYS.H"
 void AckDoubleBuffer(UCHAR *Src,UCHAR *Dest);
 extern  UCHAR   colordat[];
 };
@@ -114,9 +114,9 @@ short   nMoveObjectList[] = {
 #undef main
 int main(int argc, char* argv[])
 {
-  int     result;
+    int     result;
 //  HBITMAP hbm;
-  char    szBuf[40];
+//  char    szBuf[40];
 
     //Initialize SDL
     if ( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0 )
@@ -157,9 +157,9 @@ int main(int argc, char* argv[])
         }
     }
 
-    printf("Resolution: %dx%d\n", rcResolution.w, rcResolution.h);
+    //printf("Resolution: %dx%d\n", rcResolution.w, rcResolution.h);
     //Create our handle to the screen
-    MainScreen = SDL_SetVideoMode(rcResolution.w, rcResolution.h, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);//|SDL_FULLSCREEN);
+    MainScreen = SDL_SetVideoMode(rcResolution.w, rcResolution.h, 32, SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_FULLSCREEN);
     if ( !MainScreen )
     {
         printf("Unable to set video resolution: %s\n", SDL_GetError());
@@ -474,7 +474,7 @@ void CheckFiring(short nObjIndex,NEWOBJECT *pObj)
 {
   UCHAR   Index;
   NEWOBJECT   *pBomb;
-  long    dx,dy;
+  int32_t    dx,dy;
 
 if (pObj->id)   // Bad guy is currently firing
   return;
@@ -738,13 +738,6 @@ else
                                           (float)(rcResolution.w) / (float)(ACK3D_SCREENWIDTH),
                                           (float)(rcResolution.h) / (float)(ACK3D_SCREENHEIGHT),
                                           SMOOTHING_OFF);
-
-
-    /*SDL_Surface* bmp = SDL_LoadBMP("cb.bmp");
-    if (!bmp)
-    {
-        printf("Unable to load bitmap: %s\n", SDL_GetError());
-    }*/
 
     // centre the bitmap on screen
     SDL_Rect dstrect;

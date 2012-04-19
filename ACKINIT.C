@@ -14,9 +14,9 @@
 #include <string.h>
 //#include <sys\stat.h>
 
-#include "ack3d.h"
-#include "ackeng.h"
-#include "ackext.h"
+#include "ACK3D.H"
+#include "ACKENG.H"
+#include "ACKEXT.H"
 
 extern  char AckKeyboardSetup;
 extern  char AckTimerSetup;
@@ -28,7 +28,7 @@ short   OurDataSeg;
 
 char    rsName[128];
 
-long FloorCosTable[VIEW_WIDTH+1];
+int32_t FloorCosTable[VIEW_WIDTH+1];
 
 short AckBuildTables(ACKENG *ae);
 void AckBuildHeightTables(ACKENG *ae);
@@ -116,10 +116,10 @@ rsHandle = _lopen(ResFileName,OF_READ);  // Open new resource file
 if (rsHandle < 1)                  // Check to see if file is opened properly
     {
     rsHandle = 0;                  // Reset file handle
-    return(ERR_BADFILE);           // Return error code for faliure
+    return(ERR_BADFILE);           // Return error code for failure
     }
 
-hLen = MAX_RBA * sizeof(long);     // Get size of file
+hLen = MAX_RBA * sizeof(int32_t);     // Get size of file
 if (rbaTable == NULL)
     rbaTable = (ULONG *)AckMalloc(hLen);  // Allocate buffer for file
 if (rbaTable == NULL)                     // Was memory available?
@@ -166,7 +166,7 @@ rsHandle = 0;               // Reset the file handle
 void BuildWallDstTables(void)
 {
     short i,j,row,HiValue;
-    long        ldst,value,len;
+    int32_t        ldst,value,len;
     short *lp;
 
 for (ldst = 10;ldst < 2048; ldst++)
@@ -224,7 +224,7 @@ short AckBuildTables(ACKENG *ae)
 {
     short handle,len,ca,na;
 //    int c,s,ang;
-//    long        fAng,tu,tv;
+//    int32_t        fAng,tu,tv;
     SLICE *sa,*saNext;
 
 BuildWallDstTables();            // Create the distance tables
@@ -238,25 +238,25 @@ if (!rsHandle)                   // Check to make sure resource file is not open
 else
     {
     handle = rsHandle;                           // Get handle for resource file
-    _llseek(handle,rbaTable[0],SEEK_SET);
+    _llseek(handle,(int)(rbaTable[0]),SEEK_SET);
     }
 
 // Allocate memory for trig and coordinate tables
-LongTanTable      = (long *)AckMalloc(sizeof(long) * INT_ANGLE_360);
-LongInvTanTable   = (long *)AckMalloc(sizeof(long) * INT_ANGLE_360);
-CosTable          = (long *)AckMalloc(sizeof(long) * INT_ANGLE_360);
-SinTable          = (long *)AckMalloc(sizeof(long) * INT_ANGLE_360);
-LongCosTable      = (long *)AckMalloc(sizeof(long) * INT_ANGLE_360);
-xNextTable        = (long *)AckMalloc(sizeof(long) * INT_ANGLE_360);
-yNextTable        = (long *)AckMalloc(sizeof(long) * INT_ANGLE_360);
-ViewCosTable      = (long *)AckMalloc(sizeof(long) * VIEW_WIDTH);
+LongTanTable      = (int32_t *)AckMalloc(sizeof(int32_t) * INT_ANGLE_360);
+LongInvTanTable   = (int32_t *)AckMalloc(sizeof(int32_t) * INT_ANGLE_360);
+CosTable          = (int32_t *)AckMalloc(sizeof(int32_t) * INT_ANGLE_360);
+SinTable          = (int32_t *)AckMalloc(sizeof(int32_t) * INT_ANGLE_360);
+LongCosTable      = (int32_t *)AckMalloc(sizeof(int32_t) * INT_ANGLE_360);
+xNextTable        = (int32_t *)AckMalloc(sizeof(int32_t) * INT_ANGLE_360);
+yNextTable        = (int32_t *)AckMalloc(sizeof(int32_t) * INT_ANGLE_360);
+ViewCosTable      = (int32_t *)AckMalloc(sizeof(int32_t) * VIEW_WIDTH);
 
 // Allocate memory for map grid and object grid
 Grid = (unsigned short *)AckMalloc((GRID_MAX * 2)+1);
 ObjGrid = (unsigned short *)AckMalloc((GRID_MAX * 2)+1);
 
 // Allocate memory for height adjustment table
-AdjustTable = (long *)AckMalloc((MAX_DISTANCE+1) * sizeof(long));
+AdjustTable = (int32_t *)AckMalloc((MAX_DISTANCE+1) * sizeof(int32_t));
 // Allocate memory for screen buffers
 ae->ScreenBuffer = (UCHAR *)AckMalloc(SCREEN_SIZE+640);
 ae->BkgdBuffer = (UCHAR *)AckMalloc(SCREEN_SIZE+640);
@@ -280,7 +280,7 @@ if (LongTanTable     == NULL ||         // Make sure memory is allocated for tab
     return(ERR_NOMEMORY);                 // Return memory allocation error code
     }
 
-len = sizeof(long) * INT_ANGLE_360;       // Calculate size for each trig table
+len = sizeof(int32_t) * INT_ANGLE_360;       // Calculate size for each trig table
 _lread(handle,SinTable,len);              // Read in trig data and place in appropriate tables
 _lread(handle,CosTable,len);
 _lread(handle,LongTanTable,len);
@@ -318,8 +318,8 @@ LongInvTanTable[INT_ANGLE_270] = LongInvTanTable[INT_ANGLE_270+1];
 
 for (len = 0; len < INT_ANGLE_360; len++)
     {
-    yNextTable[len] = (long)BITMAP_WIDTH * LongTanTable[len];    // Calculate y intercept increments
-    xNextTable[len] = (long)BITMAP_WIDTH * LongInvTanTable[len]; // Calculate x intercept increments
+    yNextTable[len] = (int32_t)BITMAP_WIDTH * LongTanTable[len];    // Calculate y intercept increments
+    xNextTable[len] = (int32_t)BITMAP_WIDTH * LongInvTanTable[len]; // Calculate x intercept increments
     InvCosTable[len] = InvCosTable[len] >> 4;   // Scale inverse tables
     InvSinTable[len] = InvSinTable[len] >> 6;
     }
@@ -365,7 +365,7 @@ if (!rsHandle)            // Check to see if resource file is open already
 else
     {
     handle = rsHandle;                // Get handle to open resource
-    _llseek(handle,rbaTable[(ULONG)fName],SEEK_SET);  // Access opened resource file
+    _llseek(handle,(int)(rbaTable[(int64_t)fName]),SEEK_SET);  // Access opened resource file
     }
 
 aLen = GRID_ARRAY * 2;
@@ -459,7 +459,7 @@ return(0);
 void AckBuildHeightTables(ACKENG *ae)
 {
     short     i;
-    long    height;
+    int32_t    height;
 
 height = BITMAP_WIDTH * 128L;     // Calculate distance to height conversion factor
 

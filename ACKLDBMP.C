@@ -11,9 +11,9 @@
 #include <string.h>
 //#include <sys\stat.h>
 
-#include "ack3d.h"
-#include "ackeng.h"
-#include "ackext.h"
+#include "ACK3D.H"
+#include "ACKENG.H"
+#include "ACKEXT.H"
 
 char *GetExtent(char *s);
 //UCHAR *AckReadBBM(char *s);

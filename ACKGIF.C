@@ -9,9 +9,9 @@
 //#include <malloc.h>
 //#include <string.h>
 /*
-#include "ack3d.h"
-#include "ackeng.h"
-#include "ackext.h"
+#include "ACK3D.H"
+#include "ACKENG.H"
+#include "ACKEXT.H"
 
 
 //------------------------------------------------------------------------
@@ -38,9 +38,9 @@ return(NULL);
 //#include <fcntl.h>
 //#include <malloc.h>
 #include <string.h>
-#include "ack3d.h"
-#include "ackeng.h"
-#include "ackext.h"
+#include "ACK3D.H"
+#include "ACKENG.H"
+#include "ACKEXT.H"
 
 #define MAX_CODES     4096
 
@@ -64,7 +64,7 @@ static unsigned char *suffix;
 static unsigned short *prefix;
 static unsigned char cTemp;  //MEH General use temp variable
 
-static unsigned long code_mask[13] =
+static uint32_t code_mask[13] =
 {
   0L,
   0x0001L, 0x0003L,
@@ -78,7 +78,7 @@ static unsigned long code_mask[13] =
 static short get_next_code (void)
 {
   short i;
-  static unsigned long ret;
+  static uint32_t ret;
 
   if (!nbits_left)
     {
@@ -156,7 +156,7 @@ unsigned char *AckReadGIF (char *picname)
     else
         {
         fp = rsHandle;
-        _llseek(rsHandle,rbaTable[(ULONG)picname],SEEK_SET);
+        _llseek(rsHandle,(int)(rbaTable[(int64_t)picname]),SEEK_SET);
         }
 
   _lread (fp,buf,6);

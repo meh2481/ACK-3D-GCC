@@ -11,9 +11,9 @@
 
 //typedef unsigned short USHORT;
 
-#include "ack3d.h"
-#include "ackeng.h"
-#include "ackext.h"
+#include "ACK3D.H"
+#include "ACKENG.H"
+#include "ACKEXT.H"
 
 
 void AckDrawPage (void);

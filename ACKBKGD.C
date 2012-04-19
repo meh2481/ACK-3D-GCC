@@ -12,8 +12,8 @@
 
 //typedef unsigned short USHORT;
 
-#include "ack3d.h"
-#include "ackeng.h"
+#include "ACK3D.H"
+#include "ACKENG.H"
 
 
 void AckBuildCeilingFloor (UCHAR *, short, short, short, short, short, short);

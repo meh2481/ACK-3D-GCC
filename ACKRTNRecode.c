@@ -127,11 +127,11 @@ void DrawWalls(void)
     //Store the floor height as the viewport height / 2
     Floorht = gWinHeight / 2;
     //and half-bitmap height
-    sctopht = ViewHeight;
-    scbotht = BITMAP_HEIGHT - sctopht;  //store height of remaining half of bitmap
+//    sctopht = ViewHeight;
+//    scbotht = BITMAP_HEIGHT - sctopht;  //store height of remaining half of bitmap
 
     //Store screen buffer center row for easy access
-    scVid = &(gScrnBuffer[gWinStartX + gCenterOff]);
+//    scVid = &(gScrnBuffer[gWinStartX + gCenterOff]);
 
     //Ignore low-res code, since the game has a REALLY low resolution anyway. :P
     //I mean, come on. Who wants to go low-res in a 320x200 game nowdays? Seriously?
@@ -141,6 +141,7 @@ void DrawWalls(void)
     for(i = 0; i < VIEW_WIDTH; i++)
     {
         SLICE* CurSlice = &Slice[i];
+
         //stw020:
         //See if there's a slice or slices behind this one. If so, go to the farthest one first
         while(1)
@@ -153,15 +154,15 @@ void DrawWalls(void)
         }
 
         //stw030:
-        scbNum = CurSlice->bNumber;
-        scmulcnt = scbNum & 0xFF;
-        scmulti = 0;
-        if(scbNum & WALL_TYPE_MULTI)    //Deal with a multi-height wall
-        {
-            scMulData = CurSlice->mPtr;
-            if(scMulData)
-                scmulti = 1;
-        }
+//        scbNum = CurSlice->bNumber;
+//        scmulcnt = scbNum & 0xFF;
+//        scmulti = 0;
+//        if(scbNum & WALL_TYPE_MULTI)    //Deal with a multi-height wall
+//        {
+//            scMulData = CurSlice->mPtr;
+//            if(scMulData)
+//                scmulti = 1;
+//        }
 
         bmDistance = CurSlice->Distance;
 
@@ -171,13 +172,16 @@ void DrawWalls(void)
 
         //stw050: Light shading stuffz - Currently I have no idea what this does and I don't care
         //ShadingRegion >>= 8; //Multiply by 256 for pallette entry
-        scColumn = CurSlice->bMap[CurSlice->bColumn];
-        scWall = *(CurSlice->bMap);    //?????????
-        scPal = &(gPalTable[ShadingRegion]);
+//        scColumn = CurSlice->bMap[CurSlice->bColumn];
+//        scWall = *(CurSlice->bMap);    //?????????
+//        scPal = &(gPalTable[ShadingRegion]);
 
         gCurSlice = CurSlice;
         g_iCurScreenSpot = i;
 
+//        printf("%d\n",i);
+        if(CurSlice == NULL)
+            break;
         CurSlice->Fnc();    //Draw this slice
         //Saving stuff after here? I hope it isn't important
 
@@ -247,6 +251,7 @@ void ShowColumn(char bTrans, char bLightShaded)
     short* sTableSpot = LowerTable[gCurSlice->Distance];
     //Get the height for the wall that we're supposed to draw
     unsigned int iWallHeight = DistanceTable[gCurSlice->Distance] - 1;
+    //printf("Wall height: %d\n", iWallHeight);
     if(iWallHeight > 99)
     {
         iWallHeight = 99;   //Force to max height
@@ -256,17 +261,24 @@ void ShowColumn(char bTrans, char bLightShaded)
     // Draw bottom half of bitmap - from middle of screen down
     UCHAR* CurCol = &(gScrnBuffer[g_iCurScreenSpot]);
     CurCol=&CurCol[VIEW_WIDTH * gWinHeight/2];
+    if(gCurSlice->bMap == NULL)
+    {
+        return;
+    }
     UCHAR* BmpCol = gCurSlice->bMap[bNumber];
     if(BmpCol == NULL)
+    {
         return;             //TODO: DERP! Sometimes this is true for doors, and would cause crashes if this wasn't here.
                             // WHY?!? (Example: exit maze door in cemetery level at an angle)
                             // Probably some kind of problem in ACKRAY.C, function x/yRayCast().
+    }
     BmpCol=&BmpCol[BITMAP_HEIGHT / 2];
     BmpCol = &BmpCol[gCurSlice->bColumn * BITMAP_WIDTH];
     //CurCol += ((200 - iWallHeight) / 2) * 320;
     int i;
     for(i = 0; i < iWallHeight; i++)
     {
+//        printf("%d", i);
         UCHAR cTemp = BmpCol[*sTableSpot];
         //Get lightshaded value if we should
         if(bLightShaded)
@@ -291,6 +303,7 @@ void ShowColumn(char bTrans, char bLightShaded)
     BmpCol=&BmpCol[BITMAP_HEIGHT / 2 - 1];
     for(i = 0; i < iWallHeight; i++)
     {
+//        printf("%d", i);
         UCHAR cTemp = BmpCol[-(*sTableSpot)];
         //Get lightshaded value if we should
         if(bLightShaded)

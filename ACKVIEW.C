@@ -3,7 +3,7 @@
 //#include <windows.h>    // Required for Windows version of engine
 #include <stdlib.h>
 #include <stdio.h>
-#include <conio.h>
+//#include <conio.h>
 //#include <dos.h>
 //#include <mem.h>
 //#include <io.h>
@@ -13,20 +13,20 @@
 //#include <sys\stat.h>
 #include <limits.h>
 
-#include "ack3d.h"      // Main ACK-3D internal and interface data structures
-#include "ackeng.h"     // Intrnal structures and constants
-#include "ackext.h"     // Defines external (global) variables
+#include "ACK3D.H"      // Main ACK-3D internal and interface data structures
+#include "ACKENG.H"     // Intrnal structures and constants
+#include "ACKEXT.H"     // Defines external (global) variables
 #include "ACKRTNRecode.c"   //Defines C-recoded assembly routines we need
 
-extern  long FloorCosTable[];
+extern  int32_t FloorCosTable[];
 
 void    (*FloorCeilRtn)(void);
 void    (*WallRtn)(void);
 void    (*WallMaskRtn)(void);
 
 short   gWinFullWidth;          // Global variables for setting up a viewport
-long    gWinDWORDS;             // These are the global variables used by the
-long    gWinStartOffset;                // low-level assembly language routines to draw slices
+int32_t    gWinDWORDS;             // These are the global variables used by the
+int32_t    gWinStartOffset;                // low-level assembly language routines to draw slices
 short   gWinStartX;
 short   gWinStartY;
 short   gWinEndX;
@@ -36,7 +36,7 @@ short   gWinHalfHeight;
 short   gWinWidth;
 short   gCenterRow;
 short   gCenterOff;
-long    gBottomOff;
+int32_t    gBottomOff;
 UCHAR   *gScrnBufferCenter;
 UCHAR   *gScrnBuffer;
 UCHAR   *gBkgdBuffer;
@@ -49,27 +49,27 @@ UCHAR   **myGridGlobal; // map arrays
 UCHAR   gTopColor;
 UCHAR   gBottomColor;
 
-UCHAR   *scVid;         // Variables used in low level routines for
-UCHAR   *scWall;                // building and drawing slices
-UCHAR   *scPal;
-short   scdst;
-short   scwht;
-short   scmulti;
-short   sctopht;
-short   scbotht;
-short   scsavwht;
-short   scmulcnt;
-UCHAR   *scsavVid;
-USHORT    scbNum;
-UCHAR   *scMulData;
-UCHAR   *scColumn;
+//UCHAR   *scVid;         // Variables used in low level routines for
+//UCHAR   *scWall;                // building and drawing slices
+//UCHAR   *scPal;
+//short   scdst;
+//short   scwht;
+//short   scmulti;
+//short   sctopht;
+//short   scbotht;
+//short   scsavwht;
+//short   scmulcnt;
+//UCHAR   *scsavVid;
+//USHORT    scbNum;
+//UCHAR   *scMulData;
+//UCHAR   *scColumn;
 UCHAR   *gPtr;
 UCHAR   *gmPtr;
 short   gBitmapNumber;
 short   gBitmapColumn;
 short   gyBitmapNumber;
 short   gyBitmapColumn;
-long    gWallDistance;
+int32_t    gWallDistance;
 short   gmPos;
 DOORS   *gDoor;
 DOORS   *gDoorPosn;
@@ -78,17 +78,17 @@ UCHAR   *mgPtr;
 
 short   BegX,EndX;
 
-extern  long        x_xPos;     // Variables for tracking coordinates during
-extern  long        x_yPos;     // the ray casting process
-extern  long        x_xNext;
-extern  long        x_yNext;
-extern  long        y_xPos;
-extern  long        y_yPos;
-extern  long        y_xNext;
-extern  long        y_yNext;
+extern  int32_t        x_xPos;     // Variables for tracking coordinates during
+extern  int32_t        x_yPos;     // the ray casting process
+extern  int32_t        x_xNext;
+extern  int32_t        x_yNext;
+extern  int32_t        y_xPos;
+extern  int32_t        y_yPos;
+extern  int32_t        y_xNext;
+extern  int32_t        y_yNext;
 
 short   LastVht;
-long    WallDistTable[VIEW_WIDTH];
+int32_t    WallDistTable[VIEW_WIDTH];
 
 // Functions used to build views and perform the ray casting process
 void AckSetupWindow(ACKENG *ae);        // Sets up variables for viewport
@@ -261,10 +261,10 @@ void AckBuildView(void)
 xPglobal    = aeGlobal->xPlayer;                // The player's x coordinate
 xBegGlobal  = xPglobal & GRID_MASK;     // Upper left corner (x) of the grid
                                         // square the player is in
-xPglobalHI  = ((long)xPglobal << FP_SHIFT);     // Convert x coordinate to fixed point
+xPglobalHI  = ((int32_t)xPglobal << FP_SHIFT);     // Convert x coordinate to fixed point
 yPglobal    = aeGlobal->yPlayer;                        // The player's y coordinate
 yBegGlobal  = yPglobal & GRID_MASK;             // Upper left corner (y) of grid square
-yPglobalHI  = ((long)yPglobal << FP_SHIFT);     // Convert y coordinate to fixed point
+yPglobalHI  = ((int32_t)yPglobal << FP_SHIFT);     // Convert y coordinate to fixed point
 PlayerAngle = aeGlobal->PlayerAngle;            // The player's angle
 SysFlags    = aeGlobal->SysFlags;                       // Ceiling and floor attributes;
 BuildUpView();          // Assembly routine defined in ACKRTN3.ASM. This routine
@@ -286,15 +286,15 @@ return;
 void BuildSlice(void)
 {
     short   j,index,wFound;
-    long    yBitmap,BitmapNumber;
+    int32_t    yBitmap,BitmapNumber;
     short   DoorOpenColumn;
     ULONG   yDistance;
     ULONG   xd,yd,mf;
-    long    WallDistance,UnAdjustDist;
+    int32_t    WallDistance,UnAdjustDist;
     USHORT    BitmapColumn,yBitmapColumn;
-    long    OldMapPosn,OldMapPosn1;
-    long    offset;
-    long    mPos;
+    int32_t    OldMapPosn,OldMapPosn1;
+    int32_t    offset;
+    int32_t    mPos;
 
     USHORT    *gPtr;
     UCHAR   *mgPtr;
@@ -303,7 +303,7 @@ void BuildSlice(void)
 WallDistance = 3000000;         // Set to a ridiculous distance
 sPtr->Distance = 200;           // Initialize the distance from the POV to the slice
 wFound = 0;                     // Wall not found yet
-sPtr->Fnc = ShowNone;           // Use the stub function for now for drawing the slice
+sPtr->Fnc = ShowColNS;           // Use the stub function for now for drawing the slice
 
 // Call the low level ray casting function and see if anything is hit.
 if ((BitmapNumber = xRayCast()) != 0)   // Something has been hit while casting
@@ -553,7 +553,7 @@ if (wFound)
         spNext->bNumber = 0;
         BuildSlice();           // Call BuildSlice() again to build the slice behind
         gPtr[mPos] = BitmapColumn;              // Store position of slice
-        if (!sPtr->bNumber)             // Slice behind is no longer visible
+        if (!sPtr->bNumber)             // Slice behind is no int32_ter visible
             {
             spNext = sPtr->Prev;       // Link up slices
             if (spNext != NULL)
@@ -585,7 +585,7 @@ void BuildSliceMulti(void)
     ULONG   xDistance,yDistance;
     ULONG   xd,yd,mf;
 
-    long    WallDistance;
+    int32_t    WallDistance;
     USHORT    distance,LightAdj;
     USHORT    BitmapColumn,yBitmapColumn;
     short   OldMapPosn,OldMapPosn1;
@@ -732,7 +732,7 @@ short AckCheckHit(short xPlayer,short yPlayer,short vAngle)
     short   WallCode;
     ULONG   WallDistance;
     ULONG   xd,yd,mf,yDistance;
-    long    CheckDist;
+    int32_t    CheckDist;
 
 WallDistance = 3000000;     // Set to a ridiculous value
 WallCode     = POV_NOTHING;
@@ -741,10 +741,10 @@ BitmapNumber = 0;           // Initialize to no bitmap found
 
 xPglobal = xPlayer;
 xBegGlobal = xPglobal & GRID_MASK;
-xPglobalHI = ((long)xPglobal << FP_SHIFT);
+xPglobalHI = ((int32_t)xPglobal << FP_SHIFT);
 yPglobal = yPlayer;
 yBegGlobal = yPglobal & GRID_MASK;
-yPglobalHI = ((long)yPglobal << FP_SHIFT);
+yPglobalHI = ((int32_t)yPglobal << FP_SHIFT);
 
 ViewAngle = vAngle;
 

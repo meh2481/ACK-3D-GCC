@@ -10,9 +10,9 @@
 
 //typedef unsigned short USHORT;
 
-#include "ack3d.h"      // Main ACK-3D internal and interface data structures
-#include "ackeng.h"     // Internal data structures and constants
-#include "ackext.h"     // Defines external (global) variables
+#include "ACK3D.H"      // Main ACK-3D internal and interface data structures
+#include "ACKENG.H"     // Internal data structures and constants
+#include "ACKEXT.H"     // Defines external (global) variables
 
 typedef struct
 {
@@ -59,7 +59,7 @@ extern unsigned char colordat[];
 //=============================================================================
 unsigned char *AckReadPCX(char *filename)
 {
-    long i;
+    int32_t i;
     int mode=NORMAL,nbytes;
     char abyte,*p;
     short   handle;
@@ -80,7 +80,7 @@ else // Use the resource instead
     {
     handle = rsHandle; // Use the handle to the resource file
     // Move to the location in the resource where the data is stored
-    _llseek(handle,rbaTable[(ULONG)filename],SEEK_SET);
+    _llseek(handle,(int)(rbaTable[(int64_t)filename]),SEEK_SET);
     }
 
 
@@ -136,9 +136,9 @@ for (i=0;i<pcx->imagebytes;i++)
 // end of file. For a resource file we need to find the position where
 // the next file starts and then backup 768 bytes
 if (rsHandle)
-    _llseek(handle,rbaTable[(ULONG)(filename + 1)]-768L,SEEK_CUR);
+    _llseek(handle,(int)(rbaTable[(int64_t)(filename + 1)])-768,SEEK_CUR);
 else
-    _llseek(handle,-768L,SEEK_END);
+    _llseek(handle,-768,SEEK_END);
 
 // Store the palette data in our global colordat array
 _lread(handle,colordat,768);

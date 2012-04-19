@@ -11,12 +11,12 @@
 //#include <fcntl.h>
 //#include <sys\stat.h>
 #include <string.h>
-#include "ackse.h"
-#include "ackres.h"
-#include "ack3d.h"
+#include "ACKSE.H"
+#include "ACKRES.H"
+#include "ACK3D.H"
 
 extern "C" {
-#include "keys.h"
+#include "KEYS.H"
 extern  UCHAR   *BackArray[];
 };
 
@@ -117,10 +117,7 @@ if (ResScrollBack)
     bPtr = AckReadPCX((char *)ResScrollBack);
 
     if (bPtr == NULL)
-    {
-        printf("bPtr = NULL\n");
         return(8);
-    }
 
     ProcessBackDrop(bPtr);
     AckFree(bPtr);

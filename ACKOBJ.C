@@ -4,7 +4,7 @@
 //#include <windows.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <conio.h>
+//#include <conio.h>
 //#include <dos.h>
 //#include <mem.h>
 //#include <io.h>
@@ -14,9 +14,9 @@
 //#include <sys\stat.h>
 #include <limits.h>
 
-#include "ack3d.h"      // Main ACK-3D internal and interface data structures
-#include "ackeng.h"     // Internal data structures and constants
-#include "ackext.h"     // Defines external (global) variables
+#include "ACK3D.H"      // Main ACK-3D internal and interface data structures
+#include "ACKENG.H"     // Internal data structures and constants
+#include "ACKEXT.H"     // Defines external (global) variables
 
 extern  short   gWinStartX;   // Global variables to define the left and
 extern  short   gWinEndX;     // right edge of the viewport
@@ -43,11 +43,11 @@ extern  void    (*WallMaskRtn)(void);
 // tan (angle) = dy/dx. The look-up table LongTanTable[] is used to
 // access tangent values of angles.
 //北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
-short AckGetObjectAngle(long dx,long dy)
+short AckGetObjectAngle(int32_t dx,int32_t dy)
 {
     short   i,quadrant,objAngle;
     short   Beg;
-    long    avalue;
+    int32_t    avalue;
 
 if (dx == 0 || dy == 0)    // Test to see if angle is 0, 90, 180, or 270
     {
@@ -148,14 +148,14 @@ return(objAngle);
 }
 
 //北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
-// Internal function that returns the square root of a long value.
+// Internal function that returns the square root of a int32_t value.
 // This function is called by Find)bject().
 //北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
-short long_sqrt(long v)
+short int32_t_sqrt(int32_t v)
 {
     short     i;
     unsigned  short result,tmp;
-    unsigned  long low,high;
+    uint32_t low,high;
 
 if (v <= 1L) return((unsigned)v);   // Value is less than 1; return value
 low = v;                            // Initialize starting variables
@@ -189,7 +189,7 @@ void FindObject(void)
     short   minAngle,maxAngle,objAngle;
     short   objColumn;
     USHORT  distance;
-    long    dx,dy;
+    int32_t    dx,dy;
     short   count;
     short   ObjNum,oQuad,pQuad,numsides,afact;
     short   NewX;
@@ -199,7 +199,7 @@ void FindObject(void)
 //    short   MaxObjs;
     short   SliceLen;
     USHORT  BmpColumn;
-    long    xp,yp;
+    int32_t    xp,yp;
 //    short   wht;
     UCHAR   *wall;
 //    UCHAR   *pTable;
@@ -262,7 +262,7 @@ if (FoundObjectCount)       // Make sure objects were found during ray casting
             }
 
         // Get the distance to the object
-        distance = long_sqrt((dx * dx) + (dy * dy));
+        distance = int32_t_sqrt((dx * dx) + (dy * dy));
         // No need to check further if it's too far away
         if (distance >= MaxDistance)
             continue;
@@ -378,6 +378,7 @@ if (FoundObjectCount)       // Make sure objects were found during ray casting
         // width of the object.
         ColEnd = NewX + wt;
         // Finally get the pointer to the actual bitmap
+        //printf("bitmap #: %d\n",ObjNum);
         wall = omaps[ObjNum];
         // Pick up the transparent flags at end of bitmap
         bmpFlags = &wall[BITMAP_SIZE];
@@ -423,7 +424,7 @@ if (FoundObjectCount)       // Make sure objects were found during ray casting
                             saNext = sa2->Prev;
                             while (sa2 != sa) // Move slice down to create
                                 {             // a space for new slice
-                                memcpy(sa2,saNext,sizeof(SLICE)-9);
+                                memcpy(sa2,saNext,sizeof(SLICE)-(sizeof(SLICE*) * 2));
                                 sa2->Active = saNext->Active;
                                 sa2 = sa2->Prev;
                                 saNext = saNext->Prev;
@@ -450,7 +451,7 @@ if (FoundObjectCount)       // Make sure objects were found during ray casting
                         {                  // closer than current slice
                         sa->Active = 1;
                         saNext = sa->Next;
-                        memcpy(saNext,sa,sizeof(SLICE)-9);
+                        memcpy(saNext,sa,sizeof(SLICE)-(sizeof(SLICE*) * 2));
                         sa->Distance = distance;
                         sa->bColumn  = BmpColumn;
                         sa->bNumber  = ObjNum;

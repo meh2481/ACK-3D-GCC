@@ -10,8 +10,8 @@
 #include <string.h>
 //#include <sys\stat.h>
 
-#include "ack3d.h"
-#include "ackeng.h"
+#include "ACK3D.H"
+#include "ACKENG.H"
 
 //北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
 // Creates an overlay buffer that contains non-transparent information

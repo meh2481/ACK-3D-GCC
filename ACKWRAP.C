@@ -1,17 +1,18 @@
 //#include <windows.h>
+#include "windowsredef.h"
 #include <stdlib.h>
 #include <stdio.h>
 //#include <dos.h>
 //#include <mem.h>
-#include <io.h>
-#include <fcntl.h>
+//#include <io.h>
+//#include <fcntl.h>
 #include <time.h>
 #include <string.h>
 //#include <sys\stat.h>
 
-#include "ack3d.h"
-#include "ackeng.h"
-#include "ackext.h"
+#include "ACK3D.H"
+#include "ACKENG.H"
+#include "ACKEXT.H"
 
 typedef struct {
 	int	sel;
@@ -57,7 +58,7 @@ short AckWrapUp (ACKENG * ae)
 
   if (rsHandle)
     {
-      close (rsHandle);
+      _lclose(rsHandle);
       rsHandle = 0;
     }
 

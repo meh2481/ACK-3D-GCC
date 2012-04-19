@@ -1,49 +1,49 @@
 //#include <windows.h>
 #include <stdio.h>
 
-#include "ack3d.h"
-#include "ackeng.h"
+#include "ACK3D.H"
+#include "ACKENG.H"
 
-long scPtr;
+int32_t scPtr;
 UCHAR *bmWall;
 
-long bmDistance;
-long BackDropRows;
+int32_t bmDistance;
+int32_t BackDropRows;
 USHORT ScreenOffset;
 
-long xPglobal;
-long yPglobal;
-long xBegGlobal;
-long yBegGlobal;
+int32_t xPglobal;
+int32_t yPglobal;
+int32_t xBegGlobal;
+int32_t yBegGlobal;
 
 ACKENG *aeGlobal;
 USHORT *xGridGlobal;
 USHORT *yGridGlobal;
-long xPglobalHI;
-long yPglobalHI;
+int32_t xPglobalHI;
+int32_t yPglobalHI;
 ULONG *rbaTable;
 short rsHandle;
 
-long LastX1;
-long LastY1;
-long iLastX;
-long iLastY;
+int32_t LastX1;
+int32_t LastY1;
+int32_t iLastX;
+int32_t iLastY;
 
-long x_xPos;
-long x_yPos;
-long x_xNext;
-long x_yNext;
-long y_xPos;
-long y_yPos;
-long y_xNext;
-long y_yNext;
+int32_t x_xPos;
+int32_t x_yPos;
+int32_t x_xNext;
+int32_t x_yNext;
+int32_t y_xPos;
+int32_t y_yPos;
+int32_t y_xNext;
+int32_t y_yNext;
 
 short MaxDistance;
 short LightFlag;
 short ErrorCode;
 
-long xMapPosn;
-long yMapPosn;
+int32_t xMapPosn;
+int32_t yMapPosn;
 
 USHORT *Grid;
 USHORT *ObjGrid;
@@ -53,7 +53,7 @@ SLICE *sPtr;
 short TotalSpecial;
 
 short DistanceTable[MAX_DISTANCE + 1];
-long *AdjustTable;
+int32_t *AdjustTable;
 
 short xSecretmPos;
 short xSecretmPos1;
@@ -66,18 +66,18 @@ short ySecretColumn;
 short TotalSecret;
 short ViewColumn;
 
-long *SinTable;
-long *CosTable;
+int32_t *SinTable;
+int32_t *CosTable;
 
-long *LongTanTable;
-long *LongInvTanTable;
-long InvCosTable[INT_ANGLE_360];
-long InvSinTable[INT_ANGLE_360];
-long *LongCosTable;
-long *ViewCosTable;
+int32_t *LongTanTable;
+int32_t *LongInvTanTable;
+int32_t InvCosTable[INT_ANGLE_360];
+int32_t InvSinTable[INT_ANGLE_360];
+int32_t *LongCosTable;
+int32_t *ViewCosTable;
 
-long *xNextTable;
-long *yNextTable;
+int32_t *xNextTable;
+int32_t *yNextTable;
 
 short LastFloorAngle = -1;
 short LastFloorX;
@@ -103,28 +103,28 @@ UCHAR WorkPalette[768];
 UCHAR *BackArray[INT_ANGLE_360];
 short Resolution;
 
-long Flooru;
-long Floorv;
-long Floordu;
-long Floordv;
-long Floorkx;
-long Floorky;
-long Floorku;
-long Floorkv;
-long Floorkdu;
-long Floorkdv;
+int32_t Flooru;
+int32_t Floorv;
+int32_t Floordu;
+int32_t Floordv;
+int32_t Floorkx;
+int32_t Floorky;
+int32_t Floorku;
+int32_t Floorkv;
+int32_t Floorkdu;
+int32_t Floorkdv;
 UCHAR *Floorbm;
 UCHAR *Floorscr;
 UCHAR *FloorscrTop;
 UCHAR *Floorptr2;
 UCHAR *Floors1;
 UCHAR *Floors2;
-long Floorht;
-long Floorwt;
+int32_t Floorht;
+int32_t Floorwt;
 short Floorvht;
 short Flooreht;
-long FloorLastbNum;
-long FloorLastbm;
+int32_t FloorLastbNum;
+int32_t FloorLastbm;
 
 short ViewHeight = 31;
 short CeilingHeight = 31;
@@ -143,7 +143,7 @@ UCHAR  HitMap[4096];
 UCHAR *VidSeg;
 char *scantables[96];
 UCHAR	AckKeys[128];	// Buffer for keystrokes
-long AckTimerCounter;
+int32_t AckTimerCounter;
 
 // **** End of Data ****
 

@@ -5,19 +5,19 @@
 //#include <windows.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ackwin.h"
-#include "ack3d.h"
+#include "ACKWIN.H"
+#include "ACK3D.H"
 #include <stdio.h>
 
 extern "C" {
-#include "keys.h"
+#include "KEYS.H"
 };
 
 //MEH
 extern int         nWindowW;
 extern int         nWindowH;
 
-#include "ackres.h"
+#include "ACKRES.H"
 extern    ACKENG        *ae;            // Interface structure
 extern    bool          bNoShow;        // Do not display if true
 //extern    HWND          hwndApp;

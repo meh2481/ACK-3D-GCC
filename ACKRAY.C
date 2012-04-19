@@ -12,9 +12,9 @@
 #include <time.h>
 #include <string.h>
 //#include <sys\stat.h>
-#include "ack3d.h"
-#include "ackeng.h"
-#include "ackext.h"
+#include "ACK3D.H"
+#include "ACKENG.H"
+#include "ACKEXT.H"
 
 #ifndef UINT
 #define UINT unsigned int
@@ -42,8 +42,8 @@ for (i = 0; i < FoundObjectCount; i++)
 return(result);
 }
 
-   extern long	x_xPos,x_yPos,x_xNext,x_yNext;
-   extern long	y_xPos,y_yPos,y_xNext,y_yNext;
+   extern int32_t	x_xPos,x_yPos,x_xNext,x_yNext;
+   extern int32_t	y_xPos,y_yPos,y_xNext,y_yNext;
 
 //*************************************************************************
 //
@@ -66,7 +66,7 @@ else
     }
 
 // Calculate the Y coordinate for the current square
-x_yPos = (((long)x_xPos - (long)xPglobal) * LongTanTable[ViewAngle]) + yPglobalHI;
+x_yPos = (((int32_t)x_xPos - (int32_t)xPglobal) * LongTanTable[ViewAngle]) + yPglobalHI;
 
 }
 
@@ -84,8 +84,8 @@ UINT xRayCast(void)
 //    short     xCenter,yCenter,xAdj;
 //    short     ObjPosn;
 //    short     oBegX,oBegY;
-    long    xd,yd,sy;
-    long    ObjDist;
+    int32_t    xd,yd,sy;
+    int32_t    ObjDist;
 
 while (1)
     {
@@ -169,15 +169,15 @@ UINT OldxRay(void)
 //    short     TablePosn;
     short     MapPosn;
 //    short     xBeg;
-    long    xPos,xNext;
+    int32_t    xPos,xNext;
 //    short     BitmapColumn;
 //    short     xCenter,yCenter,xAdj;
 //    short     ObjPosn;
 //    short     oBegX,oBegY;
-    long    yPos;
-    long    yNext;
-    long    xd,yd,sy;
-    long    ObjDist;
+    int32_t    yPos;
+    int32_t    yNext;
+    int32_t    xd,yd,sy;
+    int32_t    ObjDist;
 
 yNext = yNextTable[ViewAngle];	// PreCalc'd value of BITMAP_WIDTH * Tan(angle)
 
@@ -194,7 +194,7 @@ else
     }
 
 // Calculate the Y coordinate for the current square
-yPos = (((long)xPos - (long)xPglobal) * LongTanTable[ViewAngle]) + yPglobalHI;
+yPos = (((int32_t)xPos - (int32_t)xPglobal) * LongTanTable[ViewAngle]) + yPglobalHI;
 
 while (1)
     {
@@ -289,7 +289,7 @@ else
     }
 
 // Calculate the X coordinate for the current square
-y_xPos = (((long)y_yPos - (long)yPglobal) * LongInvTanTable[ViewAngle]) + xPglobalHI;
+y_xPos = (((int32_t)y_yPos - (int32_t)yPglobal) * LongInvTanTable[ViewAngle]) + xPglobalHI;
 
 }
 
@@ -306,7 +306,7 @@ UINT yRayCast(void)
 //    short     xCenter,yCenter,yAdj;
 //    short     ObjPosn;
 //    short     oBegX;
-    long    xd,yd,ObjDist,sx;
+    int32_t    xd,yd,ObjDist,sx;
 
 while (1)
     {
@@ -390,14 +390,14 @@ UINT OldyRay(void)
 //    short     i,j,mx,my;
     short     MapPosn;
 //    short     yBeg;
-    long    yPos,yNext;
+    int32_t    yPos,yNext;
 //    short     BitmapColumn;
 //    short     xCenter,yCenter,yAdj;
 //    short     ObjPosn;
 //    short     oBegX;
-    long    xPos;
-    long    xNext;
-    long    xd,yd,ObjDist,sx;
+    int32_t    xPos;
+    int32_t    xNext;
+    int32_t    xd,yd,ObjDist,sx;
 
 xNext = xNextTable[ViewAngle];	// Pre-calc'd value of BITMAP_WIDTH / tan(angle)
 
@@ -414,7 +414,7 @@ else
     }
 
 /* Calculate the X coordinate for the current square */
-xPos = (((long)yPos - (long)yPglobal) * LongInvTanTable[ViewAngle]) + xPglobalHI;
+xPos = (((int32_t)yPos - (int32_t)yPglobal) * LongInvTanTable[ViewAngle]) + xPglobalHI;
 
 while (1)
     {
@@ -502,15 +502,15 @@ UINT xRayMulti(UINT MinDist,short MinHeight)
 //    short     TablePosn;
     short     MapPosn;
 //    short     xBeg;
-    long    xPos,xNext;
+    int32_t    xPos,xNext;
 //    short     BitmapColumn;
 //    short     xCenter,yCenter,xAdj;
 //    short     ObjPosn;
 //    short     oBegX,oBegY;
-    long    yPos;
-    long    yNext;
-    long    xd,yd;
-//    long    ObjDist;
+    int32_t    yPos;
+    int32_t    yNext;
+    int32_t    xd,yd;
+//    int32_t    ObjDist;
 
 yNext = yNextTable[ViewAngle];	/* PreCalc'd value of BITMAP_WIDTH * Tan(angle) */
 
@@ -527,7 +527,7 @@ else
     }
 
 /* Calculate the Y coordinate for the current square */
-yPos = (((long)xPos - (long)xPglobal) * LongTanTable[ViewAngle]) + yPglobalHI;
+yPos = (((int32_t)xPos - (int32_t)xPglobal) * LongTanTable[ViewAngle]) + yPglobalHI;
 
 while (1)
     {
@@ -571,14 +571,14 @@ UINT yRayMulti(UINT MinDist,short MinHeight)
 //    short     i,j,mx,my;
     short     MapPosn;
 //    short     yBeg;
-    long    yPos,yNext;
+    int32_t    yPos,yNext;
 //    short     BitmapColumn;
 //    short     xCenter,yCenter,yAdj;
 //    short     ObjPosn;
 //    short     oBegX;
-    long    xPos;
-    long    xNext;
-    long    xd,yd;
+    int32_t    xPos;
+    int32_t    xNext;
+    int32_t    xd,yd;
 
 xNext = xNextTable[ViewAngle];	/* Pre-calc'd value of BITMAP_WIDTH / tan(angle) */
 
@@ -595,7 +595,7 @@ else
     }
 
 /* Calculate the X coordinate for the current square */
-xPos = (((long)yPos - (long)yPglobal) * LongInvTanTable[ViewAngle]) + xPglobalHI;
+xPos = (((int32_t)yPos - (int32_t)yPglobal) * LongInvTanTable[ViewAngle]) + xPglobalHI;
 
 while (1)
     {

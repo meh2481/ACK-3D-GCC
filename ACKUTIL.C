@@ -10,9 +10,9 @@
 #include <string.h>
 //#include <sys\stat.h>
 
-#include "ack3d.h"
-#include "ackeng.h"
-#include "ackext.h"
+#include "ACK3D.H"
+#include "ACKENG.H"
+#include "ACKEXT.H"
 
 typedef struct {
 	int	sel;
@@ -25,7 +25,7 @@ void AckKbdInt(void);
 void AckTimerHandler(void);
 void AckSetTextMode(void);
 
-	long	AckMemUsed;
+	int32_t	AckMemUsed;
 	short	AckDisplayErrors;
 	SELOFF	OldKeybdInt;
 	char	AckKeyboardSetup;
@@ -72,7 +72,7 @@ void *AckMalloc(size_t mSize)
     /*
     UCHAR   *mBlock;
 
-mSize += sizeof(long);
+mSize += sizeof(int32_t);
 mSize++;
 mBlock = (UCHAR*)malloc(mSize);
 
@@ -89,8 +89,8 @@ if (mBlock == NULL)
 
 (*(UCHAR *)mBlock) = 0xF2;
 mBlock += 1;
-(*(long *)mBlock) = mSize;
-mBlock += sizeof(long);
+(*(int32_t *)mBlock) = mSize;
+mBlock += sizeof(int32_t);
 AckMemUsed += mSize;
 
 return(mBlock);*/
@@ -105,10 +105,10 @@ void AckFree(void *m)
     free(m);
     /*
     UCHAR   *mBlock;
-    long    mSize;
+    int32_t    mSize;
 
 mBlock = (UCHAR *)m;
-mBlock -= sizeof(long);
+mBlock -= sizeof(int32_t);
 mBlock -= 1;
 if ((*(UCHAR *)mBlock) != 0xF2)
     {
@@ -122,7 +122,7 @@ if ((*(UCHAR *)mBlock) != 0xF2)
     }
 
 mBlock += 1;
-mSize = (*(long *)mBlock);
+mSize = (*(int32_t *)mBlock);
 mBlock -= 1;
 AckMemUsed -= mSize;
 free(mBlock);*/
@@ -147,7 +147,7 @@ if (!rsHandle)
 else
     {
     handle = rsHandle;
-    _llseek(handle,rbaTable[(ULONG)PalName],SEEK_SET);
+    _llseek(handle,(int)(rbaTable[(int64_t)PalName]),SEEK_SET);
     }
 
 if (handle > 0)

@@ -5,8 +5,8 @@
 #ifndef ACKRR_H
 #define ACKRR_H
 
-#include "ack3d.h"
-#include "ackext.h"
+#include "ACK3D.H"
+#include "ACKEXT.H"
 
 void ShowCol(void);                     // Routines for drawing a slice
 void ShowColMask(void);                 // column by column
@@ -19,38 +19,38 @@ void ShowColMaskLow(void);
 //External variables needed by the functions in ACKRTNRecode.c
 extern short   gWinEndX;
 extern short   gWinStartX;
-extern long    WallDistTable[VIEW_WIDTH];
+extern int32_t    WallDistTable[VIEW_WIDTH];
 extern UCHAR*  gScrnBuffer;
 extern short   gWinHeight;
-extern UCHAR   *scVid;         // Variables used in low level routines for
-extern UCHAR   *scWall;                // building and drawing slices
-extern UCHAR   *scPal;
-extern short   scdst;
-extern short   scwht;
-extern short   scmulti;
-extern short   sctopht;
-extern short   scbotht;
-extern short   scsavwht;
-extern short   scmulcnt;
-extern UCHAR   *scsavVid;
-extern USHORT    scbNum;
-extern UCHAR   *scMulData;
-extern UCHAR   *scColumn;
+//extern UCHAR   *scVid;         // Variables used in low level routines for
+//extern UCHAR   *scWall;                // building and drawing slices
+//extern UCHAR   *scPal;
+//extern short   scdst;
+//extern short   scwht;
+//extern short   scmulti;
+//extern short   sctopht;
+//extern short   scbotht;
+//extern short   scsavwht;
+//extern short   scmulcnt;
+//extern UCHAR   *scsavVid;
+//extern USHORT    scbNum;
+//extern UCHAR   *scMulData;
+//extern UCHAR   *scColumn;
 extern UCHAR   *gPtr;
 extern UCHAR   *gmPtr;
 extern short   gBitmapNumber;
 extern short   gBitmapColumn;
 extern short   gyBitmapNumber;
 extern short   gyBitmapColumn;
-extern long    gWallDistance;
+extern int32_t    gWallDistance;
 extern short   gmPos;
 extern DOORS   *gDoor;
 extern DOORS   *gDoorPosn;
 extern short   wFound;
 extern UCHAR   *mgPtr;
 extern short   gWinFullWidth;          // Global variables for setting up a viewport
-extern long    gWinDWORDS;             // These are the global variables used by the
-extern long    gWinStartOffset;                // low-level assembly language routines to draw slices
+extern int32_t    gWinDWORDS;             // These are the global variables used by the
+extern int32_t    gWinStartOffset;                // low-level assembly language routines to draw slices
 extern short   gWinStartX;
 extern short   gWinStartY;
 extern short   gWinEndX;
@@ -60,7 +60,7 @@ extern short   gWinHalfHeight;
 extern short   gWinWidth;
 extern short   gCenterRow;
 extern short   gCenterOff;
-extern long    gBottomOff;
+extern int32_t    gBottomOff;
 extern UCHAR   *gScrnBufferCenter;
 extern UCHAR   *gScrnBuffer;
 extern UCHAR   *gBkgdBuffer;
@@ -89,46 +89,46 @@ unsigned int ShadingRegion;
 extern ColorRange  ranges[64];
 //extern ACKENG* ae;
 
-/*extern long scPtr;
+/*extern int32_t scPtr;
 extern UCHAR *bmWall;
 
-extern long bmDistance;
-extern long BackDropRows;
+extern int32_t bmDistance;
+extern int32_t BackDropRows;
 extern USHORT ScreenOffset;
 
-extern long xPglobal;
-extern long yPglobal;
-extern long xBegGlobal;
-extern long yBegGlobal;
+extern int32_t xPglobal;
+extern int32_t yPglobal;
+extern int32_t xBegGlobal;
+extern int32_t yBegGlobal;
 
 extern ACKENG *aeGlobal;
 extern USHORT *xGridGlobal;
 extern USHORT *yGridGlobal;
-extern long xPglobalHI;
-extern long yPglobalHI;
+extern int32_t xPglobalHI;
+extern int32_t yPglobalHI;
 extern ULONG *rbaTable;
 extern short rsHandle;
 
-extern long LastX1;
-extern long LastY1;
-extern long iLastX;
-extern long iLastY;
+extern int32_t LastX1;
+extern int32_t LastY1;
+extern int32_t iLastX;
+extern int32_t iLastY;
 
-extern long x_xPos;
-extern long x_yPos;
-extern long x_xNext;
-extern long x_yNext;
-extern long y_xPos;
-extern long y_yPos;
-extern long y_xNext;
-extern long y_yNext;
+extern int32_t x_xPos;
+extern int32_t x_yPos;
+extern int32_t x_xNext;
+extern int32_t x_yNext;
+extern int32_t y_xPos;
+extern int32_t y_yPos;
+extern int32_t y_xNext;
+extern int32_t y_yNext;
 
 extern short MaxDistance;
 extern short LightFlag;
 extern short ErrorCode;
 
-extern long xMapPosn;
-extern long yMapPosn;
+extern int32_t xMapPosn;
+extern int32_t yMapPosn;
 
 extern USHORT *Grid;
 extern USHORT *ObjGrid;
@@ -138,7 +138,7 @@ extern SLICE *sPtr;
 extern short TotalSpecial;
 
 extern short DistanceTable[MAX_DISTANCE + 1];
-extern long *AdjustTable;
+extern int32_t *AdjustTable;
 
 extern short xSecretmPos;
 extern short xSecretmPos1;
@@ -151,18 +151,18 @@ extern short ySecretColumn;
 extern short TotalSecret;
 extern short ViewColumn;
 
-extern long *SinTable;
-extern long *CosTable;
+extern int32_t *SinTable;
+extern int32_t *CosTable;
 
-extern long *LongTanTable;
-extern long *LongInvTanTable;
-extern long InvCosTable[INT_ANGLE_360];
-extern long InvSinTable[INT_ANGLE_360];
-extern long *LongCosTable;
-extern long *ViewCosTable;
+extern int32_t *LongTanTable;
+extern int32_t *LongInvTanTable;
+extern int32_t InvCosTable[INT_ANGLE_360];
+extern int32_t InvSinTable[INT_ANGLE_360];
+extern int32_t *LongCosTable;
+extern int32_t *ViewCosTable;
 
-extern long *xNextTable;
-extern long *yNextTable;
+extern int32_t *xNextTable;
+extern int32_t *yNextTable;
 
 extern short LastFloorAngle = -1;
 extern short LastFloorX;
@@ -183,28 +183,28 @@ extern UCHAR WorkPalette[768];
 extern UCHAR *BackArray[INT_ANGLE_360];
 extern short Resolution;
 
-extern long Flooru;
-extern long Floorv;
-extern long Floordu;
-extern long Floordv;
-extern long Floorkx;
-extern long Floorky;
-extern long Floorku;
-extern long Floorkv;
-extern long Floorkdu;
-extern long Floorkdv;
+extern int32_t Flooru;
+extern int32_t Floorv;
+extern int32_t Floordu;
+extern int32_t Floordv;
+extern int32_t Floorkx;
+extern int32_t Floorky;
+extern int32_t Floorku;
+extern int32_t Floorkv;
+extern int32_t Floorkdu;
+extern int32_t Floorkdv;
 extern UCHAR *Floorbm;
 extern UCHAR *Floorscr;
 extern UCHAR *FloorscrTop;
 extern UCHAR *Floorptr2;
 extern UCHAR *Floors1;
 extern UCHAR *Floors2;
-extern long Floorht;
-extern long Floorwt;
+extern int32_t Floorht;
+extern int32_t Floorwt;
 extern short Floorvht;
 extern short Flooreht;
-extern long FloorLastbNum;
-extern long FloorLastbm;
+extern int32_t FloorLastbNum;
+extern int32_t FloorLastbm;
 
 extern short ViewHeight = 31;
 extern short CeilingHeight = 31;
@@ -223,7 +223,7 @@ extern UCHAR  HitMap[4096];
 extern UCHAR *VidSeg;
 extern char *scantables[96];
 extern UCHAR	AckKeys[128];	// Buffer for keystrokes
-extern long AckTimerCounter;*/
+extern int32_t AckTimerCounter;*/
 
 #endif
 

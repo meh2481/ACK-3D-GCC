@@ -12,9 +12,9 @@
 #include <string.h>
 //#include <sys\stat.h>
 
-#include "ack3d.h"
-#include "ackeng.h"
-#include "ackext.h"
+#include "ACK3D.H"
+#include "ACKENG.H"
+#include "ACKEXT.H"
 
 //************************************************************************
 // Internal function called by AckMovePOV(). Checks the passed X and Y
@@ -116,8 +116,8 @@ yBottom = yTop + GRID_SIZE;
 
 // Calculate the x,y distance of movement using the angle and distance
 // x1,y1 = the new coordinate position of the player.
-x1 = xp + (long)((CosTable[Angle] * Amount) >> FP_SHIFT);
-y1 = yp + (long)((SinTable[Angle] * Amount) >> FP_SHIFT);
+x1 = xp + (int32_t)((CosTable[Angle] * Amount) >> FP_SHIFT);
+y1 = yp + (int32_t)((SinTable[Angle] * Amount) >> FP_SHIFT);
 // Calculate current map position for the xGrid[] and yGrid[] arrays
 mPos = yTop + (xp >> 6); // Current Map Posn
 
@@ -129,7 +129,7 @@ if (x1 < xp)				        // Are we moving left?
     	if (x1 < xLeft || abs(x1-xLeft) < 28)   // We crossed the wall or we're too close
     	    {
     	    x1 = xp;                // Use the previous x position
-    	    HitResult = POV_SLIDEX;   // We're possibly sliding along the left x wall
+    	    HitResult = POV_SLIDEX;   // We're possibly sliding aint32_t the left x wall
     	    }
     	}
     }
@@ -141,7 +141,7 @@ if (x1 > xp)				        // Are we moving right?
     	if (x1 > xRight || abs(xRight-x1) < 28) // We crossed the wall or we're too close
     	    {
     	    x1 = xp;                // Use the previous x position
-    	    HitResult = POV_SLIDEX; // We're possibly sliding along the right x wall
+    	    HitResult = POV_SLIDEX; // We're possibly sliding aint32_t the right x wall
     	    }
     	}
     }
@@ -153,7 +153,7 @@ if (y1 < yp)				        // Are we moving up?
     	if (y1 < yTop || abs(y1-yTop) < 28) // We crossed the wall or we're too close
     	    {
     	    y1 = yp;                // Use the previous y position
-    	    HitResult = POV_SLIDEY; // We're possibly sliding along the top wall
+    	    HitResult = POV_SLIDEY; // We're possibly sliding aint32_t the top wall
     	    }
     	}
     }
@@ -165,7 +165,7 @@ if (y1 > yp)				        // Are we moving down?
     	if (y1 > yBottom || abs(yBottom-y1) < 28) // We crossed the wall or we're too close
     	    {
     	    y1 = yp;                // Use the previous y position
-    	    HitResult = POV_SLIDEY;    // We're sliding along the bottom wall
+    	    HitResult = POV_SLIDEY;    // We're sliding aint32_t the bottom wall
     	    }
     	}
     }
@@ -407,7 +407,7 @@ if (x1 < xp)				    // Are we moving left?
     	if (x1 < xLeft || abs(x1-xLeft) < 28)	// We crossed the wall or we're too close
     	    {
     	    x1 = xp;                 // Use the previous x position
-    	    HitResult = POV_SLIDEX;     // We're possibly sliding along the left x wall
+    	    HitResult = POV_SLIDEX;     // We're possibly sliding aint32_t the left x wall
     	    }
     	}
     }
@@ -419,7 +419,7 @@ if (x1 > xp)				    // Are we moving right?
     	if (x1 > xRight || abs(xRight-x1) < 28) // We crossed the wall or we're too close
     	    {
     	    x1 = xp;                // Use the previous x position
-    	    HitResult = POV_SLIDEX;        // We're possibly sliding along the right x wall
+    	    HitResult = POV_SLIDEX;        // We're possibly sliding aint32_t the right x wall
     	    }
     	}
     }
@@ -431,7 +431,7 @@ if (y1 < yp)				    // Are we moving up?
     	if (y1 < yTop || abs(y1-yTop) < 28) // We crossed the wall or we're too close
     	    {
     	    y1 = yp;                       // Use the previous y position
-    	    HitResult = POV_SLIDEY;     // We're possibly sliding along the top wall
+    	    HitResult = POV_SLIDEY;     // We're possibly sliding aint32_t the top wall
     	    }
     	}
     }
@@ -443,7 +443,7 @@ if (y1 > yp)				     // Are we moving down?
     	if (y1 > yBottom || abs(yBottom-y1) < 28) // We crossed the wall or we're too close
     	    {
     	    y1 = yp;                     // Use the previous y position
-    	    HitResult = POV_SLIDEY;       // We're sliding along the bottom wall
+    	    HitResult = POV_SLIDEY;       // We're sliding aint32_t the bottom wall
     	    }
     	}
     }

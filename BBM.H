@@ -11,13 +11,13 @@
 #define TRUE  1
 #endif
 
-#define LONG unsigned long
-#define ULONG unsigned long
+#define LONG uint32_t
+#define ULONG uint32_t
 #define UBYTE unsigned char
 #define UWORD unsigned short
-#define DWORD unsigned long
+#define DWORD uint32_t
 
-long ByteFlipLong(long);
+int32_t ByteFlipLong(int32_t);
 UCHAR *Readiff(char *);	 /* this returns back a bitmap with a picture in it*/
 
 typedef LONG ID;  /* An ID is four printable ASCII chars like FORM or DPPV */
@@ -35,7 +35,7 @@ typedef LONG ID;  /* An ID is four printable ASCII chars like FORM or DPPV */
 typedef struct
     {
     ID	  type;
-    long  cksize;
+    int32_t  cksize;
     ID	  subtype;
     } form_chunk;
 
@@ -94,7 +94,7 @@ typedef struct {
 /* Use this constant instead of sizeof(ColorRegister). */
 #define sizeofColorRegister  3
 
-long ByteFlipLong(long);
+int32_t ByteFlipLong(int32_t);
 void ByteFlipShort(short *);
 short iffswab(unsigned short);
 short swab(unsigned short);

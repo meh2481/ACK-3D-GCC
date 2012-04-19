@@ -3,8 +3,8 @@
 /* USED TO RID OURSELVES OF THE MANY CASTING PROBLEMS */
 #define CAST(t,f) (t)(f)
 /*#define CAST(t,f) (f)*/ /* BACK TO NORMAL */
-
-typedef unsigned long	ULONG;
+#include <stdint.h>
+typedef uint32_t	ULONG;
 typedef unsigned short	USHORT;
 typedef unsigned char	UCHAR;
 
@@ -378,7 +378,7 @@ short AckGetObjectHit(void);
 short AckGetWallHit(void);
 /* Returns the map location of the last wall hit */
 
-short AckGetObjectAngle(long DeltaX,long DeltaY);
+short AckGetObjectAngle(int32_t DeltaX,int32_t DeltaY);
 /* Returns the angle (0-1919) between two objects */
 
 short AckDeleteObject(ACKENG *ae,short ObjectIndex);

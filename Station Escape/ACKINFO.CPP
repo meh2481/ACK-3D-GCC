@@ -9,21 +9,35 @@
     #define LSEEK _llseek
     #define LREAD _lread
 #else
+    #define BUILD_FOR_LINUX 0
+
+    #if BUILD_FOR_LINUX
+        #include <sys/types.h>
+        #include <unistd.h>
+        #include <sys/io.h>
+        #include <ctype.h>
+        #define O_BINARY 0
+        #define stricmp strcasecmp
+        #define strnicmp strncasecmp
+    #else
+        #include <io.h>
+    #endif
+
     #define LSEEK lseek
     #define LREAD read
 #endif
 
-#pragma hdrstop
+//#pragma hdrstop
 #include <stdlib.h>
 #include <stdio.h>
 //#include <dos.h>
 //#include <mem.h>
-#include <io.h>
+//#include <io.h>
 #include <fcntl.h>
 //#include <process.h>
 //#include <sys\stat.h>
 #include <string.h>
-#include "ack3d.h"
+#include "ACK3D.H"
 
 
 extern "C" {
@@ -45,6 +59,18 @@ extern ACKENG   *ae;
     int     ResScreenBack;
     int     ResScrollBack;
 
+//MEH Need to make function in place of strupr()
+#if BUILD_FOR_LINUX
+void strupr(char* cString)
+{
+    char *p = cString;
+    while (*p)
+    {
+        *p = toupper(*p);
+        ++p;
+    }
+}
+#endif
 
 //=============================================================================
 // Reads a text line from the resource file
@@ -108,7 +134,7 @@ return(NULL);
 int LoadWall(void)
 {
     int     wnum,rnum,result;
-    long    pos;
+    int32_t    pos;
     char    *lb;
 
 
@@ -122,9 +148,9 @@ if (lb == NULL)
 
 rnum = atoi(lb);            // Resource number
 
-pos = LSEEK(rsHandle,0L,SEEK_CUR);
+pos = LSEEK(rsHandle,0,SEEK_CUR);
 result = AckLoadWall(ae,(short)wnum,(char *)rnum);
-LSEEK(rsHandle,pos,SEEK_SET);
+LSEEK(rsHandle,(int)(pos),SEEK_SET);
 
 return(result);
 }
@@ -136,7 +162,7 @@ return(result);
 int LoadObject(void)
 {
     int     onum,rnum,result;
-    long    pos;
+    int32_t    pos;
     char    *lb;
 
 lb = LineBuffer;
@@ -148,9 +174,9 @@ if (lb == NULL)
     return(-2);
 
 rnum = atoi(lb);            // Resource number
-pos = LSEEK(rsHandle,0L,SEEK_CUR);
+pos = LSEEK(rsHandle,0,SEEK_CUR);
 result = AckLoadObject(ae,(short)onum,(char *)rnum);
-LSEEK(rsHandle,pos,SEEK_SET);
+LSEEK(rsHandle,(int)(pos),SEEK_SET);
 
 return(result);
 }
@@ -164,7 +190,7 @@ char *SkipSpaces(char *s)
 {
 
 while (*s == ' ' || *s == '\t' || *s == ',')
-    strcpy(s,&s[1]);
+    s++;//strcpy(s,&s[1]);
 
 return(s);
 }
@@ -268,6 +294,7 @@ if (lb == NULL)
     return(-5);
 
 NumViews = (short)atoi(lb);
+
 if (NumViews < 1)
     return(-6);
 
@@ -276,10 +303,12 @@ if (lb == NULL)
     return(-7);
 
 bmPerView = (short)atoi(lb);
+
 if (bmPerView < 1)
     return(-7);
 
 vnum = (short)(NumViews * bmPerView);
+
 if (vnum > MAX_OBJ_BITMAPS)
     return(-8);
 
@@ -312,11 +341,11 @@ int AckProcessInfoFile(void)
 {
     int     result;
     int     mode;
-    long    pos;
+    int32_t    pos;
 
 LineNumber = 0;
 // Position to start of info file within resource file
-LSEEK(rsHandle,rbaTable[0],SEEK_SET);
+LSEEK(rsHandle,(int)(rbaTable[0]),SEEK_SET);
 
 mode = result = 0;
 
@@ -404,9 +433,9 @@ while (!result)
             if (!strnicmp(LineBuffer,"MAPFILE:",8))
                 {
                 MapResource = atoi(&LineBuffer[8]);
-                pos = LSEEK(rsHandle,0L,SEEK_CUR);
+                pos = LSEEK(rsHandle,0,SEEK_CUR);
                 result = AckReadMapFile(ae,(char *)MapResource);
-                LSEEK(rsHandle,pos,SEEK_SET);
+                LSEEK(rsHandle,(int)(pos),SEEK_SET);
                 break;
                 }
 

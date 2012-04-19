@@ -12,17 +12,17 @@
 //#include <windows.h>
 #include "windowsredef.h"
 #include <stdio.h>
-#include <conio.h>
+//#include <conio.h>
 //#include <process.h>
 //#include <bios.h>
 //#include <fcntl.h>
 #include <malloc.h>
 //#include <mem.h>
 
-#include "ack3d.h"
-#include "ackeng.h"
-#include "ackext.h"
-#include "bbm.h"
+#include "ACK3D.H"
+#include "ACKENG.H"
+#include "ACKEXT.H"
+#include "BBM.H"
 
 extern  int  errno;
 
@@ -63,7 +63,7 @@ unsigned char *AckReadBBM(char *picname)
    form_chunk   fchunk;
    ChunkHeader  chunk;
    BitMapHeader bmhd;
-//   long length,fpos;
+//   int32_t length,fpos;
    char value;     // must remain signed, no matter what. ignore any warnings.
    short sofar;
    short height;
@@ -78,7 +78,7 @@ unsigned char *AckReadBBM(char *picname)
     else
         {
         handle = rsHandle;
-        _llseek(rsHandle,rbaTable[(ULONG)picname],SEEK_SET);
+        _llseek(rsHandle,(int)(rbaTable[(int64_t)(picname)]),SEEK_SET);
         }
 
     _lread(handle,&fchunk,sizeof(form_chunk));
@@ -199,7 +199,7 @@ unsigned char *AckReadBBM(char *picname)
           break; // leave if we've unpacked the BODY
           }
 
-        _llseek(handle,chunk.ckSize,SEEK_CUR);
+        _llseek(handle,(int)(chunk.ckSize),SEEK_CUR);
                 }
 
     if (!rsHandle)
@@ -208,9 +208,9 @@ unsigned char *AckReadBBM(char *picname)
         }
 
 
-long ByteFlipLong(long NUMBER)
+int32_t ByteFlipLong(int32_t NUMBER)
    {
-   long Y, T;
+   int32_t Y, T;
    short I;
 
    T = NUMBER;

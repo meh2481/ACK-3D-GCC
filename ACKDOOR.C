@@ -11,9 +11,9 @@
 #include <string.h>
 //#include <sys\stat.h>
 
-#include "ack3d.h"
-#include "ackeng.h"
-#include "ackext.h"
+#include "ACK3D.H"
+#include "ACKENG.H"
+#include "ACKEXT.H"
 
 extern DOORS *gDoor;
 
@@ -52,14 +52,14 @@ for (i = 0; i < MAX_DOORS; i++)
                 dPtr->ColOffset -= dPtr->Speed;  // Reduce column offset
                 continue;
                 }
-            // Is the door along an x wall
+            // Is the door aint32_t an x wall
             if (dPtr->Type == DOOR_XCODE)
                 {  // Store bitmap ids for doors
                 xGridGlobal[mPos] = dPtr->mCode;
                 xGridGlobal[mPos1] = dPtr->mCode1;
                 }
             else
-                {  // Door is along a y wall
+                {  // Door is aint32_t a y wall
                 yGridGlobal[mPos] = dPtr->mCode;
                 yGridGlobal[mPos1] = dPtr->mCode1;
                 }
@@ -272,7 +272,7 @@ short AckCheckDoorOpen (short xPlayer, short yPlayer, short PlayerAngle)
 DoorCode = POV_NODOOR;
 // Check to see if player is close to a wall
 i = AckCheckHit (xPlayer, yPlayer, PlayerAngle);
-// A secret door is found along an x wall
+// A secret door is found aint32_t an x wall
 if (i == 1 && xGridGlobal[xMapPosn] & DOOR_TYPE_SECRET)
     {
     if (xSecretColumn == 0) // Player is on the right side of door
@@ -300,7 +300,7 @@ if (i == 1 && xGridGlobal[xMapPosn] & DOOR_TYPE_SECRET)
         }
     }
 
-// A secret door is found along a y wall
+// A secret door is found aint32_t a y wall
 if (i == 2 && yGridGlobal[yMapPosn] & DOOR_TYPE_SECRET)
     {
     if (ySecretColumn == 0)
@@ -327,7 +327,7 @@ if (i == 2 && yGridGlobal[yMapPosn] & DOOR_TYPE_SECRET)
         }
     }
 
-// A sliding or split door is found along an x wall
+// A sliding or split door is found aint32_t an x wall
 if (i == 1 && (xGridGlobal[xMapPosn] & (DOOR_TYPE_SLIDE + DOOR_TYPE_SPLIT)))
     {
     j = FindDoorSlot (xMapPosn);
@@ -356,7 +356,7 @@ if (i == 1 && (xGridGlobal[xMapPosn] & (DOOR_TYPE_SLIDE + DOOR_TYPE_SPLIT)))
         }
     }
 
-// A sliding or split door is found along a y wall
+// A sliding or split door is found aint32_t a y wall
 if (i == 2 && (yGridGlobal[yMapPosn] & (DOOR_TYPE_SLIDE + DOOR_TYPE_SPLIT)))
     {
     j = FindDoorSlot (yMapPosn);
