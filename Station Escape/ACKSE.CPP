@@ -1,9 +1,7 @@
 // Example source for using ACK-3D in Windows
 // (c) 1995 ACK Software (Lary Myers)
-//#include <windows.h>
 #include <stdlib.h>
 #include <string.h>
-#include "ACKWIN.H"
 #include "ACKSE.H"
 #include <stdio.h>
 #include <fstream> //MEH for file streams. Much easier for me to use
@@ -11,78 +9,33 @@
 #ifdef __APPLE__
 #include <SDL/SDL.h>
 #include <SDL/SDL_rotozoom.h>
+#include <SDL/SDL_gfxPrimitives.h>
 #else
 #include <SDL.h>
 #include <SDL_rotozoom.h>
+#include <SDL_gfxPrimitives.h>
 #endif
 
-/*#define IDM_RES1    1100
-#define IDM_RES2    1101
-#define IDM_RES3    1102
-//#define IDM_HELP    1103
-//#define IDM_BACK    1104
-#define IDM_RES4    1105
-#define IDM_RES5    1106*/
-
-#include "ACK3D.H"
-extern "C" {
 #include "KEYS.H"
 void AckDoubleBuffer(UCHAR *Src,UCHAR *Dest);
 extern  UCHAR   colordat[];
-};
 
 // Some globals to use
 SDL_Surface* MainScreen;
-ACKENG      *ae = 0;        // Interface structure
-//HWND        hwndApp;
 UCHAR       kbPressed[128];
-void        *pAckBuffer = 0;
-//HDC         AckBuffer = 0;
-//HPALETTE    hpalApp;
-//RGBQUAD     ColorTable[256];
-//HBITMAP     gbmOldMonoBitmap = 0;
 int         StretchFactor = 1;
-//int         nBitmapW;
-//int         nBitmapH;        // WinG bitmap dimensions.
 int         nWindowW;
 int         nWindowH;
-//short       nIntroCount;
 short       nInfoMode;
-//HINSTANCE   hInstGlobal;
 bool        bNoShow;        // Do not display if true
 bool        bInStatus;      // Recursive flag for status checks
-//UCHAR       *pIntroBuf;
 short       nSecondsLeft;
-//bool        bUpdateTime;
 UINT        nTimerID;
-//WORD        nTimerCount;
 short       nRepairObjectCount;
 UCHAR       SavePal[768];
 
-ColorRange  ranges[64] = {
-    {16,16},
-    {32,16},
-    {48,16},
-    {64,16},
-    {80,16},
-    {96,8},
-    {104,8},
-    {112,8},
-    {120,8},
-    {128,8},
-    {136,8},
-    {144,8},
-    {152,8},
-    {160,8},
-    {168,8},
-    {176,8},
-    {184,8},
-    {192,16},
-    {208,16},
-    {224,16},
-    {240,15},
-    {0,0}
-};
+//MEH Ack wrapper class variable
+AckWrapper* g_Ack3D;
 
 // Keeps the list of movable objects
 short   nMoveObjectList[] = {
@@ -90,33 +43,31 @@ short   nMoveObjectList[] = {
   18,19,
   0}; // Denotes end of table
 
-  //MEH buffer for holding our pallette data. Read in from "pallette.txt"
-  PalletteSlot pallette[256];
-
   //MEH 24-bit screen buffer, for Win32 reasons
-   unsigned char* OffscreenBuffer; //For holding our offscreen buffer data
+//   unsigned char* OffscreenBuffer; //For holding our offscreen buffer data
    #define  ACK3D_SCREENWIDTH    320
    #define  ACK3D_SCREENHEIGHT   200
    #define  BYTES_PER_PIXEL     4
 
+   #define SPACEMAN_BITMAP 17
+
    SDL_Rect rcResolution;
 
-//HDC hOffscreenDC = 0;
-//HBITMAP hOffscreenBitmap;
+
+   //Global variables to deal with health
+   #define MAX_HEALTH           320
+   #define HEALTH_PLASMA_HIT    5
+   #define HEALTH_SPACEMAN_HIT  10
+
+   int g_iHealth = MAX_HEALTH;
 
 //****************************************************************************
 // The main program window
 //****************************************************************************
-/*int WINAPI WinMain (HINSTANCE hThisInstance,
-                     HINSTANCE hPrevInstance,
-                     LPSTR lpszArgument,
-                     int nCmdShow)*/
 #undef main
 int main(int argc, char* argv[])
 {
     int     result;
-//  HBITMAP hbm;
-//  char    szBuf[40];
 
     //Initialize SDL
     if ( SDL_Init( SDL_INIT_VIDEO | SDL_INIT_TIMER) < 0 )
@@ -159,7 +110,7 @@ int main(int argc, char* argv[])
 
     //printf("Resolution: %dx%d\n", rcResolution.w, rcResolution.h);
     //Create our handle to the screen
-    MainScreen = SDL_SetVideoMode(rcResolution.w, rcResolution.h, 32, SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_FULLSCREEN);
+    MainScreen = SDL_SetVideoMode(rcResolution.w, rcResolution.h, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);//|SDL_FULLSCREEN);
     if ( !MainScreen )
     {
         printf("Unable to set video resolution: %s\n", SDL_GetError());
@@ -167,153 +118,33 @@ int main(int argc, char* argv[])
     }
 
   //Allocate memory for our offscreen buffer
-  OffscreenBuffer = (unsigned char*)malloc(ACK3D_SCREENWIDTH * ACK3D_SCREENHEIGHT * BYTES_PER_PIXEL);
-
-//pIntroBuf = NULL;
-// Register our Window class if this is the first time in
-//if (!hPrevInstance)
-//  if (!Register(hThisInstance))
-//    return(-1);
+  //OffscreenBuffer = (unsigned char*)malloc(ACK3D_SCREENWIDTH * ACK3D_SCREENHEIGHT * BYTES_PER_PIXEL);
 
 //MEH Hide the cursor and set it to the center of the viewport window
 SDL_WarpMouse(rcResolution.w / 2, rcResolution.h / 2);
 SDL_ShowCursor(SDL_DISABLE);
 
-//hInstGlobal = hThisInstance;
-
-//---------------Begin ACK-3D specific, rather than Windows-specific, code
-// Prime the ACK-3D engine with our startup parameters
-if (InitACKEngine())
-  return(-1);
-
-// Open our default resource file and load bitmaps, etc.
-AckOpenResource("pics.dtf");
-result = AckProcessInfoFile();
-if (result)
-  {
-  printf("ACK-3D Error: %d in resource file",result);
-  AckCloseResource();
-  return(-1);
-  }
-LoadBackDrop(); //MEH WHY WASN'T THIS CALLED HERE??!?! RGH
-AckCloseResource();
-AckSetupPalRanges(ae, ranges);
+//---------------MEH Begin ACK-3D specific, rather than SDL-specific, code
+g_Ack3D = new AckWrapper("pics.dtf");
+g_Ack3D->AssignObjectCallback(ObjectCollision); //Set our collision callback function
 //---------------MEH End ACK-3D - specific code
-ReadInPallette();//MEH read in the pallette data from "pallette.txt"
 
 srand(SDL_GetTicks());
 
-//bUpdateTime = false;
-//nTimerCount = 0;
 nRepairObjectCount = 0;
 nSecondsLeft = (60 * 60) + (60 * 30);
-
-
-// Create the actual window to display the rendered view
-//if (!CreateAll(hThisInstance))
-//  return(-1);
-
-//nIntroCount = 0;
 
 // Here we loop until the application closes
 result = MessageLoop();
 
-//Kill all the ACK-3D buffers and stuffz
-AckWrapUp(ae);
-
-// Free up our buffers we used from WinG
-/*if (AckBuffer)
-  {
-  hbm = (HBITMAP)SelectObject(AckBuffer, gbmOldMonoBitmap);
-  DeleteObject(hbm);
-  DeleteDC(AckBuffer);
-  }*/
-
-//DeleteObject(hOffscreenDC);
-//DeleteObject(hOffscreenBitmap);
-
 //MEH Show cursor again
 SDL_ShowCursor(SDL_ENABLE);
 
-//Delete allocated memory for offscreen buffer
-free(OffscreenBuffer);
+//Clean up the ACK-3D engine
+delete g_Ack3D;
 
 return(result);
 }
-
-//****************************************************************************
-// Registers the window class.
-//****************************************************************************
-/*bool Register(HINSTANCE hInst)
-{
-  WNDCLASS wndclass;
-
-wndclass.style         = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
-wndclass.lpfnWndProc   = AckWndProc;
-wndclass.cbClsExtra    = 0;
-wndclass.cbWndExtra    = 0;
-wndclass.hInstance     = hInst;
-wndclass.hIcon         = LoadIcon(hInst,"ACKICON.ICO");
-wndclass.hCursor       = LoadCursor( NULL, IDC_ARROW );
-wndclass.hbrBackground = (HBRUSH)GetStockObject( WHITE_BRUSH );
-wndclass.lpszMenuName  = NULL;
-wndclass.lpszClassName = "ACK3DVIEW";
-
-if (!RegisterClass(&wndclass))
-  return(false);
-return(true);
-}*/
-
-//****************************************************************************
-// Loads the WinG DLL and creates the display window for the application.
-//****************************************************************************
-/*bool CreateAll(HINSTANCE hInst)
-{
-  int     windx, windy;
-  HMENU   hMenu;
-
-//nBitmapW = 319;                 // Default size (window client size to use)
-//nBitmapH = 199;
-
-windx = windy = GetSystemMetrics(SM_CXBORDER)*2;
-windx += nBitmapW;
-windy += nBitmapH + GetSystemMetrics(SM_CYCAPTION) - 1;
-nWindowW = windx;
-nWindowH = windy;
-
-// Note that in this example we're not allowing any resizing borders
-// This helps to keep things alittle more constrained with the current
-// ACK-3D engine.
-hwndApp = CreateWindow ("ACK3DVIEW",       // Class name
-                "ACK-3D Station Escape",   // Caption
-                WS_POPUP|WS_BORDER|WS_CAPTION|WS_VISIBLE|WS_SYSMENU,
-                0,                      // Position
-                0,
-                windx,windy,            // Size
-                (HWND)NULL,             // Parent window
-                (HMENU)NULL,            // use class menu
-                hInst,                  // handle to window instance
-                (LPSTR)NULL );          // no params to pass on
-
-if (!hwndApp)
-  {
-  MessageBox(NULL,"Unable to create 3D window","ERROR",MB_OK);
-  return(false);
-  }
-
-// Now we'll display the window and setup the WinG buffer when we
-// receive the WM_SIZE message.
-ShowWindow(hwndApp,SW_NORMAL);
-hMenu = GetSystemMenu(hwndApp,false);
-// Add in the menu items for the game window
-AppendMenu(hMenu,MF_SEPARATOR,0,NULL);
-AppendMenu(hMenu,MF_STRING,IDM_RES1,"320 x 200");
-AppendMenu(hMenu,MF_STRING,IDM_RES2,"480 x 300");
-AppendMenu(hMenu,MF_STRING,IDM_RES3,"640 x 400");
-AppendMenu(hMenu,MF_STRING,IDM_RES4,"800 x 600");
-AppendMenu(hMenu,MF_STRING,IDM_RES5,"1280 x 800");
-return(true);
-}*/
 
 //****************************************************************************
 // Here is where we loop until the application terminates.
@@ -345,36 +176,105 @@ for (;;)
     if(iNewTick - iCurTicks > 30) //~30 fps
     {
         iCurTicks = iNewTick;
-        DoCycle();  // Display the 3D window
+        DoCycle();  // Display the 3D window, check key presses, etc
     }
   }
 return 0;
 }
 
 //****************************************************************************
-// Turns light shading on and off.
+// Our collision callback - called when an object moves each cycle
 //****************************************************************************
-void LightOnOff(short nMode)
+void ObjectCollision(NEWOBJECT* pObj, UCHAR nIndex, short nResult)
 {
-  bool    bSet = false;
+    //First test: see if it's a spaceman
+    bool bSpaceman = false;
+    for(int i = 0; nMoveObjectList[i]; i++)
+    {
+        if(nMoveObjectList[i] == nIndex)
+        {
+            bSpaceman = true;
+            break;
+        }
+    }
+    if(bSpaceman)
+    {
+        //FOLLOW PLAYER! AHAHA
+        short dx = ae->xPlayer - pObj->x;
+        short dy = ae->yPlayer - pObj->y;
+        short dir = AckGetObjectAngle(dx,dy);
+        //But only if within two tile widths
+        if(sqrt(dx * dx + dy * dy) > GRID_WIDTH * 2)
+            pObj->Dir = dir;
+        if(sqrt(dx * dx + dy * dy) < GRID_WIDTH)    //If close to player, bounce away (TODO: Hurt player)
+            pObj->Dir = WrapAngle(dir - INT_ANGLE_180);
+        /*dir -= pObj->Dir;
+        dir = WrapAngle(dir);
+        if(dir >= INT_ANGLE_180)
+            pObj->Dir-=3;
+        if(dir < INT_ANGLE_180)
+            pObj->Dir+=3;*/
+        //If it is a spaceman, and he hit something
+        if (nResult != POV_NOTHING)
+        {
+            if(nResult == POV_XWALL)
+            {
+                //Just slide off walls
+            }
+            if(nResult == POV_YWALL)
+            {
 
-if (!nMode && ae->LightFlag == SHADING_OFF)
-  {
-  ae->LightFlag = SHADING_ON;
-  bSet = true;
-  }
+            }
+            if(nResult == POV_OBJECT)
+            {
+                //Turn around (bounce off objects)
+                pObj->Dir += INT_ANGLE_180;
+                if (pObj->Dir >= INT_ANGLE_360)
+                    pObj->Dir -= (short)INT_ANGLE_360;
+            }
+            if(nResult == POV_PLAYER)
+            {
+                HurtPlayer(HEALTH_SPACEMAN_HIT);
+            }
+        }
+        //Make the spaceman fire if he's not within a couple tile widths of player (Firing point blank kinda screws the system)
+        if(sqrt(dx * dx + dy * dy) > GRID_WIDTH * 2.5)
+            CheckFiring(nIndex,pObj);
 
-if (nMode && ae->LightFlag == SHADING_ON)
-  {
-  ae->LightFlag = SHADING_OFF;
-  bSet = true;
-  }
+    }
 
-if (bSet)
-  {
-  AckSetupPalRanges(ae,ranges);
-  AckRegisterStructure(ae);
-  }
+    //Check if it's a plasma bolt
+    if(nIndex >= BOMB_START_INDEX && nIndex <= BOMB_END_INDEX)
+    {
+        if (nResult != POV_NOTHING)
+        {
+            if (nIndex == BOMB_END_INDEX && nResult != POV_PLAYER)
+            {
+                pObj->Active = 0;
+                if (nResult == POV_OBJECT)
+                    CheckBadGuys(AckGetObjectHit());
+            }
+            else
+            {
+                if(nIndex != BOMB_END_INDEX && nResult == POV_PLAYER)
+                {
+                    HurtPlayer(HEALTH_PLASMA_HIT);
+                }
+                int nHitIndex = 0;
+                if (nResult == POV_OBJECT)
+                    nHitIndex = AckGetObjectHit();
+                if (nHitIndex != pObj->id)
+                {
+                    pObj->Active = 0;
+                    NEWOBJECT* pSman = ae->ObjList[pObj->id];
+                    if (pSman != NULL)
+                        pSman->id = 0;
+                    pObj->id = 0;
+                }
+            }
+        }
+    }
+
 }
 
 //****************************************************************************
@@ -422,7 +322,7 @@ return(0);
 //****************************************************************************
 // Moves the active bombs.
 //****************************************************************************
-void MoveBombs(void)
+/*void MoveBombs(void)
 {
   UCHAR   Index;
   UCHAR   nHitIndex;
@@ -464,10 +364,10 @@ for (Index = BOMB_START_INDEX; Index <= BOMB_END_INDEX; Index++)
       }
     }
   }
-}
+}*/
 
 //****************************************************************************
-// See if a bad guy is not cuurently firing a bomb. If so, set up the bomb
+// See if a bad guy is not currently firing a bomb. If so, set up the bomb
 // for firing.
 //****************************************************************************
 void CheckFiring(short nObjIndex,NEWOBJECT *pObj)
@@ -487,9 +387,11 @@ if (Index)
   dx = ae->xPlayer - pObj->x;
   dy = ae->yPlayer - pObj->y;
   pBomb = ae->ObjList[Index];
+  pBomb->x = pObj->x + ((dx > 0) ? (32) : (-32));
+  pBomb->y = pObj->y + ((dy > 0) ? (32) : (-32));
+  dx = ae->xPlayer - pBomb->x;
+  dy = ae->yPlayer - pBomb->y;
   pBomb->Dir = AckGetObjectAngle(dx,dy);
-  pBomb->x = pObj->x;
-  pBomb->y = pObj->y;
   pBomb->id = nObjIndex;
   pBomb->Speed = 32;
   pBomb->Active = 1;
@@ -500,7 +402,7 @@ if (Index)
 //****************************************************************************
 // Move the objects in the game.
 //****************************************************************************
-void MoveObjects(void)
+/*void MoveObjects(void)
 {
   short       i,nIndex,nResult;
   short       nRow,nCol;
@@ -518,18 +420,7 @@ while (nMoveObjectList[i])
     nResult = AckMoveObjectPOV(nIndex,pObj->Dir,pObj->Speed);
     if (nResult != POV_NOTHING)
       {
-      if (nResult == POV_XWALL || nResult == POV_YWALL)
-        {
-        nResult = AckGetWallHit();
-        if (nResult & DOOR_TYPE_SPLIT)
-          {
-          continue;
-          }
-        }
-        // Turn object to get away from the door
-        pObj->Dir += (short)((rand() % INT_ANGLE_180));
-        if (pObj->Dir >= INT_ANGLE_360)
-          pObj->Dir -= (short)INT_ANGLE_360;
+
         }
     else
       CheckFiring(nIndex,pObj);
@@ -539,7 +430,7 @@ while (nMoveObjectList[i])
 MoveBombs();  // Move the active bombs
 
 // This code determines if the player is in a special location
-// of the game map and toggles the light shadding if the player
+// of the game map and toggles the light shading if the player
 // reaches this region. This is used to create a unique
 // dynamic light shading effect
 nRow = (short)(ae->yPlayer >> 6);
@@ -547,21 +438,21 @@ nCol = (short)(ae->xPlayer >> 6);
 if (nRow == 33)
   {
   if (nCol == 8)
-    LightOnOff(0);
+    g_Ack3D->SetLightShading(ACK_LIGHTSHADING_ON);
   else
   if (nCol == 10)
-    LightOnOff(1);
+    g_Ack3D->SetLightShading(ACK_LIGHTSHADING_OFF);
   }
 
 if (nCol == 24)
   {
   if (nRow == 5)
-    LightOnOff(0);
+    g_Ack3D->SetLightShading(ACK_LIGHTSHADING_ON);
   else
   if (nRow == 7)
-    LightOnOff(1);
+    g_Ack3D->SetLightShading(ACK_LIGHTSHADING_OFF);
   }
-}
+}*/
 
 //****************************************************************************
 // Fires off a bomb at the player.
@@ -625,6 +516,14 @@ if (nRepairObjectCount == REPAIR_OBJECTS_NEEDED)
     return true;
     }
   }
+
+  //Check and see if player ran out of health (died)
+  if(g_iHealth <= 0)
+  {
+      printf("The spacemen gloat as they point their guns at your head and blast your life away.\nYou have died...\n");
+      return true;      //game over
+  }
+
   bInStatus = false;
 return false;       //Keep going
 }
@@ -632,80 +531,10 @@ return false;       //Keep going
 //****************************************************************************
 // Displays the current scene in the opened window.
 //****************************************************************************
-//#pragma argsused
 void AckPaint()
 {
-  short   nHours,nMin,nSec,t;
-  char    szBuf[40];
-
-if (ae != NULL)
-  {
-  AckCheckObjectMovement();   // Check object animation
-  MoveObjects();              // Application object movement
-  AckBuildView();             // Render the 3D view
-  }
-
-// Check for any introduction graphics to display
-//if (nIntroCount)
-//  {
-//  nIntroCount = 0;  //Segfaults on memcpy(), and I don't want this anyway.
-//  }
-
-//Create our offscreen HDC if we haven't yet
-/*if(!hOffscreenDC)
-{
-    hOffscreenDC = CreateCompatibleDC(hdc);
-    hOffscreenBitmap = CreateCompatibleBitmap(hdc, 320, 200);
-    SelectObject(hOffscreenDC, hOffscreenBitmap);
-}*/
-
-/*if (StretchFactor != 1)
-  {
     //Fill in our screenbuffer from ACK's buffer
-    unsigned char* pBufferData = OffscreenBuffer;
-
-    //Try out my stretch function instead of StretchBlt()
-    unsigned char* cTempImg = (unsigned char*)malloc(ptCurResolution.y * ptCurResolution.x);    //Create offscreen buffer large enough to hold the image result
-    //Stretch the image
-    StretchImage(ae->ScreenBuffer, cTempImg, 320, 200, ptCurResolution.x, ptCurResolution.y);
-
-    for(int r = 0; r < ptCurResolution.x; r++)
-    {
-        for(int c = 0; c < ptCurResolution.y; c++)
-        {
-            *pBufferData++ = pallette[cTempImg[c+ptCurResolution.y*r]].r;
-            *pBufferData++ = pallette[cTempImg[c+ptCurResolution.y*r]].g;
-            *pBufferData++ = pallette[cTempImg[c+ptCurResolution.y*r]].b;
-            *pBufferData++ = 255; //Alpha = 255 by default. You could probably do crazy stuff with this, but I'm not going to.
-        }
-    }
-
-    //Create icon and draw it
-    HICON ic = CreateIcon(hInstGlobal, ptCurResolution.x, ptCurResolution.y, 1, 32, NULL, (BYTE*)(OffscreenBuffer));
-    if(ic == NULL)
-        printf("Icon NULL\n");
-    else
-        DrawIconEx(hdc, 0, 0, ic, ptCurResolution.x, ptCurResolution.y, NULL, NULL, DI_NORMAL);
-
-    //Free our memory
-    free(cTempImg);
-    if(ic != NULL)
-        DestroyIcon(ic);
-  }
-else
-{*/
-    //Fill in our screenbuffer from ACK's buffer
-    unsigned char* pBufferData = OffscreenBuffer;
-    for(int r = 0; r < 320; r++)
-    {
-        for(int c = 0; c < 200; c++) //AHAHA JOKE
-        {
-            *pBufferData++ = pallette[ae->ScreenBuffer[c+200*r]].r;
-            *pBufferData++ = pallette[ae->ScreenBuffer[c+200*r]].g;
-            *pBufferData++ = pallette[ae->ScreenBuffer[c+200*r]].b;
-            *pBufferData++ = 255; //Alpha = 255 by default. You could probably do crazy stuff with this, but I'm not going to.
-        }
-    }
+    const unsigned char* pBufferData = g_Ack3D->RenderView();
 
     Uint32 rmask, gmask, bmask, amask;
 
@@ -728,7 +557,7 @@ else
     //Copy over
     for(int r = 0; r < 320 * 200 * 4; r++)
     {
-        ((unsigned char*)tempSurface->pixels)[r] = OffscreenBuffer[r];
+        ((unsigned char*)tempSurface->pixels)[r] = pBufferData[r];
     }
 
     SDL_UnlockSurface(tempSurface);
@@ -737,95 +566,58 @@ else
     SDL_Surface* tempZoomed = zoomSurface(tempSurface,
                                           (float)(rcResolution.w) / (float)(ACK3D_SCREENWIDTH),
                                           (float)(rcResolution.h) / (float)(ACK3D_SCREENHEIGHT),
-                                          SMOOTHING_OFF);
+                                          SMOOTHING_OFF);   //Pixellated rather than blurry
 
-    // centre the bitmap on screen
+    // draw bitmap starting at 0,0
     SDL_Rect dstrect;
-    dstrect.x = 0;//(rcResolution.w - tempSurface->w) / 2;
-    dstrect.y = 0;//(rcResolution.h - tempSurface->h) / 2;
+    dstrect.x = 0;
+    dstrect.y = 0;
 
     SDL_BlitSurface(tempZoomed, 0, MainScreen, &dstrect);  //draw the temp surface to the screen
 
-    /*HICON ic = CreateIcon(hInstGlobal, 320, 200, 1, 32, NULL, (BYTE*)(OffscreenBuffer));
-    if(ic == NULL)
-        printf("Icon NULL\n");
-    DrawIconEx(hOffscreenDC, 0, 0, ic, 320, 200, NULL, NULL, DI_NORMAL);
-    if(StretchFactor == 1)
-        BitBlt(hdc,0,0,nBitmapW,nBitmapH,hOffscreenDC,0,0,SRCCOPY);
-    else
-        StretchBlt(hdc,0,0,ptCurResolution.x,ptCurResolution.y,hOffscreenDC,0,0,nBitmapW,nBitmapH,SRCCOPY);
-    DestroyIcon(ic);*/
+    //Draw health left in form of a green/yellow/red bar at bottom of screen
+    int r = 0;
+    int g = 255;    //Green if above half health
+    int b = 0;
 
-//if (bUpdateTime)
-//  {
-//  bUpdateTime = false;
-  nHours = (short)(nSecondsLeft / 3600);
+    //Yellow if less than half health
+    if(g_iHealth < MAX_HEALTH / 2)
+    {
+        r = 255;
+        g = 255;
+        b = 0;
+    }
+    //Red if less than 1/5th health
+    if(g_iHealth < MAX_HEALTH / 5)
+    {
+        r = 255;
+        g = 0;
+        b = 0;
+    }
+
+    //Draw the rectangle, 5 pixels tall
+    boxRGBA(MainScreen, 0, 195, g_iHealth, 200, r, g, b, 128);
+
+    //Print time left... no simple way to do it without SDL_TTF or a lot of extra work
+  /*nHours = (short)(nSecondsLeft / 3600);
   t = (short)(nHours * 3600);
   nMin = (short)((nSecondsLeft - t) / 60);
   nSec = (short)(nSecondsLeft - t - (nMin * 60));
-  sprintf(szBuf,"Station Escape - %02d:%02d:%02d",nHours,nMin,nSec);
-  //SetWindowText(hWnd,szBuf);
-//  }
+  sprintf(szBuf,"Station Escape - %02d:%02d:%02d",nHours,nMin,nSec); */
+
 SDL_Flip(MainScreen);   //Flip the double-buffered window to the screen
 SDL_FreeSurface(tempSurface);
 SDL_FreeSurface(tempZoomed);
 }
 
 //****************************************************************************
-// Adjust the actual window size to account for borders and a caption bar
-//****************************************************************************
-/*void SetNewWindowSize(HWND hWnd)
-{
-  int     windx,windy;
-ptCurResolution.x = nWindowW;
-ptCurResolution.y = nWindowH;
-windx = windy = GetSystemMetrics(SM_CXBORDER)*2;
-nWindowW += windx;
-nWindowH += windy + GetSystemMetrics(SM_CYCAPTION) - 1;
-SetWindowPos(hWnd,NULL,0,0,nWindowW,nWindowH,
-             SWP_NOMOVE|SWP_NOZORDER|SWP_NOCOPYBITS);
-}*/
-
-//****************************************************************************
 // Message handler for the 3D window
 //****************************************************************************
 void AckWndProc( SDL_Event event )
 {
-  //HDC         hDC;
-  //PAINTSTRUCT ps;
-//  POINT       ptCursor;
 
 switch (event.type)
   {
-  /*case WM_CREATE:
-    nTimerID = SetTimer(hWnd,1,1000,NULL);
-    break;
-
-  case WM_DESTROY:
-    if (nTimerID)
-      KillTimer(hWnd,nTimerID);
-    nTimerID = 0;
-    PostQuitMessage(0);
-    break;
-
-  case WM_TIMER:
-//    nTimerCount++;
-//    bUpdateTime = true;
-    if (nSecondsLeft)
-      nSecondsLeft--;
-    CheckStatus();
-    break;
-
-  case WM_SIZE:
-    AckDoSize(hWnd,lParam);
-    break;
-
-  case WM_PAINT:
-    BeginPaint(hWnd,&ps);
-    AckPaint(hWnd,ps.hdc);
-    EndPaint(hWnd,&ps);
-    break;*/
-
   case SDL_KEYDOWN:
     if (event.key.keysym.sym == SDLK_TAB)
       {
@@ -833,127 +625,170 @@ switch (event.type)
       break;
       }
 
-    //MEH End game if pressing Esc
-    /*if(wParam == VK_ESCAPE)   //elsewhere
-    {
-        if (nTimerID)
-            KillTimer(hWnd,nTimerID);
-        nTimerID = 0;
-        PostQuitMessage(0);
-    }*/
-
 // Fall through here
   case SDL_KEYUP:
-//    nIntroCount = 0;
     ProcessKeys(event);
     break;
 
   case SDL_MOUSEBUTTONDOWN:
     if(event.button.button == SDL_BUTTON_RIGHT)
-        AckCheckDoorOpen(ae->xPlayer,ae->yPlayer,ae->PlayerAngle);
+        g_Ack3D->OpenDoorForPlayer();
     if(event.button.button == SDL_BUTTON_LEFT)
         ShootBomb();
     break;
 
-  /*case WM_LBUTTONDOWN:
-    ShootBomb();
-    break;
-
-  case WM_MOUSEMOVE:
-    break;
-
-  case WM_LBUTTONUP:
-    break;
-
-  case WM_SYSCOMMAND:
-    switch (wParam)
-      {
-      case IDM_RES1:
-        if (StretchFactor != 1)
-          {
-          StretchFactor = 1;
-          nWindowW = 320;
-          nWindowH = 200;
-          SetNewWindowSize(hWnd);
-          }
-        break;
-
-      case IDM_RES2:
-        if (StretchFactor != 2)
-          {
-          StretchFactor = 2;
-          nWindowW = 480;
-          nWindowH = 300;
-          SetNewWindowSize(hWnd);
-          }
-          break;
-
-      case IDM_RES3:
-        if (StretchFactor != 3)
-          {
-          StretchFactor = 3;
-          nWindowW = 640;
-          nWindowH = 400;
-          SetNewWindowSize(hWnd);
-          }
-          break;
-      case IDM_RES4:
-        if (StretchFactor != 4)
-          {
-          StretchFactor = 4;
-          nWindowW = 800;
-          nWindowH = 600;
-          SetNewWindowSize(hWnd);
-          }
-          break;
-
-      case IDM_RES5:
-        if (StretchFactor != 5)
-          {
-          StretchFactor = 5;
-          nWindowW = 1280;
-          nWindowH = 800;
-          SetNewWindowSize(hWnd);
-          }
-          break;
-
-//      case IDM_HELP:
-//        nInfoMode = IM_HELP;
-//        DoInfoDlg(hInstGlobal,hWnd);
-//        break;
-
-//      case IDM_BACK:
-//        nInfoMode = IM_BACK;
-//        DoInfoDlg(hInstGlobal,hWnd);
-//        break;
-
-      default:
-        break;
-      }
-    return DefWindowProc( hWnd, iMessage, wParam, lParam );*/
-
   default:
-    break;//return DefWindowProc( hWnd, iMessage, wParam, lParam );
+    break;
   }
 }
 
-void ReadInPallette()
+//****************************************************************************
+// Use this routine to process a drawing cycle of the engine. The best place
+// to call this is within the message loop handler itself (see ACKEDIT.CPP for
+// and example). The routine will check the current status of the keyboard and
+// move the POV accordingly.
+//****************************************************************************
+void DoCycle(void)
 {
-    std::ifstream infile("pallette.txt");
-    if(infile.fail())
-        return;
-    for(int i = 0; i < 256; i++)
+    short   Amt;//,MoveAngle;
+    short   nResult;
+
+nResult = 0;
+Amt = 16;
+if (kbPressed[kbCtrl])
+    Amt = 32;
+
+if (kbPressed[kbLeftArrow])
+    nResult = g_Ack3D->MovePlayer(Amt, -INT_ANGLE_90);
+
+if (kbPressed[kbRightArrow])
+    nResult = g_Ack3D->MovePlayer(Amt, INT_ANGLE_90);
+
+if (kbPressed[kbDownArrow])
+    nResult = g_Ack3D->MovePlayer(Amt, INT_ANGLE_180);
+
+if (kbPressed[kbUpArrow])
+    nResult = g_Ack3D->MovePlayer(Amt);
+
+//Open any doors for the player - here's the spot to do it if we want automatic doors
+//AckCheckDoorOpen(ae->xPlayer,ae->yPlayer,ae->PlayerAngle);
+
+//MEH Make moving the mouse pan the view
+int xCursor, yCursor;
+SDL_GetMouseState(&xCursor, &yCursor);
+int iDistMoved = xCursor - rcResolution.w / 2;
+//Of course, we can multiply this by a scaling factor if we want to, but one ACK-3D 0.2-degree increment per pixel seems to work fine
+if(iDistMoved != 0)
+    g_Ack3D->AddToPlayerAngle(iDistMoved);
+SDL_WarpMouse(rcResolution.w / 2, rcResolution.h / 2);
+
+//Update the objects and such
+g_Ack3D->Update();
+//Draw the view
+AckPaint();
+
+//TODO: This is specific to Station Escape, and it doesn't work too well. Replace later
+if (nResult == POV_OBJECT)
     {
-        unsigned int r, g, b;
-        PalletteSlot p = {0, 0, 0};
-        infile >> r >> g >> b;
-        p.r = (unsigned char)r;
-        p.g = (unsigned char)g;
-        p.b = (unsigned char)b;
-        p.a = 255;
-        pallette[i] = p;
+    nResult = AckGetObjectHit();
+    if (nResult >= 20 && nResult <= 22)
+        {
+        ae->ObjList[nResult]->Active = 0;
+        nRepairObjectCount++;
+        }
     }
-    infile.close();
+}
+
+
+//****************************************************************************
+// Use this routine to process the windows messages WM_KEYDOWN and WM_KEYUP
+// as they are received. It will set a global array of virtual keyboard elements
+// to correspond to the key being pressed or released. The routine DoCycle will
+// then look at this keyboard array to determine if the POV should be moved
+// or rotated.
+//****************************************************************************
+void ProcessKeys(SDL_Event event)
+{
+
+switch (event.type)
+    {
+    case SDL_KEYDOWN:
+        switch (event.key.keysym.sym)
+            {
+            //MEH WASD instead of arrows
+            case SDLK_w:
+                kbPressed[kbUpArrow] = 1;
+                break;
+            case SDLK_s:
+                kbPressed[kbDownArrow] = 1;
+                break;
+            case SDLK_a:
+                kbPressed[kbLeftArrow] = 1;
+                break;
+            case SDLK_d:
+                kbPressed[kbRightArrow] = 1;
+                break;
+            case SDLK_LCTRL:
+                kbPressed[kbCtrl] = 1;
+                break;
+            case SDLK_ESCAPE:
+                kbPressed[kbEsc] = 1;
+                break;
+            case SDLK_SPACE:
+                g_Ack3D->OpenDoorForPlayer();//(ae->xPlayer,ae->yPlayer,ae->PlayerAngle);
+                break;
+            case SDLK_LSHIFT:
+                kbPressed[kbLeftShift] = 1;
+                break;
+            case SDLK_TAB:
+                kbPressed[kbAlt] = 1;
+                break;
+            default:
+                break;
+            }
+        break;
+
+    case SDL_KEYUP:
+        switch (event.key.keysym.sym)
+            {
+            case SDLK_w:
+                kbPressed[kbUpArrow] = 0;
+                break;
+            case SDLK_s:
+                kbPressed[kbDownArrow] = 0;
+                break;
+            case SDLK_a:
+                kbPressed[kbLeftArrow] = 0;
+                break;
+            case SDLK_d:
+                kbPressed[kbRightArrow] = 0;
+                break;
+            case SDLK_LCTRL:
+                kbPressed[kbCtrl] = 0;
+                break;
+            case SDLK_ESCAPE:
+                kbPressed[kbEsc] = 0;
+                break;
+            case SDLK_SPACE:
+                kbPressed[kbSpace] = 0;
+                break;
+            case SDLK_LSHIFT:
+                kbPressed[kbLeftShift] = 0;
+                break;
+            case SDLK_TAB:
+                kbPressed[kbAlt] = 0;
+                break;
+            default:
+                break;
+            }
+        break;
+    }
+
+}
+
+void HurtPlayer(int iAmount)
+{
+    g_iHealth -= iAmount;
 }
 
 /*

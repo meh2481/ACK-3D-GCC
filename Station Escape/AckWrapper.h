@@ -1,7 +1,14 @@
-/* Header file for ACK3D engine interface */
+//AckWrapper.h - nice C++ wrapper class for ACK-3D
+// (c) 2012 Mark Hutcheson
+
+#ifndef ACKWRAPPER_H
+#define ACKWRAPPER_H
+
+//-------Begin: Header file for ACK3D engine interface. Ripped from Station Escape example program.
 
 /* USED TO RID OURSELVES OF THE MANY CASTING PROBLEMS */
 #define CAST(t,f) (t)(f)
+#include <cstdlib>  //MEH for size_t
 #include <stdint.h>
 typedef uint32_t	ULONG;
 typedef unsigned short	USHORT;
@@ -309,7 +316,6 @@ short AckLoadWall(ACKENG *ae,short WallNumber,char *bmFileName);
 short AckLoadObject(ACKENG *ae,short BmpNumber,char *bmFileName);
 /* Loads an object bitmap and places it into the object array */
 
-//short AckCreateObject(ACKENG *ae,short ObjNumber,short NumBitmaps,UCHAR *bmNums);
 short AckCreateObject(ACKENG *ae,short ObjNumber);
 /* Fills in ObjList structure with information passed */
 
@@ -411,4 +417,92 @@ void *AckMalloc(size_t mSize);
 void AckFree(void *m);
 /* ALL memory allocated with AckMalloc must use AckFree to free memory */
 
+//-----------------------End: ACK3D.H from Station Escape example program
+#include <string>
+using std::string;
 
+//defines
+#define ACK_VIEWWIDTH     320
+#define ACK_VIEWHEIGHT    200       //Our screen width and height is set to 320x200
+#define ACK_BYTES_PER_PIXEL 4       //32-bit offscreen buffer
+
+#define ACK_LIGHTSHADING_OFF    0
+#define ACK_LIGHTSHADING_ON     1   //Used to turn light shading off or on
+
+extern ACKENG* ae; //Blah, this has to be global, or else nobody works. TODO: Fix later.
+
+//Structure for holding RGB data
+typedef struct {
+    unsigned char r, g, b, a;
+} PalletteSlot;
+
+//Wrap an angle to stay within 0 - 359 degree range
+inline short WrapAngle(short sAngle)
+{
+    if(sAngle >= INT_ANGLE_360)
+        sAngle -= INT_ANGLE_360;
+    if(sAngle < 0)
+        sAngle += INT_ANGLE_360;
+    return sAngle;
+}
+
+//AckWrapper class definition
+class AckWrapper
+{
+protected:
+    unsigned char*  m_OffscreenBuffer;  //Used to hold the data for the screen.
+    //MEH buffer for holding our pallette data. Read in from "pallette.txt"
+    PalletteSlot m_pallette[256]; //256 entries for 256 colors
+
+    AckWrapper() {};    //No default constructor
+    void ReadInPallette();      //Reads in the pallette from "pallette.txt"
+    short InitACKEngine();      //Creates and initializes ACK-3D
+    int AckProcessInfoFile();      //Processes the file that's been opened
+    int LoadBackDrop();             //load the bg from the resource file
+    void ProcessBackDrop(UCHAR *bPtr);  //and put it into the bg array
+    //and functions used by ProcessInfoFile():
+    int ReadLine();
+    char* GetNextParm(char* s);
+    int LoadWall();
+    int LoadObject();
+    char* SkipSpaces(char* s);
+    int CreateObject();
+    //------------------------------
+    //Callback function for when an object hits something
+    void	(*m_ObjectCollide)(NEWOBJECT* pObj, UCHAR nIndex, short nResult);
+
+public:
+    //Constructor/destructor
+    AckWrapper(string sFilename);   //Creates an ACK-3D engine from the specified map file
+    ~AckWrapper();  //Cleans up the ACK-3D engine and all memory
+
+    //General methods
+    const unsigned char*  RenderView();       //Builds the view, and returns a RGBA buffer to it.
+    //DO NOT FREE OR DELETE the pointer once you're done using it!
+
+    void            Update();           //Updates the engine- moves player, objects, etc
+
+    //Accessor methods
+    short GetPlayerAngle()              { return ae->PlayerAngle; };  //Get the player's current angle
+    void  SetPlayerAngle(short sAngle)   { ae->PlayerAngle = sAngle; }; //Set the viewing angle of the player. No error checking.
+    void  AddToPlayerAngle(short sVal);  //Add a positive or negative value to the player's angle. Has error checking.
+
+    void  SetLightShading(int iOnOff);   //Turns light shading on or off. Pass ACK_LIGHTSHADING_ON/OFF to turn on or off
+    int   GetLightShading();            //Returns ACK_LIGHTSHADING_ON or ACK_LIGHTSHADING_OFF
+
+    void  OpenDoorForPlayer();          //If the player is near a door, open it
+    short MovePlayer(short sAmount, short sAddAngle = 0); //Move the player by Amount, adding sAddAngle to the player's current angle
+                                                          //if so desired
+    //assigns the collision callback function
+    void AssignObjectCallback(void (*ObjectCollide)(NEWOBJECT* pObj, UCHAR nIndex, short nResult)) {m_ObjectCollide = ObjectCollide;};
+
+};
+
+
+
+
+
+
+
+
+#endif  //Defined ACKWRAPPER_H
