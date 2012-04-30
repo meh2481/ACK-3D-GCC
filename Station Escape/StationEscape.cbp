@@ -36,7 +36,6 @@
 			<Add option="`sdl-config --libs` -lSDL -lSDL_gfx" />
 			<Add library="..\liback.a" />
 		</Linker>
-		<Unit filename="ACK3D.H" />
 		<Unit filename="ACKSE.CPP" />
 		<Unit filename="ACKSE.H" />
 		<Unit filename="AckWrapper.cpp" />

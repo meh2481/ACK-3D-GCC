@@ -446,6 +446,12 @@ inline short WrapAngle(short sAngle)
     return sAngle;
 }
 
+//Gets the map position of x and y, down to the grid square
+inline short GetMapPosn(short x, short y)
+{
+    return((short)((y & GRID_MASK) + (x >> 6)));
+}
+
 //AckWrapper class definition
 class AckWrapper
 {

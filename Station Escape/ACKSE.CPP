@@ -45,13 +45,16 @@ short   nMoveObjectList[] = {
 
   //MEH 24-bit screen buffer, for Win32 reasons
 //   unsigned char* OffscreenBuffer; //For holding our offscreen buffer data
-   #define  ACK3D_SCREENWIDTH    320
-   #define  ACK3D_SCREENHEIGHT   200
+   #define  ACK3D_SCREENWIDTH   320
+   #define  ACK3D_SCREENHEIGHT  200
    #define  BYTES_PER_PIXEL     4
 
-   #define SPACEMAN_BITMAP 17
+   #define  START_REPAIR_OBJECT 20
+   #define  END_REPAIR_OBJECT   22
 
    SDL_Rect rcResolution;
+
+   bool bHurtThisCycle; //If the player has been hit this cycle, flash the screen red
 
 
    //Global variables to deal with health
@@ -110,15 +113,12 @@ int main(int argc, char* argv[])
 
     //printf("Resolution: %dx%d\n", rcResolution.w, rcResolution.h);
     //Create our handle to the screen
-    MainScreen = SDL_SetVideoMode(rcResolution.w, rcResolution.h, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);//|SDL_FULLSCREEN);
+    MainScreen = SDL_SetVideoMode(rcResolution.w, rcResolution.h, 32, SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_FULLSCREEN);
     if ( !MainScreen )
     {
         printf("Unable to set video resolution: %s\n", SDL_GetError());
         return 1;
     }
-
-  //Allocate memory for our offscreen buffer
-  //OffscreenBuffer = (unsigned char*)malloc(ACK3D_SCREENWIDTH * ACK3D_SCREENHEIGHT * BYTES_PER_PIXEL);
 
 //MEH Hide the cursor and set it to the center of the viewport window
 SDL_WarpMouse(rcResolution.w / 2, rcResolution.h / 2);
@@ -206,14 +206,11 @@ void ObjectCollision(NEWOBJECT* pObj, UCHAR nIndex, short nResult)
         //But only if within two tile widths
         if(sqrt(dx * dx + dy * dy) > GRID_WIDTH * 2)
             pObj->Dir = dir;
-        if(sqrt(dx * dx + dy * dy) < GRID_WIDTH)    //If close to player, bounce away (TODO: Hurt player)
+        if(sqrt(dx * dx + dy * dy) < GRID_WIDTH / 2)    //If close to player, bounce away and hurt player
+        {
             pObj->Dir = WrapAngle(dir - INT_ANGLE_180);
-        /*dir -= pObj->Dir;
-        dir = WrapAngle(dir);
-        if(dir >= INT_ANGLE_180)
-            pObj->Dir-=3;
-        if(dir < INT_ANGLE_180)
-            pObj->Dir+=3;*/
+            HurtPlayer(HEALTH_SPACEMAN_HIT);
+        }
         //If it is a spaceman, and he hit something
         if (nResult != POV_NOTHING)
         {
@@ -231,10 +228,6 @@ void ObjectCollision(NEWOBJECT* pObj, UCHAR nIndex, short nResult)
                 pObj->Dir += INT_ANGLE_180;
                 if (pObj->Dir >= INT_ANGLE_360)
                     pObj->Dir -= (short)INT_ANGLE_360;
-            }
-            if(nResult == POV_PLAYER)
-            {
-                HurtPlayer(HEALTH_SPACEMAN_HIT);
             }
         }
         //Make the spaceman fire if he's not within a couple tile widths of player (Firing point blank kinda screws the system)
@@ -320,53 +313,6 @@ return(0);
 }
 
 //****************************************************************************
-// Moves the active bombs.
-//****************************************************************************
-/*void MoveBombs(void)
-{
-  UCHAR   Index;
-  UCHAR   nHitIndex;
-  short   nResult;
-  NEWOBJECT   *pBomb,*pSman;
-
-for (Index = BOMB_START_INDEX; Index <= BOMB_END_INDEX; Index++)
-  {
-  pBomb = ae->ObjList[Index];
-  if (pBomb != NULL)
-    {
-    if (pBomb->Active)
-      {
-      nHitIndex = 0;
-      // See if bomb will hit something
-      nResult = AckMoveObjectPOV(Index,pBomb->Dir,pBomb->Speed);
-      if (nResult != POV_NOTHING)
-        {
-        if (Index == BOMB_END_INDEX && nResult != POV_PLAYER)
-          {
-           pBomb->Active = 0;
-           if (nResult == POV_OBJECT)
-             CheckBadGuys(AckGetObjectHit());
-           }
-         else
-           {
-           if (nResult == POV_OBJECT)
-             nHitIndex = AckGetObjectHit();
-           if (nHitIndex != pBomb->id)
-             {
-              pBomb->Active = 0;
-              pSman = ae->ObjList[pBomb->id];
-              if (pSman != NULL)
-                pSman->id = 0;
-              pBomb->id = 0;
-              }
-            }
-        }
-      }
-    }
-  }
-}*/
-
-//****************************************************************************
 // See if a bad guy is not currently firing a bomb. If so, set up the bomb
 // for firing.
 //****************************************************************************
@@ -395,64 +341,9 @@ if (Index)
   pBomb->id = nObjIndex;
   pBomb->Speed = 32;
   pBomb->Active = 1;
-  pBomb->mPos = (short)((pBomb->y & 0xFFC0) + (pBomb->x >> (short)6));
+  pBomb->mPos = GetMapPosn(pBomb->x,pBomb->y);
   }
 }
-
-//****************************************************************************
-// Move the objects in the game.
-//****************************************************************************
-/*void MoveObjects(void)
-{
-  short       i,nIndex,nResult;
-  short       nRow,nCol;
-  NEWOBJECT   *pObj;
-
-i = 0;
-while (nMoveObjectList[i])
-  {
-  nIndex = nMoveObjectList[i];
-  i++;
-  pObj = ae->ObjList[nIndex];
-  if (pObj != NULL && pObj->Active && (pObj->Flags & OF_MOVEABLE))
-    {
-    AckCheckDoorOpen(pObj->x,pObj->y,pObj->Dir);
-    nResult = AckMoveObjectPOV(nIndex,pObj->Dir,pObj->Speed);
-    if (nResult != POV_NOTHING)
-      {
-
-        }
-    else
-      CheckFiring(nIndex,pObj);
-    }
-  }
-
-MoveBombs();  // Move the active bombs
-
-// This code determines if the player is in a special location
-// of the game map and toggles the light shading if the player
-// reaches this region. This is used to create a unique
-// dynamic light shading effect
-nRow = (short)(ae->yPlayer >> 6);
-nCol = (short)(ae->xPlayer >> 6);
-if (nRow == 33)
-  {
-  if (nCol == 8)
-    g_Ack3D->SetLightShading(ACK_LIGHTSHADING_ON);
-  else
-  if (nCol == 10)
-    g_Ack3D->SetLightShading(ACK_LIGHTSHADING_OFF);
-  }
-
-if (nCol == 24)
-  {
-  if (nRow == 5)
-    g_Ack3D->SetLightShading(ACK_LIGHTSHADING_ON);
-  else
-  if (nRow == 7)
-    g_Ack3D->SetLightShading(ACK_LIGHTSHADING_OFF);
-  }
-}*/
 
 //****************************************************************************
 // Fires off a bomb at the player.
@@ -474,7 +365,7 @@ pBomb->x = ae->xPlayer;
 pBomb->y = ae->yPlayer;
 pBomb->Speed = 32;
 pBomb->Active = 1;
-pBomb->mPos = (short)((pBomb->y & 0xFFC0) + (pBomb->x >> (short)6));
+pBomb->mPos = GetMapPosn(pBomb->x,pBomb->y);
 }
 
 //****************************************************************************
@@ -483,7 +374,6 @@ pBomb->mPos = (short)((pBomb->y & 0xFFC0) + (pBomb->x >> (short)6));
 //****************************************************************************
 bool CheckStatus()
 {
-  short   nPos;
   static int iCurTick = SDL_GetTicks();
   int iLastTick;
 
@@ -509,8 +399,7 @@ if (!nSecondsLeft)
 
 if (nRepairObjectCount == REPAIR_OBJECTS_NEEDED)
   {
-  nPos = (short)((ae->yPlayer & 0xFFC0) + (ae->xPlayer >> 6));
-  if (nPos == REPAIR_POSITION)
+  if (GetMapPosn(ae->xPlayer, ae->yPlayer) == REPAIR_POSITION)
     {
     printf("You win! YAY!\n");
     return true;
@@ -562,19 +451,6 @@ void AckPaint()
 
     SDL_UnlockSurface(tempSurface);
 
-    //Use SDL_rotozoom to fill screen
-    SDL_Surface* tempZoomed = zoomSurface(tempSurface,
-                                          (float)(rcResolution.w) / (float)(ACK3D_SCREENWIDTH),
-                                          (float)(rcResolution.h) / (float)(ACK3D_SCREENHEIGHT),
-                                          SMOOTHING_OFF);   //Pixellated rather than blurry
-
-    // draw bitmap starting at 0,0
-    SDL_Rect dstrect;
-    dstrect.x = 0;
-    dstrect.y = 0;
-
-    SDL_BlitSurface(tempZoomed, 0, MainScreen, &dstrect);  //draw the temp surface to the screen
-
     //Draw health left in form of a green/yellow/red bar at bottom of screen
     int r = 0;
     int g = 255;    //Green if above half health
@@ -596,7 +472,26 @@ void AckPaint()
     }
 
     //Draw the rectangle, 5 pixels tall
-    boxRGBA(MainScreen, 0, 195, g_iHealth, 200, r, g, b, 128);
+    boxRGBA(tempSurface, 0, 195, g_iHealth, 200, r, g, b, 128);
+
+    //Use SDL_rotozoom to fill screen
+    SDL_Surface* tempZoomed = zoomSurface(tempSurface,
+                                          (float)(rcResolution.w) / (float)(ACK3D_SCREENWIDTH),
+                                          (float)(rcResolution.h) / (float)(ACK3D_SCREENHEIGHT),
+                                          SMOOTHING_OFF);   //Pixellated rather than blurry
+
+    // draw bitmap starting at 0,0
+    SDL_Rect dstrect;
+    dstrect.x = 0;
+    dstrect.y = 0;
+
+    SDL_BlitSurface(tempZoomed, 0, MainScreen, &dstrect);  //draw the temp surface to the screen
+
+    //If we've been hit, flash screen red for a sort of visual cue
+    if(bHurtThisCycle)
+    {
+        boxRGBA(MainScreen, 0, 0, rcResolution.w, rcResolution.h, 255, 0, 0, 128);
+    }
 
     //Print time left... no simple way to do it without SDL_TTF or a lot of extra work
   /*nHours = (short)(nSecondsLeft / 3600);
@@ -650,53 +545,76 @@ switch (event.type)
 //****************************************************************************
 void DoCycle(void)
 {
-    short   Amt;//,MoveAngle;
-    short   nResult;
+    short   Amt,nRow,nCol;
 
-nResult = 0;
-Amt = 16;
-if (kbPressed[kbCtrl])
-    Amt = 32;
+    Amt = 16;
+    if (kbPressed[kbCtrl])
+        Amt = 32;
 
-if (kbPressed[kbLeftArrow])
-    nResult = g_Ack3D->MovePlayer(Amt, -INT_ANGLE_90);
+    if (kbPressed[kbLeftArrow])
+        g_Ack3D->MovePlayer(Amt, -INT_ANGLE_90);
 
-if (kbPressed[kbRightArrow])
-    nResult = g_Ack3D->MovePlayer(Amt, INT_ANGLE_90);
+    if (kbPressed[kbRightArrow])
+        g_Ack3D->MovePlayer(Amt, INT_ANGLE_90);
 
-if (kbPressed[kbDownArrow])
-    nResult = g_Ack3D->MovePlayer(Amt, INT_ANGLE_180);
+    if (kbPressed[kbDownArrow])
+        g_Ack3D->MovePlayer(Amt, INT_ANGLE_180);
 
-if (kbPressed[kbUpArrow])
-    nResult = g_Ack3D->MovePlayer(Amt);
+    if (kbPressed[kbUpArrow])
+        g_Ack3D->MovePlayer(Amt);
 
-//Open any doors for the player - here's the spot to do it if we want automatic doors
-//AckCheckDoorOpen(ae->xPlayer,ae->yPlayer,ae->PlayerAngle);
+    //Open any doors for the player - here's the spot to do it if we want automatic doors
+    //AckCheckDoorOpen(ae->xPlayer,ae->yPlayer,ae->PlayerAngle);
 
-//MEH Make moving the mouse pan the view
-int xCursor, yCursor;
-SDL_GetMouseState(&xCursor, &yCursor);
-int iDistMoved = xCursor - rcResolution.w / 2;
-//Of course, we can multiply this by a scaling factor if we want to, but one ACK-3D 0.2-degree increment per pixel seems to work fine
-if(iDistMoved != 0)
-    g_Ack3D->AddToPlayerAngle(iDistMoved);
-SDL_WarpMouse(rcResolution.w / 2, rcResolution.h / 2);
+    //MEH Make moving the mouse pan the view
+    int xCursor, yCursor;
+    SDL_GetMouseState(&xCursor, &yCursor);
+    int iDistMoved = xCursor - rcResolution.w / 2;
+    //Of course, we can multiply this by a scaling factor if we want to, but one ACK-3D 0.2-degree increment per pixel seems to work fine
+    if(iDistMoved != 0)
+        g_Ack3D->AddToPlayerAngle(iDistMoved);
+    SDL_WarpMouse(rcResolution.w / 2, rcResolution.h / 2);
 
-//Update the objects and such
-g_Ack3D->Update();
-//Draw the view
-AckPaint();
+    bHurtThisCycle = false; //Haven't been hit this cycle yet
+    //Update the objects and such
+    g_Ack3D->Update();
+    //Draw the view
+    AckPaint();
 
-//TODO: This is specific to Station Escape, and it doesn't work too well. Replace later
-if (nResult == POV_OBJECT)
+    //Check and see if we're on top of any of the objects we need!
+    short nPlayerPos = GetMapPosn(ae->xPlayer, ae->yPlayer);
+    for(int i = START_REPAIR_OBJECT; i <= END_REPAIR_OBJECT; i++)
     {
-    nResult = AckGetObjectHit();
-    if (nResult >= 20 && nResult <= 22)
+        short nObjPos = GetMapPosn(ae->ObjList[i]->x, ae->ObjList[i]->y);
+        if(nPlayerPos == nObjPos && ae->ObjList[i]->Active)
         {
-        ae->ObjList[nResult]->Active = 0;
-        nRepairObjectCount++;
+            ae->ObjList[i]->Active = 0;
+            nRepairObjectCount++;
         }
     }
+
+    // This code determines if the player is in a special location
+    // of the game map and toggles the light shading if the player
+    // reaches this region. This is used to create a unique
+    // dynamic light shading effect
+    nRow = (short)(ae->yPlayer >> 6);
+    nCol = (short)(ae->xPlayer >> 6);
+    if (nRow == 33)
+      {
+      if (nCol == 8)
+        g_Ack3D->SetLightShading(ACK_LIGHTSHADING_ON);
+      else if (nCol == 10)
+        g_Ack3D->SetLightShading(ACK_LIGHTSHADING_OFF);
+      }
+
+    if (nCol == 24)
+      {
+      if (nRow == 5)
+        g_Ack3D->SetLightShading(ACK_LIGHTSHADING_ON);
+      else if (nRow == 7)
+        g_Ack3D->SetLightShading(ACK_LIGHTSHADING_OFF);
+      }
+
 }
 
 
@@ -789,6 +707,7 @@ switch (event.type)
 void HurtPlayer(int iAmount)
 {
     g_iHealth -= iAmount;
+    bHurtThisCycle = true;      //Ouch! Flash screen red
 }
 
 /*
