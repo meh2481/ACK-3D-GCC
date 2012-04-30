@@ -121,9 +121,12 @@ int DoOptionsDlg(HINSTANCE hInst, HWND hWnd)
     int       iReturn;
     NEWOBJECT oOldObj;  //Used to hold the data for when the object dialog is opened, in case user hits cancel, so we can copy
                         //the old data back over.
+    WORD      nOldWallFlags;    //Used to hold onto old wall flags in case user presses cancel, kinda like we do with objects
 
     if(nEditType == EDIT_OBJECTS)
         CopyObject(ae->ObjList[CurrentBitmap], &oOldObj);
+    if(nEditType == EDIT_WALLS)
+        nOldWallFlags = nWallFlags; //Hold onto our old flags
 
     lpfnOptionsDlgProc = (DLGPROC)MakeProcInstance((FARPROC)OptionsDlgProc, hInst);
 
@@ -133,11 +136,13 @@ int DoOptionsDlg(HINSTANCE hInst, HWND hWnd)
 
     if (iReturn < 0)
         MessageBox(hWnd,"Unable to open dialog box","Error",MB_OK);
-    else if(!iReturn)   //Returned false, which means user clicked Cancel
+    else if(!iReturn && nEditType == EDIT_OBJECTS)   //Returned false, which means user clicked Cancel
     {
         //Restore old object
         CopyObject(&oOldObj, ae->ObjList[CurrentBitmap]);
     }
+    else if(!iReturn && nEditType == EDIT_WALLS)
+        nWallFlags = nOldWallFlags; //Restore old wall flags if user hit cancel
 
 
     return(iReturn);
