@@ -2836,6 +2836,22 @@ void SelectBitmap(HWND hWnd,short yPos)
     {
         if (nEditType == EDIT_OBJECTS)
         {
+            //But, if we're control-clicking it, remove it from the map wherever it is currently
+            if(GetAsyncKeyState(VK_CONTROL) < 0)
+            {
+                if(ae->ObjList[CurrentBitmap] != NULL)
+                {
+                    for (int mPos = 0; mPos < 4096; mPos++)
+                    {
+                        if (CurrentBitmap == (ObjGrid[mPos] & 0xFF))
+                            ObjGrid[mPos] = 0;
+                    }
+                    ae->ObjList[CurrentBitmap]->Active = 0; //set to inactive
+                    InvalidateRect(MainAppWnd->GetChildHandle(),NULL,FALSE);
+                    InvalidateRect(MainAppWnd->GetHandle(),NULL,FALSE); //Redraw windows
+                    return;
+                }
+            }
             if (ae->ObjList[CurrentBitmap] == NULL)
             {
                 if (MessageBox(MainAppWnd->GetHandle(),"Create NEW object?","Question", MB_YESNO) != IDYES)
@@ -2983,6 +2999,30 @@ switch (iMessage)
         {
             CurrentBitmap = tempCurrent;
             InvalidateRect(hWnd, NULL, TRUE);
+        }
+        break;
+
+    case WM_MBUTTONDOWN:    //MEH: MMB removes the object from wherever it is on the map, when you click on it in the bitmap window
+        tempCurrent = (short)(CurrentTopBitmap + (HIWORD(lParam) / 66));
+        //But only if this is our currently selected bitmap/object
+        if(tempCurrent == CurrentBitmap)
+        {
+            if(ae->ObjList[CurrentBitmap] != NULL)
+            {
+                for (int mPos = 0; mPos < 4096; mPos++)
+                {
+                    if (CurrentBitmap == (ObjGrid[mPos] & 0xFF))
+                        ObjGrid[mPos] = 0;
+                }
+                ae->ObjList[CurrentBitmap]->Active = 0; //set to inactive
+                InvalidateRect(MainAppWnd->GetChildHandle(),NULL,FALSE);
+                InvalidateRect(MainAppWnd->GetHandle(),NULL,FALSE); //Redraw windows
+            }
+        }
+        else    //Otherwise, set this to current bitmap
+        {
+            CurrentBitmap = tempCurrent;
+            InvalidateRect(MainAppWnd->GetChildHandle(),NULL,FALSE);    //Redraw bitmap window
         }
         break;
 
