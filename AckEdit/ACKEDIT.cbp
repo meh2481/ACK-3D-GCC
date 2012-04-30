@@ -38,23 +38,15 @@
 			<Add library="comdlg32" />
 			<Add library="..\liback.a" />
 		</Linker>
-		<Unit filename="ACK.H" />
 		<Unit filename="ACK3D.H" />
 		<Unit filename="ACKDLG.CPP" />
-		<Unit filename="ACKDOC.H" />
-		<Unit filename="ACKDOOR.H" />
 		<Unit filename="ACKEDIT.CPP" />
 		<Unit filename="ACKEDIT.H" />
 		<Unit filename="ACKEDIT.RC">
 			<Option compilerVar="WINDRES" />
 		</Unit>
-		<Unit filename="ACKENG.H" />
-		<Unit filename="ACKEXT.H" />
-		<Unit filename="ACKOBJ.H" />
-		<Unit filename="ACKPLAY.H" />
 		<Unit filename="ACKRES.H" />
 		<Unit filename="ACKSUP.CPP" />
-		<Unit filename="ACKVIEW.H" />
 		<Unit filename="ACKWIN.CPP" />
 		<Unit filename="ACKWIN.H" />
 		<Unit filename="EditorConfig.cpp" />

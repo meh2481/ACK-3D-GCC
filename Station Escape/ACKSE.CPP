@@ -284,7 +284,7 @@ while (nMoveObjectList[i])  // Check the list of movable objects
     pObj = ae->ObjList[ObjIndex];
     if (pObj != NULL)
       {
-      pObj->Active = 0;  // Bad guy has been hit--make inactive
+      AckSetObjectType(ae, ObjIndex, NO_DESTROY);  // Bad guy has been hit--make die animation
       }
     break;
     }

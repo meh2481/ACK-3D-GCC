@@ -841,7 +841,27 @@ for (i = 320; i < 640; i++)
 
 }
 
+//---------------------------------------------------------
+//
+// Misc helper functions by MEH
+//
+//---------------------------------------------------------
 
+//Wrap an angle to stay within 0 - 359 degree range
+short WrapAngle(short sAngle)
+{
+    if(sAngle >= INT_ANGLE_360)
+        sAngle -= INT_ANGLE_360;
+    if(sAngle < 0)
+        sAngle += INT_ANGLE_360;
+    return sAngle;
+}
+
+//Gets the map position of x and y, down to the grid square
+short GetMapPosn(short x, short y)
+{
+    return((short)((y & GRID_MASK) + (x >> 6)));
+}
 
 
 

@@ -103,7 +103,7 @@ FONT 8, "MS Sans Serif"
  AUTORADIOBUTTON "Attack", IDC_ATTACK, 86, 70, 41, 13
  AUTORADIOBUTTON "Destroy", IDC_DESTROY, 86, 83, 41, 13
  AUTOCHECKBOX "Passable", IDC_OBJPASS, 86, 96, 58, 14
- AUTOCHECKBOX "Active", IDC_ACTIVE, 86, 110, 58, 14
+ AUTOCHECKBOX "Active", IDC_ACTIVE, 86, 110, 58, 14, WS_DISABLED    //Don't allow users to specify whether it's active or not. Should be active when on map, inactive if not
  AUTOCHECKBOX "Moveable", IDC_MOVEABLE, 86, 124, 58, 14
  CONTROL "", IDC_CURRENT, "static", SS_BLACKFRAME | WS_CHILD | WS_VISIBLE, 172, 40, 40, 130
  CONTROL "", IDC_SUPPLY, "static", SS_BLACKFRAME | WS_CHILD | WS_VISIBLE, 242, 40, 40, 130

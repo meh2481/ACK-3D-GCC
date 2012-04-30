@@ -436,21 +436,9 @@ typedef struct {
     unsigned char r, g, b, a;
 } PalletteSlot;
 
-//Wrap an angle to stay within 0 - 359 degree range
-inline short WrapAngle(short sAngle)
-{
-    if(sAngle >= INT_ANGLE_360)
-        sAngle -= INT_ANGLE_360;
-    if(sAngle < 0)
-        sAngle += INT_ANGLE_360;
-    return sAngle;
-}
-
-//Gets the map position of x and y, down to the grid square
-inline short GetMapPosn(short x, short y)
-{
-    return((short)((y & GRID_MASK) + (x >> 6)));
-}
+//Misc helper functions
+short WrapAngle(short sAngle);                      //Makes sure an angle is in the 0-359 degree range
+short GetMapPosn(short x, short y);                 //Returns the map position (grid square number) of x and y
 
 //AckWrapper class definition
 class AckWrapper

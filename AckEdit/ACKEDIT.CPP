@@ -563,7 +563,8 @@ switch (nViewType)
                             pMap = (UCHAR *)TempScreenBuffer + offset;
                             for (by = 0; by < GridSize; by++)
                                 {
-                                *pMap = *pBmp;
+                                if(*pBmp != 0)
+                                    *pMap = *pBmp;  //MEH: Don't draw black bg. It's distracting
                                 pMap += wt;
                                 pBmp += 2;
                                 }
@@ -846,6 +847,7 @@ void PaintChild(HWND hWnd)
     UCHAR       *pPtr = NULL;//,*pBuf;
     NEWOBJECT   *pObj;
     UCHAR       cIsObjFlag = 0; //If this is an object, go ahead and draw transparent instead of black
+    UCHAR       cIsObjActive = 1;   //Is the object active in the map? Draw black border if it isn't.
 
 BeginPaint( hWnd, &ps );
 if (bNoShow)
@@ -891,6 +893,7 @@ while (y < y1)
             if (pObj->CurrentBitmaps != NULL)
                pPtr = ae->oMaps[pObj->CurrentBitmaps[0]];
             cIsObjFlag = 1;
+            cIsObjActive = pObj->Active;
             }
         }
 
@@ -916,7 +919,7 @@ while (y < y1)
                 *pBufferData++ = red;
                 *pBufferData++ = green;
                 *pBufferData++ = blue;
-                if(red == 0 && green == 0 && blue == 0 && cIsObjFlag)
+                if(red == 0 && green == 0 && blue == 0 && cIsObjFlag && cIsObjActive)
                     *pBufferData++ = 0; //Set alpha to zero for black object pixels
                 else
                     *pBufferData++ = 255; //Set alpha to 255 by default
@@ -1215,6 +1218,9 @@ switch (nViewType)
                 else
                     ObjGrid[mPos] = 0;
                 }
+            //MEH Redraw the bitmap list to reflect this object being active/not
+            InvalidateRect(MainAppWnd->GetChildHandle(),NULL,FALSE);
+
             break;
             }
 
