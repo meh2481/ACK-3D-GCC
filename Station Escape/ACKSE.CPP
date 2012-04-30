@@ -43,8 +43,6 @@ short   nMoveObjectList[] = {
   18,19,
   0}; // Denotes end of table
 
-  //MEH 24-bit screen buffer, for Win32 reasons
-//   unsigned char* OffscreenBuffer; //For holding our offscreen buffer data
    #define  ACK3D_SCREENWIDTH   320
    #define  ACK3D_SCREENHEIGHT  200
    #define  BYTES_PER_PIXEL     4
@@ -225,9 +223,7 @@ void ObjectCollision(NEWOBJECT* pObj, UCHAR nIndex, short nResult)
             if(nResult == POV_OBJECT)
             {
                 //Turn around (bounce off objects)
-                pObj->Dir += INT_ANGLE_180;
-                if (pObj->Dir >= INT_ANGLE_360)
-                    pObj->Dir -= (short)INT_ANGLE_360;
+                pObj->Dir = WrapAngle(pObj->Dir + INT_ANGLE_180);
             }
         }
         //Make the spaceman fire if he's not within a couple tile widths of player (Firing point blank kinda screws the system)
@@ -346,7 +342,7 @@ if (Index)
 }
 
 //****************************************************************************
-// Fires off a bomb at the player.
+// Fires off a bomb from the player.
 //****************************************************************************
 void ShootBomb(void)
 {
@@ -359,7 +355,7 @@ if (pBomb == NULL)
 if (pBomb->Active)
   return;
 
-// Set the bomb up so that it will come toward the player
+// Set the bomb up so that it shoot the direction the player is facing
 pBomb->Dir = ae->PlayerAngle;
 pBomb->x = ae->xPlayer;
 pBomb->y = ae->yPlayer;
@@ -474,6 +470,12 @@ void AckPaint()
     //Draw the rectangle, 5 pixels tall
     boxRGBA(tempSurface, 0, 195, g_iHealth, 200, r, g, b, 128);
 
+    //If we've been hit, flash screen red for a sort of visual cue
+    if(bHurtThisCycle)
+    {
+        boxRGBA(tempSurface, 0, 0, rcResolution.w, rcResolution.h, 255, 0, 0, 128);
+    }
+
     //Use SDL_rotozoom to fill screen
     SDL_Surface* tempZoomed = zoomSurface(tempSurface,
                                           (float)(rcResolution.w) / (float)(ACK3D_SCREENWIDTH),
@@ -487,12 +489,6 @@ void AckPaint()
 
     SDL_BlitSurface(tempZoomed, 0, MainScreen, &dstrect);  //draw the temp surface to the screen
 
-    //If we've been hit, flash screen red for a sort of visual cue
-    if(bHurtThisCycle)
-    {
-        boxRGBA(MainScreen, 0, 0, rcResolution.w, rcResolution.h, 255, 0, 0, 128);
-    }
-
     //Print time left... no simple way to do it without SDL_TTF or a lot of extra work
   /*nHours = (short)(nSecondsLeft / 3600);
   t = (short)(nHours * 3600);
@@ -502,7 +498,7 @@ void AckPaint()
 
 SDL_Flip(MainScreen);   //Flip the double-buffered window to the screen
 SDL_FreeSurface(tempSurface);
-SDL_FreeSurface(tempZoomed);
+SDL_FreeSurface(tempZoomed);    //Free up our memory
 }
 
 //****************************************************************************
@@ -538,10 +534,7 @@ switch (event.type)
 }
 
 //****************************************************************************
-// Use this routine to process a drawing cycle of the engine. The best place
-// to call this is within the message loop handler itself (see ACKEDIT.CPP for
-// and example). The routine will check the current status of the keyboard and
-// move the POV accordingly.
+// Application-specific code for each cycle of the game should go here
 //****************************************************************************
 void DoCycle(void)
 {
@@ -582,6 +575,7 @@ void DoCycle(void)
     AckPaint();
 
     //Check and see if we're on top of any of the objects we need!
+    //Works a whole lot better than moving into non-passable objects
     short nPlayerPos = GetMapPosn(ae->xPlayer, ae->yPlayer);
     for(int i = START_REPAIR_OBJECT; i <= END_REPAIR_OBJECT; i++)
     {
@@ -619,7 +613,7 @@ void DoCycle(void)
 
 
 //****************************************************************************
-// Use this routine to process the windows messages WM_KEYDOWN and WM_KEYUP
+// Use this routine to process the SDL messages SDL_KEYDOWN and SDL_KEYUP
 // as they are received. It will set a global array of virtual keyboard elements
 // to correspond to the key being pressed or released. The routine DoCycle will
 // then look at this keyboard array to determine if the POV should be moved
@@ -653,7 +647,7 @@ switch (event.type)
                 kbPressed[kbEsc] = 1;
                 break;
             case SDLK_SPACE:
-                g_Ack3D->OpenDoorForPlayer();//(ae->xPlayer,ae->yPlayer,ae->PlayerAngle);
+                g_Ack3D->OpenDoorForPlayer();
                 break;
             case SDLK_LSHIFT:
                 kbPressed[kbLeftShift] = 1;

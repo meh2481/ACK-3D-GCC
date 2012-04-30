@@ -1,7 +1,7 @@
 // Support routines for ACKEDIT application
 #define  STRICT
 #include <windows.h>
-#pragma hdrstop
+//#pragma hdrstop
 #include <stdlib.h>
 #include <stdio.h>
 //#include <dos.h>
@@ -402,7 +402,7 @@ return(s);
 //±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 int CreateObject(void)
 {
-    int     onum,vnum,speed;
+    int     onum,vnum;//,speed;
     short   result,oType;
     short   NumViews,bmPerView;
     USHORT    flags;
@@ -517,6 +517,10 @@ if (lb == NULL)
 
 vnum = 0;
 
+//MEH Set all memory to 0 at start! Otherwise trashes object dialog memory
+for(int i = 0; i < MAX_OBJ_BITMAPS; i++)
+    os.bitmaps[i] = 0;
+
 while (lb != NULL && vnum < MAX_OBJ_BITMAPS)
     {
     os.bitmaps[vnum++] = atoi(lb);
@@ -596,7 +600,7 @@ int ProcessInfoFile(short QuietFlag)
     int     result;
     int     mode;
     long    pos;
-    char    *lb;
+//    char    *lb;
 
 nOperation = OP_WAIT;
 SetOperationCursor();
@@ -1040,8 +1044,8 @@ return(0);
 //±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
 short TransferFileName(short handle,char *Name,long *rba)
 {
-    unsigned short len,rlen,LenToRead;
-    unsigned long ulen;
+    unsigned short rlen,LenToRead;
+//    unsigned long ulen;
     short FileHandle;
     UCHAR *pBuffer;
 
@@ -1084,10 +1088,10 @@ long SaveInfoFile(short handle,long rba)
 {
     short   i,index,bType;
     short   speed;
-    BOOL    bGotMemory = FALSE;
+//    BOOL    bGotMemory = FALSE;
     char    szString[256];
     NEWOBJECT   *pObj;
-    OBJSEQ      *pSeq;
+//    OBJSEQ      *pSeq;
 
 
 index = 1;
@@ -1209,12 +1213,12 @@ return(0);
 short SaveResource(HWND hWnd,char *szName)
 {
     short i,handle,InHandle,index;
-    short speed;
+//    short speed;
     long rba;
     BOOL bGotMemory = FALSE;
-    char szString[256];
-    NEWOBJECT *pObj;
-    OBJSEQ *pSeq;
+//    char szString[256];
+//    NEWOBJECT *pObj;
+//    OBJSEQ *pSeq;
 
 // Create a temporary file to transfer from old resource to new
 // resource (which could be the same name).

@@ -72,6 +72,46 @@ extern   PalletteSlot pallette[256];
 unsigned char cLastScrollboxUsed = LAST_USED_SUPPLY;
 // --MEH
 
+//MEH Copy a NEWOBJECT into another NEWOBJECT
+void CopyObject(NEWOBJECT* nObjSrc, NEWOBJECT* nObjDest)
+{
+    if(nObjSrc == NULL || nObjDest == NULL)
+        return;
+
+    //Shallow copy relevant data
+    memcpy(nObjDest, nObjSrc, sizeof(NEWOBJECT));
+
+    //Now deep copy object sequence bitmaps
+    for(int i = 0; i < MAX_OBJ_BITMAPS; i++)
+    {
+        nObjDest->Create.bitmaps[i] = nObjSrc->Create.bitmaps[i];
+        nObjDest->Destroy.bitmaps[i] = nObjSrc->Destroy.bitmaps[i];
+        nObjDest->Walk.bitmaps[i] = nObjSrc->Walk.bitmaps[i];
+        nObjDest->Attack.bitmaps[i] = nObjSrc->Attack.bitmaps[i];
+        nObjDest->Interact.bitmaps[i] = nObjSrc->Interact.bitmaps[i];
+    }
+
+    //Set to point at right bitmaps for the current object type
+    switch(nObjSrc->CurrentType)
+    {
+        case NO_CREATE:
+            nObjDest->CurrentBitmaps = (nObjDest->Create.bitmaps);
+            break;
+        case NO_DESTROY:
+            nObjDest->CurrentBitmaps = (nObjDest->Destroy.bitmaps);
+            break;
+        case NO_WALK:
+            nObjDest->CurrentBitmaps = (nObjDest->Walk.bitmaps);
+            break;
+        case NO_ATTACK:
+            nObjDest->CurrentBitmaps = (nObjDest->Attack.bitmaps);
+            break;
+        case NO_INTERACT:
+            nObjDest->CurrentBitmaps = (nObjDest->Interact.bitmaps);
+            break;
+    }
+}
+
 //**************************************************************************
 //
 //**************************************************************************
@@ -79,6 +119,11 @@ int DoOptionsDlg(HINSTANCE hInst, HWND hWnd)
 {
     DLGPROC   lpfnOptionsDlgProc;
     int       iReturn;
+    NEWOBJECT oOldObj;  //Used to hold the data for when the object dialog is opened, in case user hits cancel, so we can copy
+                        //the old data back over.
+
+    if(nEditType == EDIT_OBJECTS)
+        CopyObject(ae->ObjList[CurrentBitmap], &oOldObj);
 
     lpfnOptionsDlgProc = (DLGPROC)MakeProcInstance((FARPROC)OptionsDlgProc, hInst);
 
@@ -88,6 +133,11 @@ int DoOptionsDlg(HINSTANCE hInst, HWND hWnd)
 
     if (iReturn < 0)
         MessageBox(hWnd,"Unable to open dialog box","Error",MB_OK);
+    else if(!iReturn)   //Returned false, which means user clicked Cancel
+    {
+        //Restore old object
+        CopyObject(&oOldObj, ae->ObjList[CurrentBitmap]);
+    }
 
 
     return(iReturn);
@@ -569,7 +619,8 @@ void RestoreBitmaps(void)
 if (pCurrentOS == NULL)
     return;
 
-memcpy(pCurrentOS->bitmaps,bmCurrent,MAX_OBJ_BITMAPS);
+memset(pCurrentOS->bitmaps, 0, MAX_OBJ_BITMAPS);
+memcpy(pCurrentOS->bitmaps,bmCurrent,strlen((const char*)bmCurrent));
 pCurrentOS->MaxBitmaps = strlen((const char*)bmCurrent);
 
 if (pCurrentOS->bmSides)
@@ -587,7 +638,8 @@ void MoveBitmaps(HWND hDlg,OBJSEQ *pOS)
 
 RestoreBitmaps();
 pCurrentOS = pOS;
-memcpy(bmCurrent,pOS->bitmaps,MAX_OBJ_BITMAPS);
+memset(bmCurrent, 0, MAX_OBJ_BITMAPS);
+memcpy(bmCurrent,pOS->bitmaps,strlen((const char*)pOS->bitmaps));
 nCurrentTop = 0;
 InvalidateRect(hDlg,NULL,FALSE);
 ShowCurrent(hDlg);
@@ -836,12 +888,12 @@ switch (iMessage)
             DisableControls(hDlg,&nWallIDList[0]);
             SendDlgItemMessage(hDlg,IDC_CREATE,BM_SETCHECK,TRUE,0L);
             wsprintf((char*)bmCurrent,"Object: %d",CurrentBitmap);
-        SetWindowText(GetDlgItem(hDlg,IDC_GROUPBOX2),(const char*)bmCurrent);
-        pObj = ae->ObjList[CurrentBitmap];
-        nCurrentType = NO_CREATE;
-            memset(bmCurrent,0,256);
+            SetWindowText(GetDlgItem(hDlg,IDC_GROUPBOX2),(const char*)bmCurrent);
+            pObj = ae->ObjList[CurrentBitmap];
+            nCurrentType = NO_CREATE;
+            memset(bmCurrent,0,MAX_OBJ_BITMAPS);
             pCurrentOS = &pObj->Create;
-                memcpy(bmCurrent,pCurrentOS->bitmaps,MAX_OBJ_BITMAPS);
+            memcpy(bmCurrent,pCurrentOS->bitmaps,strlen((const char*)pCurrentOS->bitmaps));
             SetObjectControls(hDlg);
             SetObjectEdits(hDlg);
             }
