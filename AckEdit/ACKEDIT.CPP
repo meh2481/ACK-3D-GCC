@@ -162,6 +162,13 @@ unsigned char GenericUseBitmapBuffer[4*64*64];   //4 chars per pixel (rgba), 64x
 HDC hChildOffscreenDC = 0;
 HBITMAP hChildOffscreenBitmap;
 
+//MEH so we can pan the view with MMB
+bool g_bPanning = false;
+POINT g_ptStartPanLocation;
+
+//MEH So we can copy/paste objects
+unsigned short g_sClipboard = 0;
+
 
 //****************************************************************************
 // Prototypes
@@ -2064,23 +2071,77 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                     wsprintf(LineBuffer,"ACK Mem used: %ld",AckMemUsed);
                     MessageBox(hWnd,LineBuffer,"Info",MB_OK);
                     break;
+                case VK_SPACE:
+                    if(!g_bPanning) //Allow panning using the spacebar also
+                    {
+                        POINT ptCursorPos;
+                        GetCursorPos(&ptCursorPos);
+                        g_ptStartPanLocation.x = ptCursorPos.x;
+                        g_ptStartPanLocation.y = ptCursorPos.y;
+                        g_bPanning = true;
+                    }
+                    break;
             }
             break;
 
         case WM_KEYUP:
             ProcessKeys(iMessage,wParam);
             InvalidateRect(hWnd,NULL,FALSE);
+            switch(wParam)
+            {
+                case VK_SPACE:
+                    g_bPanning = false; //Stop panning view
+                    break;
+            }
             break;
 
-        //MEH Grab bitmap # if pressing MMB (For now. Later show row, col, that sorta thing)
+        //MEH Pan view with MMB
         case WM_MBUTTONDOWN:
-            mx = LOWORD(lParam);
-            my = HIWORD(lParam);
-            ShowBitmapNumber(hWndChild,mx,my);
+            if(!g_bPanning)
+            {
+                g_ptStartPanLocation.x = LOWORD(lParam);
+                g_ptStartPanLocation.y = HIWORD(lParam);
+                g_bPanning = true;
+            }
             break;
 
-        //MEH Allow click & drag to keep placing bitmaps, by falling through here
+        case WM_MBUTTONUP:
+            g_bPanning = false; //Stop panning view
+            break;
+
         case WM_MOUSEMOVE:
+            //Allow panning view if holding MMB or spacebar
+            if((GetAsyncKeyState(VK_MBUTTON) < 0 || GetAsyncKeyState(VK_SPACE) < 0) && g_bPanning)
+            {
+                int xPos = LOWORD(lParam);
+                int yPos = HIWORD(lParam);
+                //Pulling left - scroll right
+                if(g_ptStartPanLocation.x - xPos >= GridSize)
+                {
+                    g_ptStartPanLocation.x -= GridSize;
+                    ScrollMap(hWnd, SB_LINEDOWN, 0, 0);
+                }
+                //Pulling right - scroll left
+                if(xPos - g_ptStartPanLocation.x >= GridSize)
+                {
+                    g_ptStartPanLocation.x += GridSize;
+                    ScrollMap(hWnd, SB_LINEUP, 0, 0);
+                }
+                //Pulling up - scroll down
+                if(g_ptStartPanLocation.y - yPos >= GridSize)
+                {
+                    g_ptStartPanLocation.y -= GridSize;
+                    ScrollMap(hWnd, SB_LINEDOWN, 0, 1);
+                }
+                //Pulling down - scroll up
+                if(yPos - g_ptStartPanLocation.y >= GridSize)
+                {
+                    g_ptStartPanLocation.y += GridSize;
+                    ScrollMap(hWnd, SB_LINEUP, 0, 1);
+                }
+                break;  //Stop here
+            }
+
             //Just for ease-of-use, make sure user doesn't have L/R mouse buttons swapped.
             if(!((GetAsyncKeyState(VK_LBUTTON) < 0) || (GetSystemMetrics(SM_SWAPBUTTON) && GetAsyncKeyState(VK_RBUTTON) < 0)))
             {
@@ -2092,28 +2153,29 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
             //Of course, not for objects, since you place these one at a time
             if(nEditType == EDIT_OBJECTS)
                 break;
+            //MEH Allow click & drag to keep placing bitmaps, by falling through here
         case WM_LBUTTONDOWN:
             mx = LOWORD(lParam);
             my = HIWORD(lParam);
-            if (wParam & MK_CONTROL && wParam & MK_SHIFT)
+            if (wParam & MK_CONTROL && wParam & MK_SHIFT) //MEH Grab map pos # if pressing Ctrl+Shift+LMB
             {
-                ShowBitmapNumber(hWndChild,mx,my);
+                ShowMapPosn(hWndChild,mx,my);
             }
 
             else if (wParam & MK_CONTROL)
-                {
+            {
                 GrabSquare(hWndChild,mx,my);
                 break;
-                }
+            }
 
             else if (wParam & MK_SHIFT)
-                {
+            {
                 my = (short)(yCurrent + (my / GridSize));
                 mx = (short)(xCurrent + (mx / GridSize));
                 ae->xPlayer = (short)(mx * GRID_WIDTH);
                 ae->yPlayer = (short)(my * GRID_WIDTH);
                 InvalidateRect(hWnd,NULL,TRUE);
-                }
+            }
             else
                 SetBitmap(hWnd,mx,my,CurrentBitmap);
             break;
@@ -2165,11 +2227,17 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                 //MEH Make menu say you can Tab into other edit mode
                 ModifyMenu((HMENU)wParam,CM_EDITMAP,MF_STRING,CM_EDITMAP,"&Map\tTab");
                 ModifyMenu((HMENU)wParam,CM_EDITOBJECTS,MF_STRING,CM_EDITOBJECTS,"&Objects");
+                //MEH Also make copy/paste object selectable
+                ModifyMenu((HMENU)wParam,CM_COPYOBJECT,MF_STRING,CM_COPYOBJECT,"&Copy Object\tCtrl+C");
+                ModifyMenu((HMENU)wParam,CM_PASTEOBJECT,MF_STRING,CM_PASTEOBJECT,"&Paste Object\tCtrl+V");
             }
             else
             {
                 ModifyMenu((HMENU)wParam,CM_EDITMAP,MF_STRING,CM_EDITMAP,"&Map");
                 ModifyMenu((HMENU)wParam,CM_EDITOBJECTS,MF_STRING,CM_EDITOBJECTS,"&Objects\tTab");
+                //MEH Make copy/paste object unselectable
+                ModifyMenu((HMENU)wParam,CM_COPYOBJECT,MF_STRING | MF_GRAYED,CM_COPYOBJECT,"&Copy Object\tCtrl+C");
+                ModifyMenu((HMENU)wParam,CM_PASTEOBJECT,MF_STRING | MF_GRAYED,CM_PASTEOBJECT,"&Paste Object\tCtrl+V");
             }
 
             CheckMenuItem((HMENU)wParam,CM_EDITMAP,MF_UNCHECKED|MF_BYCOMMAND);
@@ -2368,9 +2436,39 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                     PostQuitMessage(0);
                     break;
 
-                /*case CM_EDITGLOBAL:
-                    DoGlobalDlg(hInstGlobal,hWnd);
-                    break;*/
+                //MEH Copy item to clipboard
+                case CM_COPYOBJECT:
+                    if(nEditType == EDIT_OBJECTS)
+                        g_sClipboard = CurrentBitmap;
+                    break;
+
+                //MEH Paste item from clipboard
+                case CM_PASTEOBJECT:
+                    if(CurrentBitmap != g_sClipboard && g_sClipboard)
+                    {
+                        if (ae->ObjList[CurrentBitmap] == NULL)
+                        {
+                            AckCreateObject(ae,CurrentBitmap);
+                            AckSetObjectType(ae,CurrentBitmap,NO_CREATE);
+                        }
+                        //Hold onto data we want to not copy (Namely position and active/not)
+                        short mPos = ae->ObjList[CurrentBitmap]->mPos;
+                        short x = ae->ObjList[CurrentBitmap]->x;
+                        short y = ae->ObjList[CurrentBitmap]->y;
+                        char active = ae->ObjList[CurrentBitmap]->Active;
+                        //Copy other object onto this one
+                        CopyObject(ae->ObjList[g_sClipboard], ae->ObjList[CurrentBitmap]);
+                        //Reset data we didn't want copied
+                        ae->ObjList[CurrentBitmap]->Active = active;
+                        ae->ObjList[CurrentBitmap]->mPos = mPos;
+                        ae->ObjList[CurrentBitmap]->x = x;
+                        ae->ObjList[CurrentBitmap]->y = y;
+                        //Redraw the bitmap window
+                        InvalidateRect(MainAppWnd->GetChildHandle(), NULL, FALSE);
+                        //Map has now been modified
+                        bModified = TRUE;
+                    }
+                    break;
 
                 case CM_EDITMAP:
                     nEditType = EDIT_WALLS;
@@ -3303,6 +3401,12 @@ void HandleGenericKeypresses(WPARAM wParam)
             }
             break;
 
+        //MEH Copy item to clipboard with Ctrl+C
+        case VK_C:
+            if(GetAsyncKeyState(VK_CONTROL) < 0 && nEditType == EDIT_OBJECTS)
+                g_sClipboard = CurrentBitmap;
+            break;
+
         //Fill in whole map with Ctrl+M
         case VK_M:
             if(GetAsyncKeyState(VK_CONTROL) < 0 && MessageBox(MainAppWnd->GetHandle(),"Fill ENTIRE map with current bitmap?","Warning",MB_OKCANCEL) == IDOK)
@@ -3378,6 +3482,34 @@ void HandleGenericKeypresses(WPARAM wParam)
                 }
                 break;
 
+            //MEH Paste item from clipboard with Ctrl+V
+            case VK_V:
+                if(GetAsyncKeyState(VK_CONTROL) < 0 && CurrentBitmap != g_sClipboard && g_sClipboard)
+                {
+                    if (ae->ObjList[CurrentBitmap] == NULL)
+                    {
+                        AckCreateObject(ae,CurrentBitmap);
+                        AckSetObjectType(ae,CurrentBitmap,NO_CREATE);
+                    }
+                    //Hold onto data we want to not copy (Namely position and active/not)
+                    short mPos = ae->ObjList[CurrentBitmap]->mPos;
+                    short x = ae->ObjList[CurrentBitmap]->x;
+                    short y = ae->ObjList[CurrentBitmap]->y;
+                    char active = ae->ObjList[CurrentBitmap]->Active;
+                    //Copy other object onto this one
+                    CopyObject(ae->ObjList[g_sClipboard], ae->ObjList[CurrentBitmap]);
+                    //Reset data we didn't want copied
+                    ae->ObjList[CurrentBitmap]->Active = active;
+                    ae->ObjList[CurrentBitmap]->mPos = mPos;
+                    ae->ObjList[CurrentBitmap]->x = x;
+                    ae->ObjList[CurrentBitmap]->y = y;
+                    //Redraw the bitmap window
+                    InvalidateRect(MainAppWnd->GetChildHandle(), NULL, FALSE);
+                    //Map has now been modified
+                    bModified = TRUE;
+                }
+                break;
+
             //Clear the map if they press Ctrl+X
             case VK_X:
                 //OH LOOK I'M ACTUALLY USING C++'S METHOD OF PARSING STATEMENTS SEQUENTIALLY
@@ -3390,22 +3522,26 @@ void HandleGenericKeypresses(WPARAM wParam)
     }
 }
 
-void ShowBitmapNumber(HWND hWndChild,short xPos,short yPos)
+void ShowMapPosn(HWND hWndChild,short xPos,short yPos)
 {
-    short   gsLeft,gsRight;
-    short   nCode = 0;
-    int     mPos;
+    int     row,col,pos;
+    int     gsLeft, gsRight, mPos;
+    bool    bLR = false;
+    bool    bEdge = false;
 
-mPos = GetGridPos(xPos,yPos);
+    row = xPos / GridSize;
+    col = yPos / GridSize;
+    row += yCurrent;
+    col += xCurrent;
+    pos = (row * GRID_WIDTH) + col;
 
-switch (nViewType)
+    switch (nViewType)
     {
     case VIEW_WALLS:
-        if (nEditType == EDIT_OBJECTS)
-            {
-            nCode = ObjGrid[mPos];
+        if (nEditType != EDIT_WALLS)
+        {
             break;
-            }
+        }
 
         xPos = (short)(xPos % GridSize);
         yPos = (short)(yPos % GridSize);
@@ -3415,13 +3551,17 @@ switch (nViewType)
             {
             if (xPos < gsLeft)
                 {
-                nCode = ae->xGrid[mPos];
+                mPos = pos;
+                bLR = true;
+                bEdge = true;
                 }
             else
                 {
                 if (xPos >= gsLeft)
                     {
-                    nCode = ae->xGrid[mPos+1];
+                    mPos = pos + 1;
+                    bLR = true;
+                    bEdge = true;
                     }
                 }
             }
@@ -3430,36 +3570,32 @@ switch (nViewType)
             {
             if (yPos < gsLeft)
                 {
-                nCode = ae->yGrid[mPos];
+                mPos = pos;
+                bEdge = true;
                 }
             else
                 {
                 if (yPos >= gsRight)
                     {
-                    nCode = ae->yGrid[mPos+GRID_WIDTH];
+                    mPos = pos + GRID_WIDTH;
+                    bEdge = true;
                     }
                 }
             }
         break;
-
-    case VIEW_FLOOR:
-        nCode = FloorMap[mPos];
-        break;
-
-    case VIEW_CEILING:
-        nCode = CeilMap[mPos];
-        break;
-
-    default:
-        break;
     }
 
-    if(nCode)
+    char ctext[128];
+    if(bEdge)
     {
-        char ctext[32];
-        sprintf(ctext, "Selected Bmp: %d", nCode & 0xFF);
-        MessageBox(hWndChild, ctext, "ACK Editor", MB_OK);
+        if(bLR)
+            sprintf(ctext, "Map Posn: %d row: %d col: %d\nX grid pos: %d", pos, row, col, mPos);
+        else
+            sprintf(ctext, "Map Posn: %d row: %d col: %d\nY grid pos: %d", pos, row, col, mPos);
     }
+    else
+        sprintf(ctext, "Map Posn: %d row: %d col: %d", pos, row, col);
+    MessageBox(hWndChild, ctext, "ACK Editor", MB_OK);
 }
 
 //MEH Clear out this map, ready for a new one

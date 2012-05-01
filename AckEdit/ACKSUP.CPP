@@ -535,7 +535,7 @@ os.bmSides = NumViews;
 result = AckSetupObject(ae,onum,oType,&os);
 
 pObj = ae->ObjList[onum];
-if (pObj != NULL)
+if (pObj != NULL && pObj->Active)   //MEH RRRGH. Set the map position to this object ONLY if it's active!!
     {
     ObjGrid[pObj->mPos] = onum;
     }

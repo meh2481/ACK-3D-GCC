@@ -1,4 +1,6 @@
 // Header file for ACKEDIT program
+#include <windows.h>
+#include"ACK3D.H"
 
 //from winpal.cpp (really a hacked PALANIM sample.c)
 extern void ClearSystemPalette(void);
@@ -29,9 +31,9 @@ LRESULT CALLBACK _export AckWndProc( HWND hWnd, UINT iMessage,
                                  WPARAM wParam, LPARAM lParam);
 
 //MEH
-void ShowBitmapNumber(HWND hWndChild,short xPos,short yPos);    //Displays a message box with the bitmap number clicked on
+void ShowMapPosn(HWND hWndChild,short xPos,short yPos);    //Displays a message box with the map pos (and row, col) clicked on
 void CreateNewMap(HWND hWnd, HWND hWndChild);                   //Wipe out this map, so it's easy to make a new one
-
+void CopyObject(NEWOBJECT* nObjSrc, NEWOBJECT* nObjDest);   //Defined in ACKDLG.CPP - copies nObjSrc into nObjDest
 
 // Various operations for cursor control
 #define OP_NORMAL       0   // No special operation
