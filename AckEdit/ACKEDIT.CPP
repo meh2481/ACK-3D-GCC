@@ -169,6 +169,12 @@ POINT g_ptStartPanLocation;
 //MEH So we can copy/paste objects
 unsigned short g_sClipboard = 0;
 
+//MEH For setting the mouse cursor
+HCURSOR g_cArrow, g_cPan;
+
+//MEH For making it easier to click on edge of grid square
+#define SQUARE_EDGE_SIZE    8
+
 
 //****************************************************************************
 // Prototypes
@@ -1233,8 +1239,8 @@ switch (nViewType)
 
         xPos = (short)(xPos % GridSize);
         yPos = (short)(yPos % GridSize);
-        gsLeft = 4;
-        gsRight = (short)(GridSize - 4);
+        gsLeft = SQUARE_EDGE_SIZE;
+        gsRight = (short)(GridSize - SQUARE_EDGE_SIZE / 2);
         if (nCode)
             {
             nMask = 0xFF00;
@@ -1259,7 +1265,7 @@ switch (nViewType)
                 }
             else
                 {
-                if (xPos >= gsLeft)
+                if (xPos >= gsRight)
                     {
                     //MEH Only redraw if we have to
                     if(ae->xGrid[mPos+1] != nCode)
@@ -1364,8 +1370,8 @@ switch (nViewType)
 
         xPos = (short)(xPos % GridSize);
         yPos = (short)(yPos % GridSize);
-        gsLeft = 4;
-        gsRight = (short)(GridSize - 4);
+        gsLeft = SQUARE_EDGE_SIZE;
+        gsRight = (short)(GridSize - SQUARE_EDGE_SIZE / 2);
         if (yPos > gsLeft && yPos < gsRight)
             {
             if (xPos < gsLeft)
@@ -1374,7 +1380,7 @@ switch (nViewType)
                 }
             else
                 {
-                if (xPos >= gsLeft)
+                if (xPos >= gsRight)
                     {
                     nCode = ae->xGrid[mPos+1];
                     }
@@ -2079,6 +2085,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         g_ptStartPanLocation.x = ptCursorPos.x;
                         g_ptStartPanLocation.y = ptCursorPos.y;
                         g_bPanning = true;
+                        SetCursor(g_cPan);
                     }
                     break;
             }
@@ -2091,6 +2098,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
             {
                 case VK_SPACE:
                     g_bPanning = false; //Stop panning view
+                    SetCursor(g_cArrow);
                     break;
             }
             break;
@@ -2102,17 +2110,23 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                 g_ptStartPanLocation.x = LOWORD(lParam);
                 g_ptStartPanLocation.y = HIWORD(lParam);
                 g_bPanning = true;
+                SetCursor(g_cPan);
             }
             break;
 
         case WM_MBUTTONUP:
             g_bPanning = false; //Stop panning view
+            SetCursor(g_cArrow);
             break;
 
         case WM_MOUSEMOVE:
+            //Set the mouse cursor back to default
+            SetCursor(g_cArrow);
+
             //Allow panning view if holding MMB or spacebar
             if((GetAsyncKeyState(VK_MBUTTON) < 0 || GetAsyncKeyState(VK_SPACE) < 0) && g_bPanning)
             {
+                SetCursor(g_cPan);
                 int xPos = LOWORD(lParam);
                 int yPos = HIWORD(lParam);
                 //Pulling left - scroll right
@@ -3183,6 +3197,10 @@ int PASCAL WinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance,LPSTR lpszCmdLine
     int     result;
     HBITMAP hbm;
 
+//MEH Load our cursors
+g_cArrow = LoadCursor(NULL, IDC_ARROW);
+g_cPan = LoadCursor(NULL, IDC_SIZEALL);
+
 nOperation = OP_NORMAL;
 hInstGlobal = hInstance;
 Main::hInstance = hInstance;
@@ -3262,6 +3280,10 @@ if(hpalApp)
 
 //WinG.Free();
 WriteConfig();
+
+//MEH Free cursors we created
+DestroyCursor(g_cArrow);
+DestroyCursor(g_cPan);
 
 return(result);
 }
@@ -3545,8 +3567,8 @@ void ShowMapPosn(HWND hWndChild,short xPos,short yPos)
 
         xPos = (short)(xPos % GridSize);
         yPos = (short)(yPos % GridSize);
-        gsLeft = 4;
-        gsRight = (short)(GridSize - 4);
+        gsLeft = SQUARE_EDGE_SIZE;
+        gsRight = (short)(GridSize - SQUARE_EDGE_SIZE / 2);
         if (yPos > gsLeft && yPos < gsRight)
             {
             if (xPos < gsLeft)
@@ -3557,7 +3579,7 @@ void ShowMapPosn(HWND hWndChild,short xPos,short yPos)
                 }
             else
                 {
-                if (xPos >= gsLeft)
+                if (xPos >= gsRight)
                     {
                     mPos = pos + 1;
                     bLR = true;
