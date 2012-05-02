@@ -57,7 +57,7 @@ extern    pal           LogicalPalette;
 extern    short         nRepairObjectCount;
 
 //MEH Since moving is something that modifies the map
-void SetUndoPoint(void);
+void SetUndoPoint(bool bMovement = false);
 
 //****************************************************************************
 // Here is a generic ACK Initialization proceedure, with Windows modifications
@@ -411,22 +411,22 @@ switch (iMessage)
         switch (wParam)
             {
             case VK_UP:
-                SetUndoPoint();
+                SetUndoPoint(true);
                 nMoveSpeed = 0;
                 kbPressed[kbUpArrow] = 0;
                 break;
             case VK_DOWN:
-                SetUndoPoint();
+                SetUndoPoint(true);
                 nMoveSpeed = 0;
                 kbPressed[kbDownArrow] = 0;
                 break;
             case VK_LEFT:
-                SetUndoPoint();
+                SetUndoPoint(true);
                 nTurnSpeed = 0;
                 kbPressed[kbLeftArrow] = 0;
                 break;
             case VK_RIGHT:
-                SetUndoPoint();
+                SetUndoPoint(true);
                 nTurnSpeed = 0;
                 kbPressed[kbRightArrow] = 0;
                 break;

@@ -3857,13 +3857,21 @@ bool CopyFile(const char* src, const char* dest)
     return true;
 }
 
+bool bLastUndoMoved = false;
 //-----------------------------------------------------------------------
 // Adds this point to the undo stack
 //-----------------------------------------------------------------------
-void SetUndoPoint(void)
+void SetUndoPoint(bool bMovement)
 {
     if(g_bNoCreateUndoRedo)
         return;
+
+    if(bLastUndoMoved && bMovement)
+    {
+        g_sNumUndo--;
+    }
+
+    bLastUndoMoved = bMovement;
 
     char szName[128];
     char PathBuffer[256];
@@ -3897,6 +3905,7 @@ void SetUndoPoint(void)
 //-----------------------------------------------------------------------
 void Undo(void)
 {
+    bLastUndoMoved = false;
     char LineBuffer[256];
     char cFilename[256];
     int result;
@@ -3943,6 +3952,7 @@ void Undo(void)
 //-----------------------------------------------------------------------
 void Redo(void)
 {
+    bLastUndoMoved = false;
     char LineBuffer[256];
     char cFilename[256];
     int result;

@@ -34,7 +34,7 @@ LRESULT CALLBACK _export AckWndProc( HWND hWnd, UINT iMessage,
 void ShowMapPosn(HWND hWndChild,short xPos,short yPos);    //Displays a message box with the map pos (and row, col) clicked on
 void CreateNewMap(HWND hWnd, HWND hWndChild);                   //Wipe out this map, so it's easy to make a new one
 void CopyObject(NEWOBJECT* nObjSrc, NEWOBJECT* nObjDest);   //Defined in ACKDLG.CPP - copies nObjSrc into nObjDest
-void SetUndoPoint(void);
+void SetUndoPoint(bool bMovement = false);
 void Undo(void);
 void Redo(void);
 bool CopyFile(const char* src, const char* dest);
