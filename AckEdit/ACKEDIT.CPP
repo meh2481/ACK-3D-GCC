@@ -182,6 +182,7 @@ bool g_bNotModifyOnMouseUp = false;
 short g_sNumUndo = 0;
 short g_sNumRedo = 0;
 short g_sSaveUndo = 0;  //The g_sNumUndo location that we last saved at
+bool g_bNoCreateUndoRedo = false;   //Whether we should create undo/redo locations or not
 
 
 //****************************************************************************
@@ -3754,7 +3755,7 @@ void CreateNewMap(HWND hWnd, HWND hWndChild)
             }
             g_sSaveUndo = g_sNumUndo;
         }
-
+        g_bNoCreateUndoRedo = true;
         //-------------------Now clear everything out
         //First delete all the bitmaps, except the first
         nEditType = EDIT_WALLS;
@@ -3802,7 +3803,9 @@ void CreateNewMap(HWND hWnd, HWND hWndChild)
         CurrentTopBitmap = 1;
         nEditType = EDIT_WALLS;
         nViewType = VIEW_WALLS;
-        SetUndoPoint();
+
+        g_bNoCreateUndoRedo = false;
+        SetUndoPoint(); //Save this all out
     }
 }
 
@@ -3857,6 +3860,9 @@ bool CopyFile(const char* src, const char* dest)
 //-----------------------------------------------------------------------
 void SetUndoPoint(void)
 {
+    if(g_bNoCreateUndoRedo)
+        return;
+
     char szName[128];
     char PathBuffer[256];
     GetCurrentDirectory(256, PathBuffer);
