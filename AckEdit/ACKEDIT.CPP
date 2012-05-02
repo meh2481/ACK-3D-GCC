@@ -175,6 +175,14 @@ HCURSOR g_cArrow, g_cPan;
 //MEH For making it easier to click on edge of grid square
 #define SQUARE_EDGE_SIZE    8
 
+//MEH For ctrl and shift clicking not modifying the map
+bool g_bNotModifyOnMouseUp = false;
+
+//MEH For dealing with undo/redo
+short g_sNumUndo = 0;
+short g_sNumRedo = 0;
+short g_sSaveUndo = 0;  //The g_sNumUndo location that we last saved at
+
 
 //****************************************************************************
 // Prototypes
@@ -400,7 +408,7 @@ InvalidateRect(hWndChild,NULL,TRUE);
 
 //MEH Make sure windows have right text to start with
 UpdateChildText(hWndChild);
-UpdateParentText(hWnd);
+//UpdateParentText(hWnd);
 }
 
 HINSTANCE Main::hInstance = 0;
@@ -417,28 +425,31 @@ int Main::MessageLoop(void)
     unsigned int iCurTick = GetTickCount();
     unsigned int iTemp = 0;
 
-for (;;)
+    for (;;)
     {
         iTemp = GetTickCount();
-    if (PeekMessage(&msg, NULL, 0, 0,PM_REMOVE))
+        if (PeekMessage(&msg, NULL, 0, 0,PM_REMOVE))
         {
-        if (msg.message == WM_QUIT)
-            break;
+            if (msg.message == WM_QUIT)
+                break;
 
-        TranslateMessage(&msg);
-        DispatchMessage(&msg);
+            TranslateMessage(&msg);
+            DispatchMessage(&msg);
         }
         //MEH Limit our framerate to something reasonable so you can actually MOVE AROUND in the 3D view
         //without getting totally sick.
-    else if(iTemp - iCurTick >= 30)
+        else if(iTemp - iCurTick >= 30)
         {
-        if (nOperation == OP_NORMAL)
-            DoCycle();
-        iCurTick = iTemp;
+            if (nOperation == OP_NORMAL)
+            {
+                DoCycle();
+                UpdateParentText(MainAppWnd->GetHandle());
+            }
+            iCurTick = iTemp;
         }
     }
 
-return msg.wParam;
+    return msg.wParam;
 }
 
 
@@ -783,7 +794,7 @@ DeleteObject(NewBrush);
 
 if (bShowCoords)
 {
-    UpdateParentText(hWnd);
+//    UpdateParentText(hWnd);
 }
 
 free(TempScreenBuffer); //MEH clean up memory
@@ -1339,8 +1350,6 @@ switch (nViewType)
         break;
     }
 
-bModified = TRUE;
-
 if(!bRedraw)
     return; //Don't redraw if we don't have to
 InvalidateRect(hWnd,NULL,TRUE);
@@ -1671,7 +1680,7 @@ void DeleteBitmap(HWND hWnd,HWND hwndChild)
 {
     short   mPos;
 
-
+SetUndoPoint();
 if (nEditType == EDIT_WALLS)
     {
     if (ae->bMaps[CurrentBitmap] == NULL)
@@ -1776,7 +1785,7 @@ switch (nViewType)
         break;
     }
 
-bModified = TRUE;
+SetUndoPoint();
 }
 
 
@@ -1834,7 +1843,7 @@ switch (nViewType)
         break;
     }
 
-bModified = TRUE;
+SetUndoPoint();
 }
 
 //±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
@@ -1875,7 +1884,7 @@ else
     oMapType[CurrentBitmap] = GetLoadType(szName);
     }
 
-bModified = TRUE;
+SetUndoPoint();
 }
 
 //****************************************************************************
@@ -1933,7 +1942,7 @@ SetWindowText(hWnd,szBuf);
 //****************************************************************************
 void UpdateParentText(HWND hWnd)
 {
-    char buf[128];
+    char buf[256];
     switch(nViewType)
     {
         case VIEW_WALLS:
@@ -1970,6 +1979,15 @@ void UpdateParentText(HWND hWnd)
             }
             break;
     }
+
+    //MEH Now see if map is modified and add asterisk at end if it is
+    if(bModified)
+    {
+        char buf2[256];
+        sprintf(buf2, "*");
+        GetWindowText(hWnd, buf, 256);
+        SetWindowText(hWnd, strcat(buf2, buf));
+    }
 }
 
 
@@ -2004,6 +2022,13 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                 else if(iResult == IDCANCEL)
                 {
                     break;
+                }
+                else if(iResult == IDNO)
+                {
+                    char cFilename[256];
+                    sprintf(cFilename, "pics u%d.dtf",g_sSaveUndo);
+                    if(CopyFile(cFilename,"pics.dtf"))
+                        CopyFile("pics r0.dtf", "pics.dtf");
                 }
             }
             DestroyWindow(hWnd);
@@ -2173,12 +2198,13 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
             my = HIWORD(lParam);
             if (wParam & MK_CONTROL && wParam & MK_SHIFT) //MEH Grab map pos # if pressing Ctrl+Shift+LMB
             {
-                ShowMapPosn(hWndChild,mx,my);
+                ShowMapPosn(hWnd,mx,my);
             }
 
             else if (wParam & MK_CONTROL)
             {
                 GrabSquare(hWndChild,mx,my);
+                g_bNotModifyOnMouseUp = true;
                 break;
             }
 
@@ -2189,13 +2215,25 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                 ae->xPlayer = (short)(mx * GRID_WIDTH);
                 ae->yPlayer = (short)(my * GRID_WIDTH);
                 InvalidateRect(hWnd,NULL,TRUE);
+                SetUndoPoint();
+                g_bNotModifyOnMouseUp = true;
             }
             else
                 SetBitmap(hWnd,mx,my,CurrentBitmap);
             break;
 
+        case WM_LBUTTONUP:
+            if(!g_bNotModifyOnMouseUp)
+                SetUndoPoint();
+            g_bNotModifyOnMouseUp = false;
+            break;
+
         case WM_RBUTTONDOWN:
             SetBitmap(hWnd,LOWORD(lParam),HIWORD(lParam),0);
+            break;
+
+        case WM_RBUTTONUP:
+            SetUndoPoint();
             break;
 
         case WM_DESTROY:
@@ -2242,17 +2280,27 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                 ModifyMenu((HMENU)wParam,CM_EDITMAP,MF_STRING,CM_EDITMAP,"&Map\tTab");
                 ModifyMenu((HMENU)wParam,CM_EDITOBJECTS,MF_STRING,CM_EDITOBJECTS,"&Objects");
                 //MEH Also make copy/paste object selectable
-                ModifyMenu((HMENU)wParam,CM_COPYOBJECT,MF_STRING,CM_COPYOBJECT,"&Copy Object\tCtrl+C");
-                ModifyMenu((HMENU)wParam,CM_PASTEOBJECT,MF_STRING,CM_PASTEOBJECT,"&Paste Object\tCtrl+V");
+                ModifyMenu((HMENU)wParam,CM_EDITCOPYOBJECT,MF_STRING,CM_EDITCOPYOBJECT,"&Copy Object\tCtrl+C");
+                ModifyMenu((HMENU)wParam,CM_EDITPASTEOBJECT,MF_STRING,CM_EDITPASTEOBJECT,"&Paste Object\tCtrl+V");
             }
             else
             {
                 ModifyMenu((HMENU)wParam,CM_EDITMAP,MF_STRING,CM_EDITMAP,"&Map");
                 ModifyMenu((HMENU)wParam,CM_EDITOBJECTS,MF_STRING,CM_EDITOBJECTS,"&Objects\tTab");
                 //MEH Make copy/paste object unselectable
-                ModifyMenu((HMENU)wParam,CM_COPYOBJECT,MF_STRING | MF_GRAYED,CM_COPYOBJECT,"&Copy Object\tCtrl+C");
-                ModifyMenu((HMENU)wParam,CM_PASTEOBJECT,MF_STRING | MF_GRAYED,CM_PASTEOBJECT,"&Paste Object\tCtrl+V");
+                ModifyMenu((HMENU)wParam,CM_EDITCOPYOBJECT,MF_STRING | MF_GRAYED,CM_EDITCOPYOBJECT,"&Copy Object\tCtrl+C");
+                ModifyMenu((HMENU)wParam,CM_EDITPASTEOBJECT,MF_STRING | MF_GRAYED,CM_EDITPASTEOBJECT,"&Paste Object\tCtrl+V");
             }
+
+            //MEH Only allow undo/redo if it's possible
+            if(g_sNumUndo)
+                ModifyMenu((HMENU)wParam,CM_EDITUNDO,MF_STRING,CM_EDITUNDO,"&Undo\tCtrl+Z");
+            else
+                ModifyMenu((HMENU)wParam,CM_EDITUNDO,MF_STRING | MF_GRAYED,CM_EDITUNDO,"&Undo\tCtrl+Z");
+            if(g_sNumRedo)
+                ModifyMenu((HMENU)wParam,CM_EDITREDO,MF_STRING,CM_EDITREDO,"&Redo\tCtrl+Y");
+            else
+                ModifyMenu((HMENU)wParam,CM_EDITREDO,MF_STRING | MF_GRAYED,CM_EDITREDO,"&Redo\tCtrl+Y");
 
             CheckMenuItem((HMENU)wParam,CM_EDITMAP,MF_UNCHECKED|MF_BYCOMMAND);
             CheckMenuItem((HMENU)wParam,CM_EDITOBJECTS,MF_UNCHECKED|MF_BYCOMMAND);
@@ -2415,20 +2463,21 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                     break;
 
                 case CM_FILESAVE:
-                     SetCurrentDirectory(szCurPath);
-                     SaveResource(hWnd,ResFileName);
+                     g_sSaveUndo = g_sNumUndo;
+                     bModified = FALSE;
                      break;
 
-                case CM_FILESAVE_AS_:
-                    strcpy(szName,ResFileName);
+                case CM_FILESAVE_AS_:   //Disabled
+                    /*strcpy(szName,ResFileName);
                     if (!ACKFileSave(hWnd,szName,sizeof(szName),
                         "Resource Files (*.dtf)\0*.dtf\0All Files (*.*)\0*.*\0",
                         "Save Resource File"))
                         {
                         SaveResource(hWnd,szName);
+                        bModified = FALSE;
                         strcpy(ResFileName,szName);
                         GetCurrentDirectory(sizeof(szCurPath),szCurPath);
-                        }
+                        }*/
                     break;
 
 
@@ -2446,18 +2495,35 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         {
                             break;
                         }
+                        else if(iResult == IDNO)
+                        {
+                            char cFilename[256];
+                            sprintf(cFilename, "pics u%d.dtf",g_sSaveUndo);
+                            CopyFile(cFilename,"pics.dtf");
+                        }
                     }
                     PostQuitMessage(0);
                     break;
 
+                //MEH Undo/redo
+                case CM_EDITUNDO:
+                    if (g_sNumUndo)
+                        Undo();
+                    break;
+
+                case CM_EDITREDO:
+                    if (g_sNumRedo)
+                        Redo();
+                    break;
+
                 //MEH Copy item to clipboard
-                case CM_COPYOBJECT:
+                case CM_EDITCOPYOBJECT:
                     if(nEditType == EDIT_OBJECTS)
                         g_sClipboard = CurrentBitmap;
                     break;
 
                 //MEH Paste item from clipboard
-                case CM_PASTEOBJECT:
+                case CM_EDITPASTEOBJECT:
                     if(CurrentBitmap != g_sClipboard && g_sClipboard)
                     {
                         if (ae->ObjList[CurrentBitmap] == NULL)
@@ -2480,7 +2546,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         //Redraw the bitmap window
                         InvalidateRect(MainAppWnd->GetChildHandle(), NULL, FALSE);
                         //Map has now been modified
-                        bModified = TRUE;
+                        SetUndoPoint();
                     }
                     break;
 
@@ -2530,9 +2596,8 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                                 {
                                 break;
                                 }
-
                             }
-
+                        SetUndoPoint();
                         if (!ACKFileOpen(hWnd,szName,sizeof(szName),
                             "GIF Images (*.gif)\0*.gif\0PCX files (*.pcx)\0*.pcx\0BBM Bitmaps (*.bbm)\0*.bbm\0All Files (*.*)\0*.*\0",
                             "Open Bitmap File","bbm"))
@@ -2543,7 +2608,10 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                                 ae->bmLoadType = BMLOAD_GIF;
                             //MEH Free bitmap data AFTER we know the user wants to
                             if(ae->bMaps[CurrentBitmap] != NULL)
+                            {
                                 AckFree(ae->bMaps[CurrentBitmap]);
+                                InvalidateRect(hWnd, NULL, FALSE);
+                            }
                             ae->bMaps[CurrentBitmap] = NULL;
                             //----
                             AckLoadBitmap(ae,CurrentBitmap,TYPE_WALL,szName);
@@ -2566,7 +2634,11 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                     else
                         sprintf(szName, "Delete current bitmap?");
                     if (MessageBox(hWnd,szName,"Warning",MB_OKCANCEL) == IDOK)
+                    {
+                        SetUndoPoint();
                         DeleteBitmap(MainAppWnd->GetHandle(),hWnd);
+                        InvalidateRect(MainAppWnd->GetChildHandle(), NULL, FALSE);
+                    }
                     break;
 
                 case CM_VIEWWALLS:
@@ -2576,7 +2648,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         InvalidateRect(hWndChild,NULL,TRUE);
                     }
                     nViewType = VIEW_WALLS;
-                    UpdateParentText(hWnd);
+//                    UpdateParentText(hWnd);
                     InvalidateRect(hWnd,NULL,TRUE);
                     break;
 
@@ -2587,7 +2659,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         InvalidateRect(hWndChild,NULL,TRUE);
                     }
                     nViewType = VIEW_FLOOR;
-                    UpdateParentText(hWnd);
+//                    UpdateParentText(hWnd);
                     InvalidateRect(hWnd,NULL,TRUE);
                     break;
 
@@ -2598,7 +2670,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         InvalidateRect(hWndChild,NULL,TRUE);
                     }
                     nViewType = VIEW_CEILING;
-                    UpdateParentText(hWnd);
+//                    UpdateParentText(hWnd);
                     InvalidateRect(hWnd,NULL,TRUE);
                     break;
 
@@ -2704,6 +2776,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         {
                         //if (strstr(szName,".PCX"))
                         //    ae->bmLoadType = BMLOAD_PCX;
+                        SetUndoPoint();
                         LoadNewBackDrop(szName);
                         //ae->bmLoadType = BMLOAD_BBM;
                         lstrcpy(BackGndFile,szName);
@@ -2712,6 +2785,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                     break;
 
                 case CM_GOODIESLIGHT_SHADING:
+                    SetUndoPoint();
                     if (ae->LightFlag == SHADING_OFF)
                         ae->LightFlag = SHADING_ON;
                     else
@@ -3055,7 +3129,12 @@ switch (nScrollCode)
 if(nEditType == EDIT_OBJECTS && pos > 250)
     pos = 250;
 
+//Test to make sure we didn't go too far up
+if(pos <= 0)
+    pos = 1;
+
 CurrentTopBitmap = (short)pos;
+
 SetScrollPos(hWnd,SB_VERT,pos,TRUE);
 
 hdc = GetDC(hWnd);
@@ -3196,6 +3275,7 @@ int PASCAL WinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance,LPSTR lpszCmdLine
     short   i;
     int     result;
     HBITMAP hbm;
+    char szName[256];
 
 //MEH Load our cursors
 g_cArrow = LoadCursor(NULL, IDC_ARROW);
@@ -3285,6 +3365,28 @@ WriteConfig();
 DestroyCursor(g_cArrow);
 DestroyCursor(g_cPan);
 
+//MEH Destroy all undo/redo locations
+if(g_sNumRedo > 0)
+{
+    for(;g_sNumRedo > 0;)
+    {
+        sprintf(szName, "pics r%d.dtf", g_sNumRedo);
+        unlink(szName);
+        g_sNumRedo--;
+    }
+    unlink("pics r0.dtf");
+}
+if(g_sNumUndo > 0)
+{
+    for(;g_sNumUndo > 0;)
+    {
+        sprintf(szName, "pics u%d.dtf", g_sNumUndo);
+        unlink(szName);
+        g_sNumUndo--;
+    }
+    unlink("pics u0.dtf");
+}
+
 return(result);
 }
 
@@ -3339,7 +3441,7 @@ void HandleGenericKeypresses(WPARAM wParam)
             //Of course, redraw and set the child (bitmap) window text to be correct
             InvalidateRect(MainAppWnd->GetChildHandle(), NULL, TRUE);
             UpdateChildText(MainAppWnd->GetChildHandle());
-            UpdateParentText(MainAppWnd->GetHandle());
+//            UpdateParentText(MainAppWnd->GetHandle());
             break;
 
         //Pagedown/pageup causes background color to change
@@ -3371,7 +3473,7 @@ void HandleGenericKeypresses(WPARAM wParam)
                 }
                 nViewType = VIEW_WALLS;
                 InvalidateRect(MainAppWnd->GetHandle(), NULL, TRUE);
-                UpdateParentText(MainAppWnd->GetHandle());
+//                UpdateParentText(MainAppWnd->GetHandle());
             }
             break;
 
@@ -3394,7 +3496,7 @@ void HandleGenericKeypresses(WPARAM wParam)
                 }
                 nViewType = VIEW_FLOOR;
                 InvalidateRect(MainAppWnd->GetHandle(), NULL, TRUE);
-                UpdateParentText(MainAppWnd->GetHandle());
+//                UpdateParentText(MainAppWnd->GetHandle());
             }
             break;
 
@@ -3410,7 +3512,7 @@ void HandleGenericKeypresses(WPARAM wParam)
                 }
                 nViewType = VIEW_CEILING;
                 InvalidateRect(MainAppWnd->GetHandle(), NULL, TRUE);
-                UpdateParentText(MainAppWnd->GetHandle());
+//                UpdateParentText(MainAppWnd->GetHandle());
             }
             break;
 
@@ -3499,8 +3601,8 @@ void HandleGenericKeypresses(WPARAM wParam)
                 //Otherwise, Ctrl+S = save
                 else if (GetAsyncKeyState(VK_CONTROL) < 0)
                 {
-                    SetCurrentDirectory(szCurPath);
-                    SaveResource(MainAppWnd->GetHandle(),ResFileName);
+                    g_sSaveUndo = g_sNumUndo;
+                    bModified = FALSE;
                 }
                 break;
 
@@ -3528,7 +3630,7 @@ void HandleGenericKeypresses(WPARAM wParam)
                     //Redraw the bitmap window
                     InvalidateRect(MainAppWnd->GetChildHandle(), NULL, FALSE);
                     //Map has now been modified
-                    bModified = TRUE;
+                    SetUndoPoint();
                 }
                 break;
 
@@ -3540,6 +3642,18 @@ void HandleGenericKeypresses(WPARAM wParam)
                     FillEntireMap(0);
                     InvalidateRect(MainAppWnd->GetHandle(),NULL,TRUE);
                 }
+                break;
+
+            //MEH: If pressing Ctrl+Y, redo
+            case VK_Y:
+                if (GetAsyncKeyState(VK_CONTROL) < 0 && g_sNumRedo)
+                    Redo();
+                break;
+
+            //MEH: If pressing CTRL+Z, undo
+            case VK_Z:
+                if (GetAsyncKeyState(VK_CONTROL) < 0 && g_sNumUndo)
+                    Undo();
                 break;
     }
 }
@@ -3632,11 +3746,13 @@ void CreateNewMap(HWND hWnd, HWND hWndChild)
             {
                 SetCurrentDirectory(szCurPath);
                 SaveResource(hWnd,ResFileName);
+                bModified = FALSE;
             }
             else if(iResult == IDCANCEL)
             {
                 return;
             }
+            g_sSaveUndo = g_sNumUndo;
         }
 
         //-------------------Now clear everything out
@@ -3686,6 +3802,180 @@ void CreateNewMap(HWND hWnd, HWND hWndChild)
         CurrentTopBitmap = 1;
         nEditType = EDIT_WALLS;
         nViewType = VIEW_WALLS;
-        bModified = TRUE;
+        SetUndoPoint();
     }
 }
+
+
+//MEH Functions for dealing with Undo/redo
+
+//Copy one file to another - ripped from teh internets
+bool CopyFile(const char* src, const char* dest)
+{
+    FILE *in, *out;
+    char ch;
+
+    if((in = fopen(src, "rb")) == NULL)
+    {
+        //printf("Cannot open input file.\n");
+        return false;
+    }
+    if((out = fopen(dest, "wb")) == NULL)
+    {
+        printf("Cannot open output file.\n");
+        return false;
+    }
+
+    while(!feof(in))
+    {
+        ch = getc(in);
+        if(ferror(in))
+        {
+            printf("Read Error\n");
+            clearerr(in);
+            break;
+        }
+        else
+        {
+            if(!feof(in))
+                putc(ch, out);
+            if(ferror(out))
+            {
+                printf("Write Error\n");
+                clearerr(out);
+                break;
+            }
+        }
+    }
+    fclose(in);
+    fclose(out);
+    return true;
+}
+
+//-----------------------------------------------------------------------
+// Adds this point to the undo stack
+//-----------------------------------------------------------------------
+void SetUndoPoint(void)
+{
+    char szName[128];
+    char PathBuffer[256];
+    GetCurrentDirectory(256, PathBuffer);
+    SetCurrentDirectory(szCurPath);
+
+    bModified = TRUE;
+
+    sprintf(szName, "pics u%d.dtf", g_sNumUndo);
+    g_sNumUndo++;
+    rename("pics.dtf",szName);
+    CopyFile(szName, "pics.dtf");   //So SaveResource() doesn't totally mess up
+    SaveResource(MainAppWnd->GetHandle(), "pics.dtf");
+
+    SetCurrentDirectory(PathBuffer);
+
+    if(g_sNumRedo > 0)
+    {
+        for(;g_sNumRedo > 0;)
+        {
+            sprintf(szName, "pics r%d.dtf", g_sNumRedo);
+            unlink(szName);
+            g_sNumRedo--;
+        }
+        unlink("pics r0.dtf");
+    }
+}
+
+//-----------------------------------------------------------------------
+// Undoes a step from the top of the undo stack
+//-----------------------------------------------------------------------
+void Undo(void)
+{
+    char LineBuffer[256];
+    char cFilename[256];
+    int result;
+    char PathBuffer[256];
+    GetCurrentDirectory(256, PathBuffer);
+    SetCurrentDirectory(szCurPath);
+
+    sprintf(cFilename, "pics r%d.dtf", g_sNumRedo);
+    g_sNumRedo++;
+    CopyFile("pics.dtf",cFilename);
+    sprintf(cFilename, "pics u%d.dtf", g_sNumUndo - 1);
+    g_sNumUndo--;
+    CopyFile(cFilename, "pics.dtf");
+    unlink(cFilename);
+    sprintf(cFilename, "pics.dtf");
+    AckOpenResource(cFilename);
+    result = ProcessInfoFile(1);
+    if (result)
+    {
+        wsprintf(LineBuffer,"Error: %d reading resource file %s",result,cFilename);
+        MessageBox(NULL,LineBuffer,"Error",MB_OK|MB_ICONSTOP);
+        AckCloseResource();
+        return;
+    }
+
+    LoadBackDrop();
+    AckCloseResource();
+
+    SetCurrentDirectory(PathBuffer);
+
+    //If we've undone everything, map isn't modified any more
+    if(g_sNumUndo == g_sSaveUndo)
+        bModified = FALSE;
+    else
+        bModified = TRUE;
+
+    //Also redraw
+    InvalidateRect(MainAppWnd->GetHandle(), NULL, FALSE);
+    InvalidateRect(MainAppWnd->GetChildHandle(), NULL, FALSE);
+}
+
+//-----------------------------------------------------------------------
+// Redoes an undo
+//-----------------------------------------------------------------------
+void Redo(void)
+{
+    char LineBuffer[256];
+    char cFilename[256];
+    int result;
+    char PathBuffer[256];
+    GetCurrentDirectory(256, PathBuffer);
+    SetCurrentDirectory(szCurPath);
+
+    sprintf(cFilename, "pics u%d.dtf", g_sNumUndo);
+    g_sNumUndo++;
+    CopyFile("pics.dtf",cFilename);
+    sprintf(cFilename, "pics r%d.dtf", g_sNumRedo - 1);
+    g_sNumRedo--;
+    CopyFile(cFilename, "pics.dtf");
+    unlink(cFilename);
+    sprintf(cFilename, "pics.dtf");
+    AckOpenResource(cFilename);
+    result = ProcessInfoFile(1);
+    if (result)
+    {
+        wsprintf(LineBuffer,"Error: %d reading resource file %s",result,cFilename);
+        MessageBox(NULL,LineBuffer,"Error",MB_OK|MB_ICONSTOP);
+        AckCloseResource();
+        return;
+    }
+
+    LoadBackDrop();
+    AckCloseResource();
+
+    SetCurrentDirectory(PathBuffer);
+
+    //If we've undone everything, map isn't modified any more
+    if(g_sNumUndo == g_sSaveUndo)
+        bModified = FALSE;
+    else
+        bModified = TRUE;
+
+    //Also redraw
+    InvalidateRect(MainAppWnd->GetHandle(), NULL, FALSE);
+    InvalidateRect(MainAppWnd->GetChildHandle(), NULL, FALSE);
+}
+
+
+
+

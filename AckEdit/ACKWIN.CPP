@@ -56,6 +56,9 @@ extern    RGBQUAD       ColorTable[];
 extern    pal           LogicalPalette;
 extern    short         nRepairObjectCount;
 
+//MEH Since moving is something that modifies the map
+void SetUndoPoint(void);
+
 //****************************************************************************
 // Here is a generic ACK Initialization proceedure, with Windows modifications
 // for error reporting, etc. Replace the initial values below with your own
@@ -401,25 +404,29 @@ switch (iMessage)
             default:
                 break;
             }
-        DoCycle();
+//        DoCycle();
         break;
 
     case WM_KEYUP:
         switch (wParam)
             {
             case VK_UP:
+                SetUndoPoint();
                 nMoveSpeed = 0;
                 kbPressed[kbUpArrow] = 0;
                 break;
             case VK_DOWN:
+                SetUndoPoint();
                 nMoveSpeed = 0;
                 kbPressed[kbDownArrow] = 0;
                 break;
             case VK_LEFT:
+                SetUndoPoint();
                 nTurnSpeed = 0;
                 kbPressed[kbLeftArrow] = 0;
                 break;
             case VK_RIGHT:
+                SetUndoPoint();
                 nTurnSpeed = 0;
                 kbPressed[kbRightArrow] = 0;
                 break;
@@ -441,7 +448,7 @@ switch (iMessage)
             default:
                 break;
             }
-        DoCycle();
+//        DoCycle();
         break;
     }
 
@@ -456,43 +463,46 @@ switch (iMessage)
 //****************************************************************************
 void ProcessMouse(HWND hWnd,short nType,short xPos,short yPos)
 {
-    short   xMax,yMax;
+    //MEH Ahh, forget it. Clicking to move sucked, anyway.
+
+    /*short   xMax,yMax;
     RECT    rect;
 
-memset(kbPressed,0,128);    // Clear out all previous key presses
+    memset(kbPressed,0,128);    // Clear out all previous key presses
 
-if (!nType)                 // For now, a mouse released will just return
+    if (!nType)                 // For now, a mouse released will just return
     {
-    nMoveSpeed = nTurnSpeed = 0;
-    return;
+        if(nMoveSpeed || nTurnSpeed)    //MEH And if we were moving, the map has been modified
+        {
+            SetUndoPoint();
+        }
+        nMoveSpeed = nTurnSpeed = 0;
+        return;
     }
 
-GetClientRect(hWnd,&rect);
-xMax = (short)rect.right;
-yMax = (short)rect.bottom;
+    GetClientRect(hWnd,&rect);
+    xMax = (short)rect.right;
+    yMax = (short)rect.bottom;
 
-if (yPos < 60)          // Simulate an up arrow if near the top of the window
+    if (yPos < 60)          // Simulate an up arrow if near the top of the window
     {
-    kbPressed[kbUpArrow] = 1;
-    nMoveSpeed += (short)SPEED_AMOUNT;
+        kbPressed[kbUpArrow] = 1;
+        nMoveSpeed += (short)SPEED_AMOUNT;
     }
-if (yPos > (yMax-60))   // Simulate down arrow if near the bottom
+    if (yPos > (yMax-60))   // Simulate down arrow if near the bottom
     {
-    kbPressed[kbDownArrow] = 1;
-    nMoveSpeed += (short)SPEED_AMOUNT;
+        kbPressed[kbDownArrow] = 1;
+        nMoveSpeed += (short)SPEED_AMOUNT;
     }
-if (xPos < 60)          // Simulate left arrow if near left edge
+    if (xPos < 60)          // Simulate left arrow if near left edge
     {
-    kbPressed[kbLeftArrow] = 1;
-    nTurnSpeed += (short)SPEED_AMOUNT;
-    }
-
-if (xPos > (xMax-60))   // Simulate right arrow if near right edge
-    {
-    kbPressed[kbRightArrow] = 1;
-    nTurnSpeed += (short)SPEED_AMOUNT;
+        kbPressed[kbLeftArrow] = 1;
+        nTurnSpeed += (short)SPEED_AMOUNT;
     }
 
-DoCycle();              // Update the 3D window
-
+    if (xPos > (xMax-60))   // Simulate right arrow if near right edge
+    {
+        kbPressed[kbRightArrow] = 1;
+        nTurnSpeed += (short)SPEED_AMOUNT;
+    }*/
 }

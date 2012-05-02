@@ -1344,7 +1344,6 @@ for (i = 1; i < MAX_OBJBMPS; i++)
 
 nOperation = OP_NORMAL;
 SetOperationCursor();
-bModified = FALSE;
 return(0);
 }
 

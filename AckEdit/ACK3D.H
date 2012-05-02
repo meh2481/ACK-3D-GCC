@@ -414,10 +414,16 @@ void AckFree(void *m);
 /* ALL memory allocated with AckMalloc must use AckFree to free memory */
 
 //MEH Defines I need
-#ifndef VK_A
+#ifndef VK_1
 #define VK_1 49
 #define VK_2 50
 #define VK_3 51
+#define VK_4 52
+#define VK_5 53
+#define VK_6 54
+#define VK_7 55
+#define VK_8 56
+#define VK_9 57
 #define VK_A 65
 #define VK_B 66
 #define VK_C 67
@@ -429,6 +435,8 @@ void AckFree(void *m);
 #define VK_U 85
 #define VK_V 86
 #define VK_X 88
+#define VK_Y 89
+#define VK_Z 90
 #endif
 
 

@@ -315,7 +315,6 @@ while (y < y1)
         DrawIconEx(hdc, 2, y, ic, 64-5, 64, NULL, NULL, DI_NORMAL); //Stretch the bitmap slightly so it fits
         DestroyIcon(ic);
 
-        //BitBlt(hdc,2,y,64,64,SupplyBuffer,0,0,SRCCOPY);
         }
 
     if (nIndex > MAX_OBJ_BITMAPS)
@@ -395,14 +394,14 @@ while (y < y1)
                 if(red == 0 && green == 0 && blue == 0)
                     *pBufferData++ = 0; //Alpha = 0 if this pixel is black
                 else
-                    *pBufferData++ = 255; //Alpha = 255 by default.
+                    *pBufferData++ = (nEditType == EDIT_OBJECTS)?(255):(128); //Alpha = 255 by default. If this is the wall options
+                                                                              // dialog, though, make images greyed out.
             }
         }
         HICON ic = CreateIcon(Main::hInstance, 64, 64, 1, 32, NULL, (BYTE*)(GenericUseBitmapBuffer));
         DrawIconEx(hdc, 2, y, ic, 64-5, 64, NULL, NULL, DI_NORMAL); //Squish the bitmap a tad so it fits
         DestroyIcon(ic);
 
-        //BitBlt(hdc,2,y,64,64,SupplyBuffer,0,0,SRCCOPY);
         }
 
     if (nIndex > 255)
@@ -535,6 +534,9 @@ void TransferCurrentToSupply(HWND hDlg,short mx,short my)
     short   nBitmap,y;
     RECT    rect;
 
+    if(nEditType == EDIT_WALLS)
+        return;     //MEH Shouldn't be able to transfer if we're not even editing objects!
+
 GetWindowRect(GetDlgItem(hDlg,IDC_CURRENT),&rect);
 y = my - rect.top;
 nBitmap = nCurrentTop + (y / 66);
@@ -560,6 +562,9 @@ void TransferSupplyToCurrent(HWND hDlg,short mx,short my)
 {
     short   nBitmap,y;
     RECT    rect;
+
+    if(nEditType == EDIT_WALLS)
+        return;     //MEH Shouldn't be able to transfer if we're not even editing objects!
 
 GetWindowRect(GetDlgItem(hDlg,IDC_SUPPLY),&rect);
 y = my - rect.top;
@@ -606,6 +611,7 @@ if (ae->oMaps[nBitmap] == NULL)
 
 if (MessageBox(hDlg,"Delete this bitmap?","Delete",MB_YESNO) == IDYES)
     {
+    SetUndoPoint();
     AckFree(ae->oMaps[nBitmap]);
     ae->oMaps[nBitmap] = NULL;
     RemoveFileName(TYPE_OBJECT,nBitmap);
@@ -951,7 +957,8 @@ switch (iMessage)
         if (mx >= rect.left && mx <= rect.right &&
             my >= rect.top && my <= rect.bottom)
         {
-            DeleteSupplyBitmap(hDlg,mx,my);
+            if(nEditType == EDIT_OBJECTS)
+                DeleteSupplyBitmap(hDlg,mx,my);
             cLastScrollboxUsed = LAST_USED_SUPPLY;
         }
         break;
@@ -974,6 +981,8 @@ switch (iMessage)
 
     //MEH Mousewheel makes current bitmaps scroll
     case WM_MOUSEWHEEL:
+        if(nEditType != EDIT_OBJECTS)
+            break;
         if((short)(HIWORD(wParam)) > 0)  //Rotated wheel up
         {
             DoScroll(SB_LINEUP, 0, hDlg,
@@ -1003,7 +1012,7 @@ switch (iMessage)
                     {
                     GetObjectEdit(hDlg);
                     CheckObject(nCurrentType);
-                    bModified = TRUE;
+                    SetUndoPoint();
                     }
                 CloseWinG();
                 EndDialog(hDlg, TRUE);
