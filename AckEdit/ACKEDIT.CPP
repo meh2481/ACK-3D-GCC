@@ -1949,34 +1949,34 @@ void UpdateParentText(HWND hWnd)
         case VIEW_WALLS:
             if (bShowCoords)
             {
-                wsprintf(buf,"Map Editor - Walls Row:%d,Col:%d",ae->yPlayer >> 6,ae->xPlayer >> 6);
-                SetWindowText(hWnd,buf);
+                sprintf(buf,"Map Editor - Walls Row:%d,Col:%d",ae->yPlayer >> 6,ae->xPlayer >> 6);
+                //SetWindowText(hWnd,buf);
             }
             else
             {
-                SetWindowText(hWnd,"Map Editor - Walls");
+                sprintf(buf,"Map Editor - Walls");
             }
             break;
         case VIEW_FLOOR:
             if (bShowCoords)
             {
-                wsprintf(buf,"Map Editor - Floors Row:%d,Col:%d",ae->yPlayer >> 6,ae->xPlayer >> 6);
-                SetWindowText(hWnd,buf);
+                sprintf(buf,"Map Editor - Floors Row:%d,Col:%d",ae->yPlayer >> 6,ae->xPlayer >> 6);
+                //SetWindowText(hWnd,buf);
             }
             else
             {
-                SetWindowText(hWnd,"Map Editor - Floors");
+                sprintf(buf,"Map Editor - Floors");
             }
             break;
         case VIEW_CEILING:
             if (bShowCoords)
             {
-                wsprintf(buf,"Map Editor - Ceilings Row:%d,Col:%d",ae->yPlayer >> 6,ae->xPlayer >> 6);
-                SetWindowText(hWnd,buf);
+                sprintf(buf,"Map Editor - Ceilings Row:%d,Col:%d",ae->yPlayer >> 6,ae->xPlayer >> 6);
+                //SetWindowText(hWnd,buf);
             }
             else
             {
-                SetWindowText(hWnd,"Map Editor - Ceilings");
+                sprintf(buf,"Map Editor - Ceilings");
             }
             break;
     }
@@ -1986,9 +1986,11 @@ void UpdateParentText(HWND hWnd)
     {
         char buf2[256];
         sprintf(buf2, "*");
-        GetWindowText(hWnd, buf, 256);
+        //GetWindowText(hWnd, buf, 256);
         SetWindowText(hWnd, strcat(buf2, buf));
     }
+    else
+        SetWindowText(hWnd, buf);
 }
 
 
