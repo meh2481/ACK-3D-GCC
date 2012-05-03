@@ -184,6 +184,10 @@ short g_sNumRedo = 0;
 short g_sSaveUndo = 0;  //The g_sNumUndo location that we last saved at
 bool g_bNoCreateUndoRedo = false;   //Whether we should create undo/redo locations or not
 
+bool g_bCreatedObjectThisCycle = false; //Whether or not we created an object, in case user selects "cancel"
+                                        // in the object attributes dialog right after they create it, we want
+                                        // to delete the newly-created object.
+
 
 //****************************************************************************
 // Prototypes
@@ -577,27 +581,30 @@ switch (nViewType)
                 {
                 nMapCode = ObjGrid[mx];
                 if (nMapCode)
-                    {
+                {
                     pObj = ae->ObjList[nMapCode & 0xFF];
                     if (pObj != NULL)
-                        {
+                    {
                         pBmp = ae->oMaps[pObj->CurrentBitmaps[0]];
-                        offset = (y * wt) + x;
-                        for (bx = 0; bx < GridSize; bx++)
+                        if(pBmp != NULL)
+                        {
+                            offset = (y * wt) + x;
+                            for (bx = 0; bx < GridSize; bx++)
                             {
-                            pMap = (UCHAR *)TempScreenBuffer + offset;
-                            for (by = 0; by < GridSize; by++)
+                                pMap = (UCHAR *)TempScreenBuffer + offset;
+                                for (by = 0; by < GridSize; by++)
                                 {
-                                if(*pBmp != 0)
-                                    *pMap = *pBmp;  //MEH: Don't draw black bg. It's distracting
-                                pMap += wt;
-                                pBmp += 2;
+                                    if(*pBmp != 0)
+                                        *pMap = *pBmp;  //MEH: Don't draw black bg. It's distracting
+                                    pMap += wt;
+                                    pBmp += 2;
                                 }
-                            offset++;
-                            pBmp += 64;
+                                offset++;
+                                pBmp += 64;
                             }
                         }
                     }
+                }
 
                 nMapCode = ae->xGrid[mx];
                 if (nMapCode)
@@ -1681,7 +1688,6 @@ void DeleteBitmap(HWND hWnd,HWND hwndChild)
 {
     short   mPos;
 
-SetUndoPoint();
 if (nEditType == EDIT_WALLS)
     {
     if (ae->bMaps[CurrentBitmap] == NULL)
@@ -2152,7 +2158,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
             SetCursor(g_cArrow);
 
             //Allow panning view if holding MMB or spacebar
-            if((GetAsyncKeyState(VK_MBUTTON) < 0 || GetAsyncKeyState(VK_SPACE) < 0) && g_bPanning)
+            if((wParam & MK_MBUTTON || GetAsyncKeyState(VK_SPACE) < 0) && g_bPanning)
             {
                 SetCursor(g_cPan);
                 int xPos = LOWORD(lParam);
@@ -2184,11 +2190,11 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                 break;  //Stop here
             }
 
-            //Just for ease-of-use, make sure user doesn't have L/R mouse buttons swapped.
-            if(!((GetAsyncKeyState(VK_LBUTTON) < 0) || (GetSystemMetrics(SM_SWAPBUTTON) && GetAsyncKeyState(VK_RBUTTON) < 0)))
+            //If they're not pressing left mouse button, don't keep placing bitmaps
+            if(!(wParam & MK_LBUTTON))
             {
                 //Also allow user to remove bitmaps by holding down RMB
-                if(((GetAsyncKeyState(VK_RBUTTON) < 0) || (GetSystemMetrics(SM_SWAPBUTTON) && GetAsyncKeyState(VK_LBUTTON) < 0)))
+                if(wParam & MK_RBUTTON)
                     SetBitmap(hWnd,LOWORD(lParam),HIWORD(lParam),0);
                 break;
             }
@@ -2600,7 +2606,6 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                                 break;
                                 }
                             }
-                        SetUndoPoint();
                         if (!ACKFileOpen(hWnd,szName,sizeof(szName),
                             "GIF Images (*.gif)\0*.gif\0PCX files (*.pcx)\0*.pcx\0BBM Bitmaps (*.bbm)\0*.bbm\0All Files (*.*)\0*.*\0",
                             "Open Bitmap File","bbm"))
@@ -2621,6 +2626,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                             ae->bmLoadType = BMLOAD_BBM;
                             AddFileName(TYPE_WALL,szName);
                             InvalidateRect(hWndChild,NULL,TRUE);
+                            SetUndoPoint();
                             }
                         }
                     else
@@ -2638,9 +2644,9 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         sprintf(szName, "Delete current bitmap?");
                     if (MessageBox(hWnd,szName,"Warning",MB_OKCANCEL) == IDOK)
                     {
-                        SetUndoPoint();
                         DeleteBitmap(MainAppWnd->GetHandle(),hWnd);
                         InvalidateRect(MainAppWnd->GetChildHandle(), NULL, FALSE);
+                        SetUndoPoint();
                     }
                     break;
 
@@ -2678,17 +2684,19 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                     break;
 
                 case CM_GOODIESATTRIBUTES:
+                    g_bCreatedObjectThisCycle = false;
                     if (nEditType == EDIT_OBJECTS)
                         {
                         if (ae->ObjList[CurrentBitmap] == NULL)
                             {
-                            if (MessageBox(hWnd,"Create NEW object?","Question",
+                            if (MessageBox(hWnd,"Create NEW object?","ACK Editor",
                                 MB_YESNO) != IDYES)
                                 {
                                 break;
                                 }
                             AckCreateObject(ae,CurrentBitmap);
                             AckSetObjectType(ae,CurrentBitmap,NO_CREATE);
+                            g_bCreatedObjectThisCycle = true;
                             }
                         }
                     DoOptionsDlg(hInstGlobal,hWnd);
@@ -2779,22 +2787,22 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         {
                         //if (strstr(szName,".PCX"))
                         //    ae->bmLoadType = BMLOAD_PCX;
-                        SetUndoPoint();
                         LoadNewBackDrop(szName);
                         //ae->bmLoadType = BMLOAD_BBM;
                         lstrcpy(BackGndFile,szName);
                         InvalidateRect(hwndApp,NULL,FALSE);
+                        SetUndoPoint();
                         }
                     break;
 
                 case CM_GOODIESLIGHT_SHADING:
-                    SetUndoPoint();
                     if (ae->LightFlag == SHADING_OFF)
                         ae->LightFlag = SHADING_ON;
                     else
                         ae->LightFlag = SHADING_OFF;
                     AckSetupPalRanges(ae,ranges);
                     AckRegisterStructure(ae);
+                    SetUndoPoint();
                     break;
 
 
@@ -2916,7 +2924,7 @@ LRESULT  CALLBACK _export AckWndProc( HWND hWnd, UINT iMessage, WPARAM wParam,
                                  LPARAM lParam )
 
 {
-        HDC         hDC;
+//        HDC         hDC;
         PAINTSTRUCT ps;
 
 switch (iMessage)
@@ -2984,19 +2992,6 @@ switch (iMessage)
         }
         break;
 
-    /*case WM_PALETTECHANGED:
-        if (hWnd == (HWND)wParam)
-            break;
-        // Fall through here
-    case WM_QUERYNEWPALETTE:
-        hDC = GetDC(hWnd);
-        if (hpalApp)
-            SelectPalette(hDC,hpalApp,FALSE);
-        RealizePalette(hDC);
-        ReleaseDC(hWnd,hDC);
-        return FALSE;*/
-
-
     default:
         return DefWindowProc(hWnd,iMessage,wParam,lParam);
     }
@@ -3011,6 +3006,8 @@ void SelectBitmap(HWND hWnd,short yPos)
 {
     HDC     hdc;
     short   oldCurrent = CurrentBitmap;
+
+    g_bCreatedObjectThisCycle = false;
 
     CurrentBitmap = (short)(CurrentTopBitmap + (yPos / 66));
     if (CurrentBitmap != oldCurrent)
@@ -3038,17 +3035,19 @@ void SelectBitmap(HWND hWnd,short yPos)
                     ae->ObjList[CurrentBitmap]->Active = 0; //set to inactive
                     InvalidateRect(MainAppWnd->GetChildHandle(),NULL,FALSE);
                     InvalidateRect(MainAppWnd->GetHandle(),NULL,FALSE); //Redraw windows
+                    SetUndoPoint();
                     return;
                 }
             }
             if (ae->ObjList[CurrentBitmap] == NULL)
             {
-                if (MessageBox(MainAppWnd->GetHandle(),"Create NEW object?","Question", MB_YESNO) != IDYES)
+                if (MessageBox(MainAppWnd->GetHandle(),"Create NEW object?","ACK Editor", MB_YESNO) != IDYES)
                 {
                     return;
                 }
                 AckCreateObject(ae,CurrentBitmap);
                 AckSetObjectType(ae,CurrentBitmap,NO_CREATE);
+                g_bCreatedObjectThisCycle = true;
             }
         }
         if (nEditType == EDIT_WALLS && ae->bMaps[CurrentBitmap] == NULL)    //If this bitmap is blank, load it by clicking
@@ -3153,7 +3152,7 @@ InvalidateRect(hWnd,NULL,FALSE);
 LRESULT  CALLBACK _export ChildWndProc( HWND hWnd, UINT iMessage, WPARAM wParam,
                                  LPARAM lParam )
 {
-    HDC     hDC;
+//    HDC     hDC;
     int     tempCurrent;
 
 switch (iMessage)
@@ -3186,7 +3185,10 @@ switch (iMessage)
             else
                 sprintf(cTempText, "Delete current bitmap?");
             if (MessageBox(hWnd,cTempText,"Warning",MB_OKCANCEL) == IDOK)
+            {
                 DeleteBitmap(MainAppWnd->GetHandle(),hWnd);
+                SetUndoPoint();
+            }
         }
         //Otherwise, select it
         else
@@ -3211,6 +3213,7 @@ switch (iMessage)
                 ae->ObjList[CurrentBitmap]->Active = 0; //set to inactive
                 InvalidateRect(MainAppWnd->GetChildHandle(),NULL,FALSE);
                 InvalidateRect(MainAppWnd->GetHandle(),NULL,FALSE); //Redraw windows
+                SetUndoPoint();
             }
         }
         else    //Otherwise, set this to current bitmap
@@ -3249,19 +3252,6 @@ switch (iMessage)
         ProcessKeys(iMessage,wParam);
         HandleGenericKeypresses(wParam);
         break;
-
-    case WM_PALETTECHANGED:
-        if (hWnd == (HWND)wParam)
-            break;
-        // Fall through here
-    case WM_QUERYNEWPALETTE:
-        hDC = GetDC(hWnd);
-        if (hpalApp)
-            SelectPalette(hDC,hpalApp,FALSE);
-        RealizePalette(hDC);
-        ReleaseDC(hWnd,hDC);
-        return FALSE;
-
 
     default:
         return DefWindowProc(hWnd,iMessage,wParam,lParam);
@@ -3926,6 +3916,10 @@ void Undo(void)
     unlink(cFilename);
     sprintf(cFilename, "pics.dtf");
     AckOpenResource(cFilename);
+
+    //Clear everything
+    AckReset();
+
     result = ProcessInfoFile(1);
     if (result)
     {
@@ -3937,6 +3931,8 @@ void Undo(void)
 
     LoadBackDrop();
     AckCloseResource();
+    AckSetupPalRanges(ae,ranges);
+    AckRegisterStructure(ae);
 
     SetCurrentDirectory(PathBuffer);
 
@@ -3973,6 +3969,10 @@ void Redo(void)
     unlink(cFilename);
     sprintf(cFilename, "pics.dtf");
     AckOpenResource(cFilename);
+
+    //Clear everything
+    AckReset();
+
     result = ProcessInfoFile(1);
     if (result)
     {
@@ -3984,6 +3984,8 @@ void Redo(void)
 
     LoadBackDrop();
     AckCloseResource();
+    AckSetupPalRanges(ae,ranges);
+    AckRegisterStructure(ae);
 
     SetCurrentDirectory(PathBuffer);
 

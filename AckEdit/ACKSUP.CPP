@@ -155,15 +155,20 @@ for (i = 0; i < 255; i++)
         AckFree(ae->oMaps[i]);
         ae->oMaps[i] = NULL;
         }
-    if (ae->ObjList[i] != NULL)
-        {
-        AckFree(ae->ObjList[i]);
-        ae->ObjList[i] = NULL;
-        }
 
     oMapIndex[i] = 0;
     bMapIndex[i] = 0;
     }
+
+//MEH Less objects than object bitmaps! Grr...
+for(i = 0; i < MAX_OBJECTS; i++)
+{
+    if (ae->ObjList[i] != NULL)
+    {
+        AckFree(ae->ObjList[i]);
+        ae->ObjList[i] = NULL;
+    }
+}
 
 for (i = 0; i < 640; i++)
     {

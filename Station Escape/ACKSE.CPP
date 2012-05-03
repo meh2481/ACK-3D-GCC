@@ -62,6 +62,8 @@ short   nMoveObjectList[] = {
 
    int g_iHealth = MAX_HEALTH;
 
+   bool g_bMotionBlur = false;      //MEH If we're running, add motion blur as visual cue
+
 //****************************************************************************
 // The main program window
 //****************************************************************************
@@ -443,6 +445,11 @@ void AckPaint()
     for(int r = 0; r < 320 * 200 * 4; r++)
     {
         ((unsigned char*)tempSurface->pixels)[r] = pBufferData[r];
+        if(g_bMotionBlur && r % 4 == 3)
+        {
+            ((unsigned char*)tempSurface->pixels)[r] = 128; //Alpha = 128 when motion blur. Just a cool little touch.
+        }
+
     }
 
     SDL_UnlockSurface(tempSurface);
@@ -541,8 +548,19 @@ void DoCycle(void)
     short   Amt,nRow,nCol;
 
     Amt = 16;
-    if (kbPressed[kbCtrl])
+    g_bMotionBlur = false;
+    if (kbPressed[kbLeftShift])
+    {
         Amt = 32;
+        //Motion blur if we're moving while holding ctrl
+        if(kbPressed[kbLeftArrow] ||
+           kbPressed[kbRightArrow] ||
+           kbPressed[kbUpArrow] ||
+           kbPressed[kbDownArrow])
+        {
+            g_bMotionBlur = true;
+        }
+    }
 
     if (kbPressed[kbLeftArrow])
         g_Ack3D->MovePlayer(Amt, -INT_ANGLE_90);

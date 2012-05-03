@@ -380,6 +380,8 @@ if (FoundObjectCount)       // Make sure objects were found during ray casting
         // Finally get the pointer to the actual bitmap
         //printf("bitmap #: %d\n",ObjNum);
         wall = omaps[ObjNum];
+        if(wall == NULL)
+            continue;   //skip this object if NULL bitmap
         // Pick up the transparent flags at end of bitmap
         bmpFlags = &wall[BITMAP_SIZE];
         j = distance;

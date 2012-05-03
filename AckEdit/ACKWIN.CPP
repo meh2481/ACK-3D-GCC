@@ -188,7 +188,7 @@ hpalApp = CreateIdentityPalette(ColorTable, 256);
 void AckDoSize(HWND hWnd,LPARAM lParam)
 {
     HBITMAP hbm;
-    int Counter;
+//    int Counter;
 
 //nBitmapW = LOWORD(lParam);
 //nBitmapH = HIWORD(lParam);

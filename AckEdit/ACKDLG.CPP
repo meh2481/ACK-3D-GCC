@@ -2,7 +2,7 @@
 #define  STRICT
 #include <windows.h>
 #include <stdio.h>
-#pragma hdrstop
+//#pragma hdrstop
 #include <stdlib.h>
 #include <string.h>
 //#include "wing.h"
@@ -70,6 +70,12 @@ extern   PalletteSlot pallette[256];
 #define     LAST_USED_CURRENT   0
 #define     LAST_USED_SUPPLY    1
 unsigned char cLastScrollboxUsed = LAST_USED_SUPPLY;
+
+extern bool g_bCreatedObjectThisCycle;
+
+extern MainWindow* MainAppWnd;
+
+void DeleteBitmap(HWND hWnd,HWND hwndChild);
 // --MEH
 
 //MEH Copy a NEWOBJECT into another NEWOBJECT
@@ -123,7 +129,7 @@ int DoOptionsDlg(HINSTANCE hInst, HWND hWnd)
                         //the old data back over.
     WORD      nOldWallFlags;    //Used to hold onto old wall flags in case user presses cancel, kinda like we do with objects
 
-    if(nEditType == EDIT_OBJECTS)
+    if(nEditType == EDIT_OBJECTS && !g_bCreatedObjectThisCycle)
         CopyObject(ae->ObjList[CurrentBitmap], &oOldObj);
     if(nEditType == EDIT_WALLS)
         nOldWallFlags = nWallFlags; //Hold onto our old flags
@@ -139,7 +145,12 @@ int DoOptionsDlg(HINSTANCE hInst, HWND hWnd)
     else if(!iReturn && nEditType == EDIT_OBJECTS)   //Returned false, which means user clicked Cancel
     {
         //Restore old object
-        CopyObject(&oOldObj, ae->ObjList[CurrentBitmap]);
+        if(!g_bCreatedObjectThisCycle)
+            CopyObject(&oOldObj, ae->ObjList[CurrentBitmap]);
+        else    //Destroy newly created object
+        {
+            DeleteBitmap(MainAppWnd->GetHandle(),MainAppWnd->GetChildHandle());
+        }
     }
     else if(!iReturn && nEditType == EDIT_WALLS)
         nWallFlags = nOldWallFlags; //Restore old wall flags if user hit cancel
@@ -200,7 +211,7 @@ return(iReturn);
 void SetupWinG(HWND hDlg)
 {
     RECT    rect;
-    HWND    hDlgItem;
+//    HWND    hDlgItem;
     HBITMAP hbm;
 
 /*if (WinG.pRecommendDIBFormat((BITMAPINFO *)&BufferHeader))
@@ -611,11 +622,11 @@ if (ae->oMaps[nBitmap] == NULL)
 
 if (MessageBox(hDlg,"Delete this bitmap?","Delete",MB_YESNO) == IDYES)
     {
-    SetUndoPoint();
     AckFree(ae->oMaps[nBitmap]);
     ae->oMaps[nBitmap] = NULL;
     RemoveFileName(TYPE_OBJECT,nBitmap);
     ShowSupply(hDlg);
+    SetUndoPoint();
     }
 
 }
@@ -867,10 +878,10 @@ if (!ACKFileOpen(hWnd,szName,sizeof(szName),
 BOOL CALLBACK _export FAR PASCAL OptionsDlgProc(HWND hDlg, UINT iMessage,
         WPARAM wParam, LPARAM lParam)
 {
-    short   nID,mx,my;
+    short   mx,my;
     RECT    rect;
     POINT   pt;
-         HWND    hWndScroll;
+//         HWND    hWndScroll;
          HWND           hDlgItem;
 
 switch (iMessage)
@@ -1219,7 +1230,7 @@ return(TRUE);
 //**************************************************************************
 short ReadTempInfo(HWND hDlg)
 {
-    short   handle;
+//    short   handle;
     FILE    *fp;
     char    *s;
     char    szBuf[256];
@@ -1262,9 +1273,9 @@ return(0);
 BOOL CALLBACK _export FAR PASCAL InfoDlgProc(HWND hDlg, UINT iMessage,
         WPARAM wParam, LPARAM lParam)
 {
-    short   nTF;
-    HWND    hDlgItem;
-    char    szBuf[10];
+//    short   nTF;
+//    HWND    hDlgItem;
+//    char    szBuf[10];
 
 switch (iMessage)
     {
