@@ -3897,6 +3897,10 @@ void SetUndoPoint(bool bMovement)
             g_sNumRedo--;
         }
         unlink("pics r0.dtf");
+
+        //Also make sure we don't get into a state where the editor thinks the map is saved, but it isn't.
+        if(g_sSaveUndo > g_sNumUndo)
+            g_sSaveUndo = -1;
     }
 }
 
