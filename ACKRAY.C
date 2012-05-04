@@ -99,7 +99,7 @@ while (1)
 
     if ((Color = ObjGrid[MapPosn]) != 0)
 	{
-	Color &= 0x7F;
+	Color &= 0xFF;  //MEH RGH. NOT 0x7F like he had! That only allows 127 objects!!!
 	if (!ObjectExist(Color))
 	    ObjectsSeen[FoundObjectCount++] = Color;
 
@@ -208,7 +208,7 @@ while (1)
 
     if ((Color = ObjGrid[MapPosn]) != 0)
 	{
-	Color &= 0x7F;
+	Color &= 0xFF;
 	if (!ObjectExist(Color))
 	    ObjectsSeen[FoundObjectCount++] = Color;
 
@@ -320,7 +320,7 @@ while (1)
 
     if ((Color = ObjGrid[MapPosn]) != 0)
 	{
-	Color &= 0x7F;
+	Color &= 0xFF;
 	if (!ObjectExist(Color))
 	    ObjectsSeen[FoundObjectCount++] = Color;
 
@@ -430,7 +430,7 @@ while (1)
 
     if ((Color = ObjGrid[MapPosn]) != 0)
 	{
-	Color &= 0x7F;
+	Color &= 0xFF;
 	if (!ObjectExist(Color))
 	    ObjectsSeen[FoundObjectCount++] = Color;
 

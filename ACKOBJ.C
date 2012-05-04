@@ -149,9 +149,9 @@ return(objAngle);
 
 //北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
 // Internal function that returns the square root of a int32_t value.
-// This function is called by Find)bject().
+// This function is called by FindObject().
 //北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北北
-short int32_t_sqrt(int32_t v)
+short long_sqrt(int32_t v)
 {
     short     i;
     unsigned  short result,tmp;
@@ -262,7 +262,7 @@ if (FoundObjectCount)       // Make sure objects were found during ray casting
             }
 
         // Get the distance to the object
-        distance = int32_t_sqrt((dx * dx) + (dy * dy));
+        distance = long_sqrt((dx * dx) + (dy * dy));
         // No need to check further if it's too far away
         if (distance >= MaxDistance)
             continue;

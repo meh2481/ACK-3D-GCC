@@ -67,8 +67,8 @@ typedef unsigned char	UCHAR;
 #define POV_YWALL       2       // A Y wall was hit
 #define POV_OBJECT      3       // An object was hit
 #define POV_PLAYER      4       // The player was hit by object
-#define POV_SLIDEX      5       // Sliding aint32_t an X wall
-#define POV_SLIDEY      6       // Sliding aint32_t a Y wall
+#define POV_SLIDEX      5       // Sliding along an X wall
+#define POV_SLIDEY      6       // Sliding along a Y wall
 #define POV_NODOOR      0       // No door was opened
 #define POV_XDOOR       1       // An X door was opened
 #define POV_YDOOR       2       // A Y door was opened
