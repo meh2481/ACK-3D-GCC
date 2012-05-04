@@ -129,16 +129,16 @@ void AckReset(void)
 
 for (i = 0; i < 4096; i++)
     {
-    if (ae->mxGrid[i] != NULL)
-        {
-        AckFree(ae->mxGrid[i]);
+    //if (ae->mxGrid[i] != NULL)    //MEH Why does this cause crashes? TODO: I'll have to look into multi-height walls sometime...
+    //    {
+    //    AckFree(ae->mxGrid[i]);
         ae->mxGrid[i] = NULL;
-        }
-    if (ae->myGrid[i] != NULL)
-        {
-        AckFree(ae->myGrid[i]);
+    //    }
+    //if (ae->myGrid[i] != NULL)
+    //    {
+    //    AckFree(ae->myGrid[i]);
         ae->myGrid[i] = NULL;
-        }
+    //    }
     ae->xGrid[i] = 0;
     ae->yGrid[i] = 0;
     }
@@ -161,7 +161,7 @@ for (i = 0; i < 255; i++)
     }
 
 //MEH Less objects than object bitmaps! Grr...
-for(i = 0; i < MAX_OBJECTS; i++)
+for(i = 1; i < MAX_OBJECTS; i++)
 {
     if (ae->ObjList[i] != NULL)
     {

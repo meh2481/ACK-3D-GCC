@@ -867,7 +867,7 @@ if (!ACKFileOpen(hWnd,szName,sizeof(szName),
     CurrentBitmap = i;
     AddFileName(TYPE_OBJECT,szName);
     CurrentBitmap = temp;
-    InvalidateRect(hWnd,NULL,TRUE);
+    InvalidateRect(hWnd,NULL,FALSE);
     }
 
 }
