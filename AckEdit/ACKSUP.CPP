@@ -1,27 +1,10 @@
 // Support routines for ACKEDIT application
-#define  STRICT
 #include <windows.h>
-//#pragma hdrstop
 #include <stdlib.h>
 #include <stdio.h>
-//#include <dos.h>
-//#include <mem.h>
-//#include <io.h>
-//#include <fcntl.h>
-//#include <process.h>
-//#include <sys\stat.h>
 #include <string.h>
 #include "fileio.h" //MEH For LREAD and such
 
-#include <errno.h>
-//#include "wing.h"
-//#include "wingdll.h"
-
-// Uncomment next line to use normal windows colors
-//#define _USE_SYSTEM_PALETTE 1
-
-
-//extern "C" {
 #include "keys.h"
 #include "ack3d.h"
 extern  short   rsHandle;
@@ -33,7 +16,6 @@ extern  unsigned short FloorMap[];
 extern  unsigned short CeilMap[];
 extern  unsigned short *ObjGrid;
 extern  unsigned short *Grid;
-//};
 
 #include "ackedit.h"
 
@@ -255,23 +237,20 @@ return(0);
 
 //=============================================================================
 // Same as LoadBackDrop except a string filename is used instead of a
-// resource number.
+// resource number. Loads a PCX image only.
 //=============================================================================
 int LoadNewBackDrop(char *szName)
 {
     UCHAR   *bPtr;
 
-//if(ae->bmLoadType == BMLOAD_BBM)
     bPtr = AckReadPCX(szName);
-//else
-//    bPtr = AckReadPCX(szName);
-if (bPtr == NULL)
-    return(8);
+    if (bPtr == NULL)
+        return(8);
 
-ProcessBackDrop(bPtr);
-AckFree(bPtr);
+    ProcessBackDrop(bPtr);
+    AckFree(bPtr);
 
-return(0);
+    return(0);
 }
 
 //=============================================================================
@@ -592,7 +571,7 @@ for (i = MAX_OBJECTS-1; i > 0; i--)
         break;
     }
 
-ae->MaxObjects = i;
+ae->MaxObjects = i+1;   //MEH i+1 here instead of just i, because of the way the engine iterates through objects.
 
 }
 
@@ -605,7 +584,6 @@ int ProcessInfoFile(short QuietFlag)
     int     result;
     int     mode;
     long    pos;
-//    char    *lb;
 
 nOperation = OP_WAIT;
 SetOperationCursor();
@@ -684,7 +662,6 @@ while (!result)
 
 
         default:
-//            printf("%s\n",LineBuffer);
             if (!strnicmp(LineBuffer,"WALLS:",6))
                 {
                 mode = 4;
@@ -1050,7 +1027,6 @@ return(0);
 short TransferFileName(short handle,char *Name,long *rba)
 {
     unsigned short rlen,LenToRead;
-//    unsigned long ulen;
     short FileHandle;
     UCHAR *pBuffer;
 
@@ -1093,10 +1069,8 @@ long SaveInfoFile(short handle,long rba)
 {
     short   i,index,bType;
     short   speed;
-//    BOOL    bGotMemory = FALSE;
     char    szString[256];
     NEWOBJECT   *pObj;
-//    OBJSEQ      *pSeq;
 
 
 index = 1;
@@ -1218,12 +1192,8 @@ return(0);
 short SaveResource(HWND hWnd,char *szName)
 {
     short i,handle,InHandle,index;
-//    short speed;
     long rba;
     BOOL bGotMemory = FALSE;
-//    char szString[256];
-//    NEWOBJECT *pObj;
-//    OBJSEQ *pSeq;
 
 // Create a temporary file to transfer from old resource to new
 // resource (which could be the same name).

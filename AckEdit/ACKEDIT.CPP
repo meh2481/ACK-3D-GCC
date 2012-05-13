@@ -1,14 +1,10 @@
 // ACKEDIT.CPP - Map Editor for ACK-3D Windows
 
-#define  STRICT
 #include <windows.h>
 #include <stdlib.h>
 #include <string.h>
-//#include "wing.h"
-//#include "wingdll.h"
 #include "ackwin.h"
 
-//extern "C" {
 #include "keys.h"
 #include "ack3d.h"
 
@@ -72,8 +68,6 @@ extern              char    LineBuffer[];
     COLORREF    rgbSelectColor;
     UCHAR       kbPressed[128];
     char        ResFileName[128];
-
-//    WinGdll     WinG;
 
     header      BufferHeader;
     long        Orientation = 0;
@@ -196,7 +190,6 @@ void AckReset(void);
 void gkScaleBitmap(short bmWt,short bmHt,short DstWt,short DstHt,UCHAR *bm,
                    UCHAR *DstBuffer);
 int DoOptionsDlg(HINSTANCE hInst,HWND hWnd);
-//int DoGlobalDlg(HINSTANCE hInst,HWND hWnd);
 int DoInfoDlg(HINSTANCE hInst,HWND hWnd);
 short SaveResource(HWND hWnd,char *szName);
 void EditInfoFile(HWND hWnd);
@@ -257,12 +250,6 @@ if ( ! RegisterClass( &wndclass ) )
 //****************************************************************************
 MainWindow::MainWindow( void )
 {
-/*
-if (!WinG.Load())
-    {
-    MessageBox(0,"Can't find WING32.DLL","ACK Error!",MB_OK);
-    exit(FALSE);
-    }*/
 
 }
 
@@ -276,11 +263,8 @@ void MainWindow::CreateAll( void )
     int     windx,windy;
     HBITMAP hbm;
 
-
 GridSize = 32;
 xCurrent = yCurrent = 0;
-CurrentTopBitmap = 1;
-CurrentBitmap = 1;
 rgbSelectColor = RGB(255,0,0);
 
 hWnd = CreateWindow( szClassName,
@@ -336,9 +320,10 @@ GetWindowRect(hWndChild,&rect);
 
 
 
-windx = windy = GetSystemMetrics(SM_CXBORDER) * 2;
+windx = GetSystemMetrics(SM_CXSIZEFRAME) - 1;
+windy = GetSystemMetrics(SM_CYSIZEFRAME) - 1;
 windx += nBitmapW;
-windy += nBitmapH + GetSystemMetrics(SM_CYCAPTION) - 1;
+windy += nBitmapH + GetSystemMetrics(SM_CYCAPTION);
 
 hwndApp = CreateWindow ("ACK3DVIEW",    // Class name
                 "3D View",              // Caption
@@ -353,7 +338,7 @@ hwndApp = CreateWindow ("ACK3DVIEW",    // Class name
 
 //Set the window pos to 640*400 if stretched
 if(StretchFactor == 2)
-    SetWindowPos(hwndApp,NULL,0,0,640,400, SWP_NOMOVE|SWP_NOZORDER|SWP_NOCOPYBITS);
+    SetWindowPos(hwndApp,NULL,0,0,640 + GetSystemMetrics(SM_CXSIZEFRAME)-2,400 + GetSystemMetrics(SM_CYSIZEFRAME)-2 + GetSystemMetrics(SM_CYCAPTION), SWP_NOMOVE|SWP_NOZORDER|SWP_NOCOPYBITS);
 
 if (!hwndApp)
     {
@@ -363,34 +348,8 @@ if (!hwndApp)
 
 ShowWindow(hwndApp,SW_NORMAL);
 
-//if (WinG.pRecommendDIBFormat((BITMAPINFO *)&BufferHeader))
-//    {
-//    BufferHeader.Header.biBitCount = 8;
-//    BufferHeader.Header.biCompression = BI_RGB;
-//    }
-//else
- //   {
-   /* BufferHeader.Header.biSize = sizeof(BITMAPINFOHEADER);
-    BufferHeader.Header.biPlanes = 1;
-    BufferHeader.Header.biBitCount = 8;
-    BufferHeader.Header.biCompression = BI_RGB;
-    BufferHeader.Header.biSizeImage = 0;
-    BufferHeader.Header.biClrUsed = 0;
-    BufferHeader.Header.biClrImportant = 0;
-  //  }
 
-BufferHeader.Header.biWidth = 64;
-BufferHeader.Header.biHeight = -350; // Use -height for a Top-down bitmap
-*/
 CreateAckPalette();
-/*
-for (Counter = 0;Counter < 256;Counter++)
-    {
-    BufferHeader.aColors[Counter].rgbRed   = ColorTable[Counter].rgbRed;
-    BufferHeader.aColors[Counter].rgbGreen = ColorTable[Counter].rgbGreen;
-    BufferHeader.aColors[Counter].rgbBlue  = ColorTable[Counter].rgbBlue;
-    BufferHeader.aColors[Counter].rgbReserved = 0;
-    }*/
 
 Buffer = CreateCompatibleDC(GetDC(hwndApp));
 hbm = CreateCompatibleBitmap(GetDC(hwndApp),nBitmapW,nBitmapH);
@@ -401,8 +360,6 @@ PatBlt(Buffer, 0,0,nBitmapW,nBitmapH, BLACKNESS);
 GetClientRect(hWnd,&rect);
 GridWidth = (short)rect.right;
 GridHeight = (short)rect.bottom;
-//BufferHeader.Header.biWidth = (short)rect.right;
-//BufferHeader.Header.biHeight = -(rect.bottom+GridSize); // Use -height for a Top-down bitmap
 MapBuffer = CreateCompatibleDC(GetDC(hwndApp));
 hbm = CreateCompatibleBitmap(GetDC(hwndApp),rect.right,rect.bottom);
 SelectObject(MapBuffer,hbm);
@@ -413,7 +370,6 @@ InvalidateRect(hWndChild,NULL,TRUE);
 
 //MEH Make sure windows have right text to start with
 UpdateChildText(hWndChild);
-//UpdateParentText(hWnd);
 }
 
 HINSTANCE Main::hInstance = 0;
@@ -467,16 +423,6 @@ void MainWindow::DrawGrid(HDC hdc,short wt,short ht)
     HPEN    pen,oldpen;
     short   x,y;
 
-/*//MEH first fill in bg color. Pretty standard graphics primitives stuff
-PalletteSlot bgpalcol = pallette[nBackColor];
-HBRUSH hBgColorBrush = CreateSolidBrush(RGB(bgpalcol.b, bgpalcol.g, bgpalcol.r));   //remember that R and B are reversed...
-HBRUSH hOld = (HBRUSH)SelectObject(hdc, hBgColorBrush);
-RECT rcArea = {0,0,wt*GridSize, ht*GridSize};
-FillRect(hdc, &rcArea, hBgColorBrush);
-SelectObject(hdc, hOld);
-DeleteObject(hBgColorBrush);
-//---MEH */
-
 pen = CreatePen(PS_SOLID,1,RGB(128,128,128));
 oldpen = (HPEN)SelectObject(hdc,pen);
 
@@ -503,9 +449,6 @@ DeleteObject(pen);
 //****************************************************************************
 void DrawMap(HWND hWnd,HDC hdc,short wt,short ht)
 {
-    //wt++;
-    //ht+=GridSize;
-
     short   MapPosn,x,y,mx,my,OrgPos,bx,by,x2,y2,x3,y3;
     int     len,offset;
     POINT   pts[4];
@@ -569,7 +512,6 @@ y2 = (short)((ht / GridSize) * GridSize);
 pMap = (UCHAR *)TempScreenBuffer;
 
 len = (int)(wt * ht);
-//memset(pMap,nBackColor,len);
 
 switch (nViewType)
     {
@@ -743,20 +685,9 @@ for (x = 0; x < x2; x += GridSize)
             *pBufferData++ = 255; //Alpha = 255 by default.
         }
     }
-    //Create our offscreen HDC if we haven't yet
-    /*if(!hOffscreenDC)
-    {
-        hOffscreenDC = CreateCompatibleDC(hdc);
-        hOffscreenBitmap = CreateCompatibleBitmap(hdc, 320, 200);
-        SelectObject(hOffscreenDC, hOffscreenBitmap);
-    }*/
-    //PatBlt(hOffscreenDC, 0,0,nBitmapW,nBitmapH, BLACKNESS);
     HICON ic = CreateIcon(Main::hInstance, wt, ht, 1, 32, NULL, (BYTE*)(TempIconBuffer));
     DrawIconEx(hdc, 0, 0, ic, wt, ht, NULL, NULL, DI_NORMAL);
     DestroyIcon(ic);
-    //-------MEH
-
-//BitBlt(hdc,0,0,wt,ht,MapBuffer,0,0, SRCCOPY);
 
 x = (short)((ae->yPlayer & 0xFFC0) + (ae->xPlayer >> 6));
 
@@ -799,11 +730,6 @@ if (x >= OrgPos && x <= (MapPosn-1))
 
 SelectObject(hdc,OldBrush);
 DeleteObject(NewBrush);
-
-if (bShowCoords)
-{
-//    UpdateParentText(hWnd);
-}
 
 free(TempScreenBuffer); //MEH clean up memory
 free(TempIconBuffer);
@@ -888,14 +814,6 @@ if (bNoShow)
     return;
     }
 
-//Make sure our offscreen buffer is initialized
-/*if(!hChildOffscreenDC)
-{
-    hChildOffscreenDC = CreateCompatibleDC(ps.hdc);
-    hChildOffscreenBitmap = CreateCompatibleBitmap(ps.hdc, 90, 298);
-}*/
-
-
 if (hpalApp)
     {
     UnrealizeObject(hpalApp);
@@ -910,7 +828,6 @@ PatBlt(ps.hdc, 0,0,90, 298, WHITENESS);  //Clear the bitmap to white
 OrgIndex = nIndex = CurrentTopBitmap;
 BitmapSelectX1 = 0;
 y1 = (short)(rect.bottom - 66);
-//memset(pBuffer,255,(short)(rect.bottom * 66));
 y = 2;
 while (y < y1)
     {
@@ -966,16 +883,6 @@ while (y < y1)
             printf("Error: Could not create icon to draw.\n");
         DrawIconEx(ps.hdc, 2, y, ic, 64, 64, NULL, NULL, DI_NORMAL);
         DestroyIcon(ic);
-
-        /*for (bx = 0; bx < 64; bx++)
-            {
-            pBuf = (UCHAR *)pBuffer + bx + yOffset;
-            for (by = 0; by < 64; by++)
-                {
-                *pBuf = *pPtr++;
-                pBuf += 64;
-                }
-            }*/
         }
 
     if ((nIndex-1) == CurrentBitmap)
@@ -1005,7 +912,6 @@ while (y < y1)
     y += (short)67;
     }
 
-//BitBlt(ps.hdc,0,0,90,298,hChildOffscreenDC,0,0, SRCCOPY);
 if (BitmapSelectX1)
     HighlightBitmap(ps.hdc,rgbSelectColor);
 
@@ -1052,10 +958,10 @@ DestroyIcon(ic);
 
 
 if (StretchFactor != 1)
-    StretchBlt(hdc,0,0,StretchFactor*nBitmapW,StretchFactor*nBitmapH,
-                     hOffscreenDC,0,0,nBitmapW,nBitmapH, SRCCOPY);
+    StretchBlt(hdc,0,0,StretchFactor*(nBitmapW+1),StretchFactor*(nBitmapH+1),
+                     hOffscreenDC,0,0,nBitmapW+1,nBitmapH+1, SRCCOPY);
 else
-    BitBlt(hdc,0,0,nBitmapW,nBitmapH,hOffscreenDC,0,0, SRCCOPY);
+    BitBlt(hdc,0,0,nBitmapW+1,nBitmapH+1,hOffscreenDC,0,0, SRCCOPY);
 
 }
 
@@ -1467,9 +1373,6 @@ ht = rect.bottom;
 
 if (MapBuffer)
     {
-    //BufferHeader.Header.biWidth = wt;
-    //BufferHeader.Header.biHeight = -ht;
-
     hbm = CreateCompatibleBitmap(MapBuffer,wt,ht);
 
     hbm = (HBITMAP)SelectObject(MapBuffer,hbm);
@@ -1479,25 +1382,6 @@ if (MapBuffer)
     }
 else
     {
-    /*if (WinG.pRecommendDIBFormat((BITMAPINFO *)&BufferHeader))
-        {
-        BufferHeader.Header.biBitCount = 8;
-        BufferHeader.Header.biCompression = BI_RGB;
-        }
-    else
-        {
-        BufferHeader.Header.biSize = sizeof(BITMAPINFOHEADER);
-        BufferHeader.Header.biPlanes = 1;
-        BufferHeader.Header.biBitCount = 8;
-        BufferHeader.Header.biCompression = BI_RGB;
-        BufferHeader.Header.biSizeImage = 0;
-        BufferHeader.Header.biClrUsed = 0;
-        BufferHeader.Header.biClrImportant = 0;
-        }
-
-    BufferHeader.Header.biWidth = wt;
-    BufferHeader.Header.biHeight = -ht;*/
-
     MapBuffer = CreateCompatibleDC(GetDC(hWndMap));
     hbm = CreateCompatibleBitmap(GetDC(hWndMap),wt, ht);
 
@@ -1508,9 +1392,6 @@ else
 
 if (Buffer)
     {
-    //BufferHeader.Header.biWidth = 64;
-    //BufferHeader.Header.biHeight = -350;
-
     hbm = CreateCompatibleBitmap(Buffer,64,350);
 
     hbm = (HBITMAP)SelectObject(Buffer,hbm);
@@ -1520,25 +1401,6 @@ if (Buffer)
     }
 else
     {
-    /*if (WinG.pRecommendDIBFormat((BITMAPINFO *)&BufferHeader))
-        {
-        BufferHeader.Header.biBitCount = 8;
-        BufferHeader.Header.biCompression = BI_RGB;
-        }
-    else
-        {
-        BufferHeader.Header.biSize = sizeof(BITMAPINFOHEADER);
-        BufferHeader.Header.biPlanes = 1;
-        BufferHeader.Header.biBitCount = 8;
-        BufferHeader.Header.biCompression = BI_RGB;
-        BufferHeader.Header.biSizeImage = 0;
-        BufferHeader.Header.biClrUsed = 0;
-        BufferHeader.Header.biClrImportant = 0;
-        }
-
-    BufferHeader.Header.biWidth = 64;
-    BufferHeader.Header.biHeight = -350;*/
-
     Buffer = CreateCompatibleDC(GetDC(hWndMap));
     hbm = CreateCompatibleBitmap(GetDC(hWndMap), 64, 350);
 
@@ -1549,9 +1411,6 @@ else
 
 if (AckBuffer)
     {
-    //BufferHeader.Header.biWidth = nBitmapW;
-    //BufferHeader.Header.biHeight = -nBitmapH;   // -height for top-down display
-
     hbm = CreateCompatibleBitmap(AckBuffer,nBitmapW,nBitmapH);
 
     hbm = (HBITMAP)SelectObject(AckBuffer, hbm);
@@ -1561,7 +1420,6 @@ if (AckBuffer)
 
     if (ae != NULL)
         {
-//        ae->ScreenBuffer = (UCHAR *)pAckBuffer;
         ae->WinEndX = (short)nBitmapW;
         ae->WinEndY = (short)nBitmapH;
         if (ae->WinEndX > 319)
@@ -1573,25 +1431,6 @@ if (AckBuffer)
     }
 else
     {
-    /*if (WinG.pRecommendDIBFormat((BITMAPINFO *)&BufferHeader))
-        {
-        BufferHeader.Header.biBitCount = 8;
-        BufferHeader.Header.biCompression = BI_RGB;
-        }
-    else
-        {
-        BufferHeader.Header.biSize = sizeof(BITMAPINFOHEADER);
-        BufferHeader.Header.biPlanes = 1;
-        BufferHeader.Header.biBitCount = 8;
-        BufferHeader.Header.biCompression = BI_RGB;
-        BufferHeader.Header.biSizeImage = 0;
-        BufferHeader.Header.biClrUsed = 0;
-        BufferHeader.Header.biClrImportant = 0;
-        }
-
-    BufferHeader.Header.biWidth = nBitmapW;
-    BufferHeader.Header.biHeight = -nBitmapH;*/
-
     AckBuffer = CreateCompatibleDC(GetDC(hwndApp));
     hbm = CreateCompatibleBitmap(GetDC(hwndApp),nBitmapW,nBitmapH);
 
@@ -1600,7 +1439,6 @@ else
     PatBlt(AckBuffer, 0,0,nBitmapW,nBitmapH, BLACKNESS);
     if (ae != NULL)
         {
-//        ae->ScreenBuffer = (UCHAR *)pAckBuffer;
         AckRegisterStructure(ae);
         }
     }
@@ -1645,33 +1483,6 @@ if (MapBuffer)
     }
 else
     {
-    /*if (WinG.pRecommendDIBFormat((BITMAPINFO *)&BufferHeader))
-        {
-        BufferHeader.Header.biBitCount = 8;
-        BufferHeader.Header.biCompression = BI_RGB;
-        }
-    else
-        {
-        BufferHeader.Header.biSize = sizeof(BITMAPINFOHEADER);
-        BufferHeader.Header.biPlanes = 1;
-        BufferHeader.Header.biBitCount = 8;
-        BufferHeader.Header.biCompression = BI_RGB;
-        BufferHeader.Header.biSizeImage = 0;
-        BufferHeader.Header.biClrUsed = 0;
-        BufferHeader.Header.biClrImportant = 0;
-        }
-
-    BufferHeader.Header.biWidth = wt;
-    BufferHeader.Header.biHeight = -ht;
-
-    for (Counter = 0;Counter < 256;Counter++)
-        {
-        BufferHeader.aColors[Counter].rgbRed   = ColorTable[Counter].rgbRed;
-        BufferHeader.aColors[Counter].rgbGreen = ColorTable[Counter].rgbGreen;
-        BufferHeader.aColors[Counter].rgbBlue  = ColorTable[Counter].rgbBlue;
-        BufferHeader.aColors[Counter].rgbReserved = 0;
-        }*/
-
     MapBuffer = CreateCompatibleDC(GetDC(hWndMap));
     hbm = CreateCompatibleBitmap(GetDC(hWndMap),wt,ht);
 
@@ -1956,7 +1767,6 @@ void UpdateParentText(HWND hWnd)
             if (bShowCoords)
             {
                 sprintf(buf,"Map Editor - Walls Row:%d,Col:%d",ae->yPlayer >> 6,ae->xPlayer >> 6);
-                //SetWindowText(hWnd,buf);
             }
             else
             {
@@ -1967,7 +1777,6 @@ void UpdateParentText(HWND hWnd)
             if (bShowCoords)
             {
                 sprintf(buf,"Map Editor - Floors Row:%d,Col:%d",ae->yPlayer >> 6,ae->xPlayer >> 6);
-                //SetWindowText(hWnd,buf);
             }
             else
             {
@@ -1978,7 +1787,6 @@ void UpdateParentText(HWND hWnd)
             if (bShowCoords)
             {
                 sprintf(buf,"Map Editor - Ceilings Row:%d,Col:%d",ae->yPlayer >> 6,ae->xPlayer >> 6);
-                //SetWindowText(hWnd,buf);
             }
             else
             {
@@ -1992,7 +1800,6 @@ void UpdateParentText(HWND hWnd)
     {
         char buf2[256];
         sprintf(buf2, "*");
-        //GetWindowText(hWnd, buf, 256);
         SetWindowText(hWnd, strcat(buf2, buf));
     }
     else
@@ -2348,14 +2155,12 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
             else
                mx = MF_UNCHECKED;
             mx |= MF_BYCOMMAND;
-//            CheckMenuItem((HMENU)wParam,CM_GOODIESSOLID_FLOOR,mx);
 
             if (ae->SysFlags & SYS_SOLID_CEIL)
                mx = MF_CHECKED;
             else
                mx = MF_UNCHECKED;
             mx |= MF_BYCOMMAND;
-//            CheckMenuItem((HMENU)wParam,CM_GOODIESSOLID_CEILING,mx);
 
             if (ae->LightFlag == SHADING_OFF)
                 mx = MF_UNCHECKED;
@@ -2371,7 +2176,6 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                 mx = MF_UNCHECKED;
 
             mx |= MF_BYCOMMAND;
-//            CheckMenuItem((HMENU)wParam,CM_GOODIESSINGLE_BITMAP,mx);
 
             if (nEditType == EDIT_WALLS)
                 ModifyMenu((HMENU)wParam,CM_GOODIESATTRIBUTES,MF_STRING,
@@ -2456,9 +2260,6 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                                 AckRegisterStructure(ae);
                                 bNoShow = FALSE;
                                 }
-
-                        //  AckDoSize(hWnd,0);
-                        //  CreateAckPalette();
                             RemapBufferPalettes();
                             InvalidateRect(hWnd,NULL,TRUE);
                             InvalidateRect(hWndChild,NULL,TRUE);
@@ -2569,11 +2370,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         }
                     CurrentTopBitmap = CurrentBitmap = 1;
                     UpdateChildText(hWndChild);
-                    SetScrollPos(hWndChild,SB_VERT,1,TRUE);
                     InvalidateRect(hWndChild,NULL,TRUE);
-                    //MEH Update the menu
-                    //ModifyMenu((HMENU)wParam,CM_EDITMAP,MF_STRING,CM_EDITMAP,"&Map");
-                    //ModifyMenu((HMENU)wParam,CM_EDITOBJECTS,MF_STRING,CM_EDITOBJECTS,"&Objects\tTab");
                     break;
 
                 case CM_EDITOBJECTS:
@@ -2586,11 +2383,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         }
                     CurrentTopBitmap = CurrentBitmap = 1;
                     UpdateChildText(hWndChild);
-                    SetScrollPos(hWndChild,SB_VERT,1,TRUE);
                     InvalidateRect(hWndChild,NULL,TRUE);
-                    //MEH Update the menu
-                    //ModifyMenu((HMENU)wParam,CM_EDITMAP,MF_STRING,CM_EDITMAP,"&Map\tTab");
-                    //ModifyMenu((HMENU)wParam,CM_EDITOBJECTS,MF_STRING,CM_EDITOBJECTS,"&Objects");
                     break;
 
                 case CM_BITMAPLOAD:
@@ -2657,7 +2450,6 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         InvalidateRect(hWndChild,NULL,TRUE);
                     }
                     nViewType = VIEW_WALLS;
-//                    UpdateParentText(hWnd);
                     InvalidateRect(hWnd,NULL,TRUE);
                     break;
 
@@ -2668,7 +2460,6 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         InvalidateRect(hWndChild,NULL,TRUE);
                     }
                     nViewType = VIEW_FLOOR;
-//                    UpdateParentText(hWnd);
                     InvalidateRect(hWnd,NULL,TRUE);
                     break;
 
@@ -2679,7 +2470,6 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         InvalidateRect(hWndChild,NULL,TRUE);
                     }
                     nViewType = VIEW_CEILING;
-//                    UpdateParentText(hWnd);
                     InvalidateRect(hWnd,NULL,TRUE);
                     break;
 
@@ -2710,13 +2500,13 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
 
                 case CM_VIEWTIMES_ONE:
                     StretchFactor = 1;
-                    SetWindowPos(hwndApp,NULL,0,0,320,200,
+                    SetWindowPos(hwndApp,NULL,0,0,320 + GetSystemMetrics(SM_CXSIZEFRAME)-2,200 + GetSystemMetrics(SM_CYSIZEFRAME)-2 + GetSystemMetrics(SM_CYCAPTION),
                                  SWP_NOMOVE|SWP_NOZORDER|SWP_NOCOPYBITS);
                     break;
 
                 case CM_VIEWTIMES_TWO:
                     StretchFactor = 2;
-                    SetWindowPos(hwndApp,NULL,0,0,640,400,
+                    SetWindowPos(hwndApp,NULL,0,0,640 + GetSystemMetrics(SM_CXSIZEFRAME)-2,400 + GetSystemMetrics(SM_CYSIZEFRAME)-2 + GetSystemMetrics(SM_CYCAPTION),
                                  SWP_NOMOVE|SWP_NOZORDER|SWP_NOCOPYBITS);
                     break;
 
@@ -2785,10 +2575,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                         "PCX files (*.pcx)\0*.pcx\0All Files (*.*)\0*.*\0",
                         "Open Backdrop File","pcx"))
                         {
-                        //if (strstr(szName,".PCX"))
-                        //    ae->bmLoadType = BMLOAD_PCX;
                         LoadNewBackDrop(szName);
-                        //ae->bmLoadType = BMLOAD_BBM;
                         lstrcpy(BackGndFile,szName);
                         InvalidateRect(hwndApp,NULL,FALSE);
                         SetUndoPoint();
@@ -2805,29 +2592,6 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                     SetUndoPoint();
                     break;
 
-
-                /*case CM_GOODIESSOLID_FLOOR:
-                  ae->SysFlags ^= SYS_SOLID_FLOOR;
-                  AckRegisterStructure(ae);
-                  break;*/
-
-                /*case CM_GOODIESSOLID_CEILING:
-                  ae->SysFlags ^= SYS_SOLID_CEIL;
-                  AckRegisterStructure(ae);
-                  break;*/
-
-                /*case CM_GOODIESSINGLE_BITMAP:
-                    if (ae->SysFlags & SYS_SINGLE_BMP)
-                        ae->SysFlags &= ~SYS_SINGLE_BMP;
-                    else
-                        {
-                        ae->SysFlags |= SYS_SINGLE_BMP;
-                        ae->SysFlags &= ~SYS_SOLID_FLOOR;
-                        ae->SysFlags &= ~SYS_SOLID_CEIL;
-                        }
-                    AckRegisterStructure(ae);
-                    break;*/
-
                 case CM_GOODIESTRACK_PLAYER:
                     bTrackPlayer ^= 1;
                     InvalidateRect(hWnd,NULL,TRUE);
@@ -2837,17 +2601,6 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
                     bShowCoords ^= 1;
                     InvalidateRect(hWnd,NULL,TRUE);
                     break;
-
-                /*case CM_ASSIGN_CEILING:
-                    ae->CeilBitmap = CurrentBitmap;
-                    AckRegisterStructure(ae);
-                    break;*/
-
-                /*case CM_ASSIGN_FLOOR:
-                    ae->FloorBitmap = CurrentBitmap;
-                    AckRegisterStructure(ae);
-                    break;*/
-
 
                 default:
                     break;
@@ -2924,7 +2677,6 @@ LRESULT  CALLBACK _export AckWndProc( HWND hWnd, UINT iMessage, WPARAM wParam,
                                  LPARAM lParam )
 
 {
-//        HDC         hDC;
         PAINTSTRUCT ps;
 
 switch (iMessage)
@@ -3152,7 +2904,6 @@ InvalidateRect(hWnd,NULL,FALSE);
 LRESULT  CALLBACK _export ChildWndProc( HWND hWnd, UINT iMessage, WPARAM wParam,
                                  LPARAM lParam )
 {
-//    HDC     hDC;
     int     tempCurrent;
 
 switch (iMessage)
@@ -3262,8 +3013,8 @@ return 0;
 //****************************************************************************
 //
 //****************************************************************************
-int PASCAL WinMain(HINSTANCE hInstance,HINSTANCE hPrevInstance,LPSTR lpszCmdLine,
-                    int nCmdShow)
+int WINAPI WinMain (HINSTANCE hThisInstance,HINSTANCE hPrevInstance,LPSTR lpszArgument,
+                     int nCmdShow)
 {
     short   i;
     int     result;
@@ -3275,8 +3026,8 @@ g_cArrow = LoadCursor(NULL, IDC_ARROW);
 g_cPan = LoadCursor(NULL, IDC_SIZEALL);
 
 nOperation = OP_NORMAL;
-hInstGlobal = hInstance;
-Main::hInstance = hInstance;
+hInstGlobal = hThisInstance;
+Main::hInstance = hThisInstance;
 Main::hPrevInstance = hPrevInstance;
 Main::nCmdShow = nCmdShow;
 
@@ -3337,6 +3088,10 @@ for (i = 0; i < MAX_WALLBMPS; i++)
 
 AckSetupPalRanges(ae,ranges);
 MainWnd.CreateAll();
+
+//Scroll to the right position in the child window
+SetScrollPos(MainAppWnd->GetChildHandle(),SB_VERT,CurrentTopBitmap,TRUE);
+
 result = Main::MessageLoop();
 
 if (Buffer)
@@ -3351,7 +3106,6 @@ if(hpalApp)
     DeleteObject(hpalApp);
     }
 
-//WinG.Free();
 WriteConfig();
 
 //MEH Free cursors we created
@@ -3390,7 +3144,7 @@ void ReadInPallette()
     std::ifstream infile("pallette.txt");
     if(infile.fail())
         return;
-//printf("reading in pallette\n");
+
     for(int i = 0; i < 256; i++)
     {
         unsigned int r, g, b;
@@ -3400,7 +3154,7 @@ void ReadInPallette()
         p.g = (unsigned char)g;
         p.b = (unsigned char)r;
         p.a = 255;
-        //printf("%d, %d, %d\n", p.r, p.g, p.b);
+
         pallette[i] = p;
     }
     infile.close();
@@ -3411,9 +3165,6 @@ void ReadInPallette()
 // to no matter the window. That kinda explains itself, doesn't it?
 void HandleGenericKeypresses(WPARAM wParam)
 {
-    //char            szName[128];
-    //short           mx;
-
     switch(wParam)
     {
         //MEH Pressing tab will alternate object editing and wall editing
@@ -3434,7 +3185,6 @@ void HandleGenericKeypresses(WPARAM wParam)
             //Of course, redraw and set the child (bitmap) window text to be correct
             InvalidateRect(MainAppWnd->GetChildHandle(), NULL, TRUE);
             UpdateChildText(MainAppWnd->GetChildHandle());
-//            UpdateParentText(MainAppWnd->GetHandle());
             break;
 
         //Pagedown/pageup causes background color to change
@@ -3452,7 +3202,7 @@ void HandleGenericKeypresses(WPARAM wParam)
             if(GetAsyncKeyState(VK_CONTROL) < 0)
             {
                 StretchFactor = 1;
-                SetWindowPos(hwndApp,NULL,0,0,320,200,SWP_NOMOVE|SWP_NOZORDER|SWP_NOCOPYBITS);
+                SetWindowPos(hwndApp,NULL,0,0,320 + GetSystemMetrics(SM_CXSIZEFRAME)-2,200 + GetSystemMetrics(SM_CYSIZEFRAME)-2 + GetSystemMetrics(SM_CYCAPTION),SWP_NOMOVE|SWP_NOZORDER|SWP_NOCOPYBITS);
                 break;
             }
             if(nViewType != VIEW_WALLS || nEditType == EDIT_OBJECTS)
@@ -3466,7 +3216,6 @@ void HandleGenericKeypresses(WPARAM wParam)
                 }
                 nViewType = VIEW_WALLS;
                 InvalidateRect(MainAppWnd->GetHandle(), NULL, TRUE);
-//                UpdateParentText(MainAppWnd->GetHandle());
             }
             break;
 
@@ -3475,7 +3224,7 @@ void HandleGenericKeypresses(WPARAM wParam)
             if(GetAsyncKeyState(VK_CONTROL) < 0)
             {
                 StretchFactor = 2;
-                SetWindowPos(hwndApp,NULL,0,0,640,400,SWP_NOMOVE|SWP_NOZORDER|SWP_NOCOPYBITS);
+                SetWindowPos(hwndApp,NULL,0,0,640 + GetSystemMetrics(SM_CXSIZEFRAME)-2,400 + GetSystemMetrics(SM_CYSIZEFRAME)-2 + GetSystemMetrics(SM_CYCAPTION),SWP_NOMOVE|SWP_NOZORDER|SWP_NOCOPYBITS);
                 break;
             }
             if(nViewType != VIEW_FLOOR)
@@ -3489,7 +3238,6 @@ void HandleGenericKeypresses(WPARAM wParam)
                 }
                 nViewType = VIEW_FLOOR;
                 InvalidateRect(MainAppWnd->GetHandle(), NULL, TRUE);
-//                UpdateParentText(MainAppWnd->GetHandle());
             }
             break;
 
@@ -3505,7 +3253,6 @@ void HandleGenericKeypresses(WPARAM wParam)
                 }
                 nViewType = VIEW_CEILING;
                 InvalidateRect(MainAppWnd->GetHandle(), NULL, TRUE);
-//                UpdateParentText(MainAppWnd->GetHandle());
             }
             break;
 
@@ -3802,7 +3549,7 @@ void CreateNewMap(HWND hWnd, HWND hWndChild)
 }
 
 
-//MEH Functions for dealing with Undo/redo
+//MEH Functions for dealing with Undo/redo. Very hackish, and don't ask me how they work. They just do. I think.
 
 //Copy one file to another - ripped from teh internets
 bool CopyFile(const char* src, const char* dest)
@@ -3812,7 +3559,6 @@ bool CopyFile(const char* src, const char* dest)
 
     if((in = fopen(src, "rb")) == NULL)
     {
-        //printf("Cannot open input file.\n");
         return false;
     }
     if((out = fopen(dest, "wb")) == NULL)

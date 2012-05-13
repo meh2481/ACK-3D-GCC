@@ -2,18 +2,7 @@
 //Used to save/load the editor configuration, so some settings are kept from one editor launch to another
 //Mark Hutcheson 2012
 
-//#define  STRICT
 #include <windows.h>
-//#pragma hdrstop
-//#include <stdlib.h>
-//#include <string.h>
-//#include "wing.h"
-//#include "wingdll.h"
-//#include "ackwin.h"
-
-//extern "C" {
-//#include "keys.h"
-//#include "ack3d.h"
 
 //For reading and writing the config file
 #include <iostream>
@@ -30,6 +19,8 @@ extern short       nEditType;      // Editing walls or objects
 extern BOOL        bShowCoords;    // Show the coordinates or not
 extern int         StretchFactor;
 extern short       nBackColor;
+extern short       CurrentBitmap;
+extern short       CurrentTopBitmap;
 
 //--------------------------------------------------
 // ReadConfig() - read in our configuration settings
@@ -55,6 +46,8 @@ void ReadConfig()
     infile >> bShowCoords;
     infile >> StretchFactor;
     infile >> nBackColor;
+    infile >> CurrentBitmap;
+    infile >> CurrentTopBitmap;
 
     infile.close();
 
@@ -84,6 +77,8 @@ void WriteConfig()
     ofile << bShowCoords << endl;
     ofile << StretchFactor << endl;
     ofile << nBackColor << endl;
+    ofile << CurrentBitmap << endl;
+    ofile << CurrentTopBitmap << endl;
 
     ofile.close();
     SetCurrentDirectory(PathBuffer);

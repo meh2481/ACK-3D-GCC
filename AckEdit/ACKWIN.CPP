@@ -2,13 +2,9 @@
 // These routines are not necessarily tied to the ACK Map Editor, but are
 // more generic in nature.
 // (c) 1995 ACK Software (Lary Myers)
-#define  STRICT
 #include <windows.h>
-//#pragma hdrstop
 #include <stdlib.h>
 #include <string.h>
-//#include "wing.h"
-//#include "wingdll.h"
 #include "ackwin.h"
 #include "ack3d.h"
 #include <stdio.h>
@@ -16,7 +12,6 @@
 extern "C" {
 #include "keys.h"
 
-//extern  short   rsHandle;
 extern  ULONG   *rbaTable;
 extern  short   Resolution;
 extern  UCHAR   colordat[];
@@ -101,13 +96,6 @@ if (result)
     return(-1);
     }
 
-//
-//if (ae->ScreenBuffer != NULL)
-//    {
-//    AckFree(ae->ScreenBuffer);
-//    ae->ScreenBuffer = NULL;
-//    }
-//
 result = AckInitialize(ae);
 if (result)
     {
@@ -188,10 +176,6 @@ hpalApp = CreateIdentityPalette(ColorTable, 256);
 void AckDoSize(HWND hWnd,LPARAM lParam)
 {
     HBITMAP hbm;
-//    int Counter;
-
-//nBitmapW = LOWORD(lParam);
-//nBitmapH = HIWORD(lParam);
 nBitmapW = 319; // We'll hard-code the size for now since the Map Editor
 nBitmapH = 199; // is a non-sizable window.
 // Make sure the width is on an even boundary for the size it is set to.
@@ -199,12 +183,6 @@ nBitmapW = ((nBitmapW+3)/4)*4;
 
 if (AckBuffer)
     {
-        /*BufferHeader.Header.biWidth = nBitmapW;
-        BufferHeader.Header.biHeight = -nBitmapH;   // -height for top-down display
-
-        hbm = CreateBitmap(320, 200, 1, 8, &pAckBuffer);
-        //hbm = WinG.pCreateBitmap(AckBuffer,
-        //        (BITMAPINFO *)&BufferHeader, &pAckBuffer); */
 
         hbm = (HBITMAP)SelectObject(AckBuffer, hbm);
         DeleteObject(hbm);
@@ -213,7 +191,6 @@ if (AckBuffer)
 
     if (ae != NULL)
         {
-//        ae->ScreenBuffer = (UCHAR *)pAckBuffer;
         ae->WinEndX = (short)nBitmapW;
         ae->WinEndY = (short)nBitmapH;
         if (ae->WinEndX > 319)
@@ -225,47 +202,17 @@ if (AckBuffer)
     }
 else
     {
-        /*if (WinG.pRecommendDIBFormat((BITMAPINFO *)&BufferHeader))
-        {
-                BufferHeader.Header.biBitCount = 8;
-                BufferHeader.Header.biCompression = BI_RGB;
-            }
-        else
-            {
-                BufferHeader.Header.biSize = sizeof(BITMAPINFOHEADER);
-                BufferHeader.Header.biPlanes = 1;
-                BufferHeader.Header.biBitCount = 8;
-                BufferHeader.Header.biCompression = BI_RGB;
-                BufferHeader.Header.biSizeImage = 0;
-                BufferHeader.Header.biClrUsed = 0;
-                BufferHeader.Header.biClrImportant = 0;
-        //    }
-
-    BufferHeader.Header.biWidth = nBitmapW;
-    BufferHeader.Header.biHeight = -nBitmapH; */
 
     CreateAckPalette();
 
-    /*for (Counter = 0;Counter < 256;Counter++)
-        {
-            BufferHeader.aColors[Counter].rgbRed   = ColorTable[Counter].rgbRed;
-            BufferHeader.aColors[Counter].rgbGreen = ColorTable[Counter].rgbGreen;
-            BufferHeader.aColors[Counter].rgbBlue  = ColorTable[Counter].rgbBlue;
-            BufferHeader.aColors[Counter].rgbReserved = 0;
-        } */
-
-    AckBuffer = GetDC(FindWindow("ACK3DVIEW", NULL));//CreateDC(TEXT("DISPLAY"),NULL,NULL,NULL);
+    AckBuffer = GetDC(FindWindow("ACK3DVIEW", NULL));
     hbm = CreateBitmap(320, 200, 1, 8, &pAckBuffer);
-    //hbm = WinG.pCreateBitmap(AckBuffer,
-    //                            (BITMAPINFO *)&BufferHeader, &pAckBuffer);
 
     SelectObject(AckBuffer, hbm);
 
     PatBlt(AckBuffer, 0,0,nBitmapW,nBitmapH, BLACKNESS);
     if (ae != NULL)
         {
-//        ae->ScreenBuffer = (UCHAR *)pAckBuffer;
-//printf("created AckBuffer\n");
         AckRegisterStructure(ae);
         }
     }
@@ -343,15 +290,6 @@ if (nTurnSpeed < 0)
 if (nTurnSpeed > 90)
     nTurnSpeed = 90;
 
-/*if (nResult == POV_OBJECT)
-    {
-    nResult = AckGetObjectHit();
-    if (nResult >= 20 && nResult <= 22)
-        {
-        ae->ObjList[nResult]->Active = 0;
-        nRepairObjectCount++;
-        }
-    }*/
 }
 
 
@@ -404,7 +342,6 @@ switch (iMessage)
             default:
                 break;
             }
-//        DoCycle();
         break;
 
     case WM_KEYUP:
@@ -448,7 +385,6 @@ switch (iMessage)
             default:
                 break;
             }
-//        DoCycle();
         break;
     }
 
@@ -464,45 +400,4 @@ switch (iMessage)
 void ProcessMouse(HWND hWnd,short nType,short xPos,short yPos)
 {
     //MEH Ahh, forget it. Clicking to move sucked, anyway.
-
-    /*short   xMax,yMax;
-    RECT    rect;
-
-    memset(kbPressed,0,128);    // Clear out all previous key presses
-
-    if (!nType)                 // For now, a mouse released will just return
-    {
-        if(nMoveSpeed || nTurnSpeed)    //MEH And if we were moving, the map has been modified
-        {
-            SetUndoPoint();
-        }
-        nMoveSpeed = nTurnSpeed = 0;
-        return;
-    }
-
-    GetClientRect(hWnd,&rect);
-    xMax = (short)rect.right;
-    yMax = (short)rect.bottom;
-
-    if (yPos < 60)          // Simulate an up arrow if near the top of the window
-    {
-        kbPressed[kbUpArrow] = 1;
-        nMoveSpeed += (short)SPEED_AMOUNT;
-    }
-    if (yPos > (yMax-60))   // Simulate down arrow if near the bottom
-    {
-        kbPressed[kbDownArrow] = 1;
-        nMoveSpeed += (short)SPEED_AMOUNT;
-    }
-    if (xPos < 60)          // Simulate left arrow if near left edge
-    {
-        kbPressed[kbLeftArrow] = 1;
-        nTurnSpeed += (short)SPEED_AMOUNT;
-    }
-
-    if (xPos > (xMax-60))   // Simulate right arrow if near right edge
-    {
-        kbPressed[kbRightArrow] = 1;
-        nTurnSpeed += (short)SPEED_AMOUNT;
-    }*/
 }

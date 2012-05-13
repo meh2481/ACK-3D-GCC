@@ -1,26 +1,19 @@
 // Options dialog module
-#define  STRICT
 #include <windows.h>
 #include <stdio.h>
-//#pragma hdrstop
 #include <stdlib.h>
 #include <string.h>
-//#include "wing.h"
-//#include "wingdll.h"
 #include "ackres.h"
 #include "ackedit.h"
 
-//extern "C" {
 #include "ack3d.h"
 extern  unsigned    short   *ObjGrid;
-//};
 
 extern  WORD    nWallFlags;
 extern  WORD    nObjFLags;
 extern  short   CurrentBitmap;
 extern  short   nEditType;
 extern  header  BufferHeader;
-//extern  WinGdll WinG;
 extern  ACKENG  *ae;
 extern  HPALETTE  hpalApp;
 extern  BOOL    bModified;
@@ -32,8 +25,6 @@ void AddFileName(short nType,char *szName);
 void RemoveFileName(short nType,short nIndex);
 BOOL CALLBACK _export FAR PASCAL OptionsDlgProc(HWND hDlg, UINT iMessage,
         WPARAM wParam, LPARAM lParam);
-//BOOL CALLBACK _export FAR PASCAL GlobalDlgProc(HWND hDlg, UINT iMessage,
-//        WPARAM wParam, LPARAM lParam);
 BOOL CALLBACK _export FAR PASCAL InfoDlgProc(HWND hDlg, UINT iMessage,
         WPARAM wParam, LPARAM lParam);
 
@@ -162,27 +153,6 @@ int DoOptionsDlg(HINSTANCE hInst, HWND hWnd)
 //**************************************************************************
 //
 //**************************************************************************
-/*int DoGlobalDlg(HINSTANCE hInst, HWND hWnd)
-{
-    DLGPROC   lpfnGlobalDlgProc;
-    int       iReturn;
-
-    lpfnGlobalDlgProc = (DLGPROC)MakeProcInstance((FARPROC)GlobalDlgProc, hInst);
-
-    iReturn = DialogBox(hInst,MAKEINTRESOURCE(DIALOG_2),hWnd,lpfnGlobalDlgProc);
-
-    FreeProcInstance((FARPROC)lpfnGlobalDlgProc);
-
-    if (iReturn < 0)
-        MessageBox(hWnd,"Unable to open dialog box","Error",MB_OK);
-
-
-    return(iReturn);
-}*/
-
-//**************************************************************************
-//
-//**************************************************************************
 int DoInfoDlg(HINSTANCE hInst, HWND hWnd)
 {
     DLGPROC   lpfnInfoDlgProc;
@@ -211,29 +181,7 @@ return(iReturn);
 void SetupWinG(HWND hDlg)
 {
     RECT    rect;
-//    HWND    hDlgItem;
     HBITMAP hbm;
-
-/*if (WinG.pRecommendDIBFormat((BITMAPINFO *)&BufferHeader))
-    {
-    BufferHeader.Header.biBitCount = 8;
-    BufferHeader.Header.biCompression = BI_RGB;
-    }
-else
-    {
-    BufferHeader.Header.biSize = sizeof(BITMAPINFOHEADER);
-    BufferHeader.Header.biPlanes = 1;
-    BufferHeader.Header.biBitCount = 8;
-    BufferHeader.Header.biCompression = BI_RGB;
-    BufferHeader.Header.biSizeImage = 0;
-    BufferHeader.Header.biClrUsed = 0;
-    BufferHeader.Header.biClrImportant = 0;
-    }
-
-hDlgItem = GetDlgItem(hDlg,IDC_SUPPLY);
-GetClientRect(hDlgItem,&rect);
-BufferHeader.Header.biWidth = 64;
-BufferHeader.Header.biHeight = -64;*/
 
 SupplyBuffer = CreateCompatibleDC(GetDC(hDlg));
 hbm = CreateCompatibleBitmap(GetDC(hDlg),64,64);
@@ -834,6 +782,7 @@ CheckObject(nType);
 //**************************************************************************
 //
 //**************************************************************************
+extern short ErrorCode;
 void LoadNewSupply(HWND hWnd)
 {
     short   i,temp;
@@ -861,11 +810,20 @@ if (!ACKFileOpen(hWnd,szName,sizeof(szName),
         ae->bmLoadType = BMLOAD_PCX;
     else if (strstr(szName,".gif") || strstr(szName,".GIF"))
         ae->bmLoadType = BMLOAD_GIF;
-    AckLoadBitmap(ae,i,TYPE_OBJECT,szName);
+
+    //MEH Test result rather than blindly assuming it's fine
+    int result = AckLoadBitmap(ae,i,TYPE_OBJECT,szName);
+    if(result)
+    {
+        sprintf(szName, "Error %d in loading bitmap %d . Errorcode: %d", result, i, ErrorCode);
+        MessageBox(hWnd, szName, "Error", MB_OK);
+    }
+
     ae->bmLoadType = BMLOAD_BBM;
     temp = CurrentBitmap;
     CurrentBitmap = i;
-    AddFileName(TYPE_OBJECT,szName);
+    if(!result)
+        AddFileName(TYPE_OBJECT,szName);
     CurrentBitmap = temp;
     InvalidateRect(hWnd,NULL,FALSE);
     }
@@ -881,7 +839,6 @@ BOOL CALLBACK _export FAR PASCAL OptionsDlgProc(HWND hDlg, UINT iMessage,
     short   mx,my;
     RECT    rect;
     POINT   pt;
-//         HWND    hWndScroll;
          HWND           hDlgItem;
 
 switch (iMessage)
@@ -1139,98 +1096,8 @@ return(TRUE);
 //**************************************************************************
 //
 //**************************************************************************
-/*BOOL CALLBACK _export FAR PASCAL GlobalDlgProc(HWND hDlg, UINT iMessage,
-        WPARAM wParam, LPARAM lParam)
-{
-    short   nTF;
-    HWND    hDlgItem;
-    char    szBuf[10];
-
-switch (iMessage)
-    {
-    case WM_INITDIALOG:
-        hDlgItem = GetDlgItem(hDlg,IDC_EDIT1);
-        if (hDlgItem != NULL)
-            {
-            wsprintf(szBuf,"%d",ae->TopColor);
-            SetWindowText(hDlgItem,szBuf);
-            }
-        hDlgItem = GetDlgItem(hDlg,IDC_EDIT2);
-        if (hDlgItem != NULL)
-            {
-            wsprintf(szBuf,"%d",ae->BottomColor);
-            SetWindowText(hDlgItem,szBuf);
-            }
-
-        if (ae->SysFlags & SYS_SOLID_CEIL)
-            nTF = TRUE;
-        else
-            nTF = FALSE;
-
-        SendDlgItemMessage(hDlg,IDC_CHECKBOX1,BM_SETCHECK,nTF,0L);
-
-        if (ae->SysFlags & SYS_SOLID_FLOOR)
-            nTF = TRUE;
-        else
-            nTF = FALSE;
-
-        SendDlgItemMessage(hDlg,IDC_CHECKBOX2,BM_SETCHECK,nTF,0L);
-
-        return(TRUE);
-
-    case WM_COMMAND:
-        switch (wParam)
-            {
-            case IDOK:
-            hDlgItem = GetDlgItem(hDlg,IDC_EDIT1);
-            if (hDlgItem != NULL)
-                {
-                GetWindowText(hDlgItem,szBuf,sizeof(szBuf));
-                ae->TopColor = (UCHAR)atoi(szBuf);
-                }
-            hDlgItem = GetDlgItem(hDlg,IDC_EDIT2);
-            if (hDlgItem != NULL)
-                {
-                GetWindowText(hDlgItem,szBuf,sizeof(szBuf));
-                ae->BottomColor = (UCHAR)atoi(szBuf);
-                }
-
-            if (SendDlgItemMessage(hDlg,IDC_CHECKBOX1,BM_GETCHECK,0,0L))
-                ae->SysFlags |= SYS_SOLID_CEIL;
-            else
-                ae->SysFlags &= ~SYS_SOLID_CEIL;
-
-            if (SendDlgItemMessage(hDlg,IDC_CHECKBOX2,BM_GETCHECK,0,0L))
-                ae->SysFlags |= SYS_SOLID_FLOOR;
-            else
-                ae->SysFlags &= ~SYS_SOLID_FLOOR;
-
-                EndDialog(hDlg, TRUE);
-            AckRegisterStructure(ae);
-            break;
-
-        case IDCANCEL:
-            EndDialog(hDlg, FALSE);
-            break;
-
-            default:
-                return(FALSE);
-            }
-        break;
-
-    default:
-        return(FALSE);
-    }
-
-return(TRUE);
-}*/
-
-//**************************************************************************
-//
-//**************************************************************************
 short ReadTempInfo(HWND hDlg)
 {
-//    short   handle;
     FILE    *fp;
     char    *s;
     char    szBuf[256];
@@ -1273,9 +1140,6 @@ return(0);
 BOOL CALLBACK _export FAR PASCAL InfoDlgProc(HWND hDlg, UINT iMessage,
         WPARAM wParam, LPARAM lParam)
 {
-//    short   nTF;
-//    HWND    hDlgItem;
-//    char    szBuf[10];
 
 switch (iMessage)
     {
