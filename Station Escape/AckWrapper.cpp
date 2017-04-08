@@ -149,8 +149,8 @@ memset(ae,0,sizeof(ACKENG));
 
 ae->WinStartX = 0;
 ae->WinStartY = 0;
-ae->WinEndX = 319;
-ae->WinEndY = 199;
+ae->WinEndX = ACK_VIEWWIDTH-1;
+ae->WinEndY = ACK_VIEWHEIGHT-1;
 
 ae->LightFlag = SHADING_OFF;
 ae->xPlayer = 192;
@@ -165,7 +165,7 @@ ae->CeilBitmap = 47;
 
 ae->PlayerHeight = DEFAULT_PLAYER_HEIGHT;
 
-result = AckOpenResource("KIT.OVL");
+result = AckOpenResource((char*)"KIT.OVL");
 if (result)
     {
     printf("ACK-3D Error: Cannot open KIT.OVL\n");
