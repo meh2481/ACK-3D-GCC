@@ -422,7 +422,7 @@ void AckFree(void *m);
 using std::string;
 
 //defines
-#define ACK_VIEWWIDTH     320
+#define ACK_VIEWWIDTH     96
 #define ACK_VIEWHEIGHT    200       //Our screen width and height is set to 320x200
 #define ACK_BYTES_PER_PIXEL 4       //32-bit offscreen buffer
 
