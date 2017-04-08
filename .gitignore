@@ -1,0 +1,7 @@
+*.d
+*.o
+*.exe
+*.lib
+config.txt
+*.res
+*.a

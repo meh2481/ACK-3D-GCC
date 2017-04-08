@@ -272,8 +272,8 @@ hWnd = CreateWindow( szClassName,
             WS_OVERLAPPEDWINDOW|WS_VSCROLL|WS_HSCROLL,
             0,
             0,
-            480,
-            520,
+            1200,
+            900,
             NULL,
             NULL,
             Main::hInstance,
@@ -300,7 +300,7 @@ hWndChild = CreateWindow( "ACKBitmaps",
                 rect.right,
                 0,
                 90,
-                298,
+                300,
                 hWnd,
                 NULL,
                 Main::hInstance,
@@ -1456,6 +1456,7 @@ void ResizeMapBuffer(HWND hWnd,LPARAM lParam)
 
 wt = LOWORD(lParam);
 ht = HIWORD(lParam);
+printf("Setting size to %dx%d\n", wt, ht);
 wt = ((wt+3)/4)*4;
 GridWidth = wt;
 GridHeight = ht;
@@ -1664,9 +1665,9 @@ switch (nViewType)
 SetUndoPoint();
 }
 
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±?
 //
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±?
 short GetLoadType(char *szName)
 {
     short   nType = BMLOAD_BBM;
@@ -2203,7 +2204,7 @@ LRESULT MainWindow::WndProc(UINT iMessage, WPARAM wParam, LPARAM lParam )
 
         case WM_GETMINMAXINFO:
             lpmmi = (LPMINMAXINFO)lParam;
-            mx = (short)(GridSize * 24);
+            mx = (short)(GridSize * 65);	//64 grid squares +1 for max window size
             lpmmi->ptMaxSize.x = mx;
             lpmmi->ptMaxSize.y = mx;
             lpmmi->ptMaxTrackSize.x = mx;
