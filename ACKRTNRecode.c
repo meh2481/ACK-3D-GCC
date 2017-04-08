@@ -270,7 +270,7 @@ void ShowColumn(char bTrans, char bLightShaded)
         return;
     }
     UCHAR* BmpCol = gCurSlice->bMap[bNumber];
-    if(BmpCol == NULL)
+    if(BmpCol == NULL || sTableSpot == NULL)
     {
         return;             //TODO: DERP! Sometimes this is true for doors, and would cause crashes if this wasn't here.
                             // WHY?!? (Example: exit maze door in cemetery level at an angle)
@@ -295,7 +295,7 @@ void ShowColumn(char bTrans, char bLightShaded)
             *CurCol = cTemp;
         CurCol=&CurCol[VIEW_WIDTH];
         sTableSpot++;
-    }
+    }		
 
     //Draw top half of bitmap - from middle of screen up
     iWallHeight++;

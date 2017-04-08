@@ -260,6 +260,7 @@ if (FoundObjectCount)       // Make sure objects were found during ray casting
             {
             objColumn = objAngle - minAngle; // Calc. view column of object
             }
+			objColumn = objColumn / 3.333f;
 
         // Get the distance to the object
         distance = long_sqrt((dx * dx) + (dy * dy));
@@ -326,7 +327,7 @@ if (FoundObjectCount)       // Make sure objects were found during ray casting
             distance = MAX_DISTANCE-11;
 
         // Get the width of the object
-        wt = DistanceTable[distance];   // Adjust the width using the distance
+        wt = DistanceTable[distance]/3.33;   // Adjust the width using the distance
         // Keep the width of the object reasonable
         if (wt > 300)           // The object is too wide
             continue;           // Skip over
@@ -465,7 +466,7 @@ if (FoundObjectCount)       // Make sure objects were found during ray casting
                     }
                 }
     keepgoing:
-            xp += yp;    // Advance the next column to display (scaling)
+            xp += yp*3.33;    // Advance the next column to display (scaling)
             }
         }
     }
