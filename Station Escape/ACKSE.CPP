@@ -12,9 +12,8 @@
 #include <SDL/SDL_gfxPrimitives.h>
 #else
 #include <SDL.h>
-#include <SDL_rotozoom.h>
-#include <SDL_gfxPrimitives.h>
 #endif
+#include <cmath> 	//sqrt
 
 #include "KEYS.H"
 void AckDoubleBuffer(UCHAR *Src,UCHAR *Dest);
@@ -33,6 +32,7 @@ short       nSecondsLeft;
 UINT        nTimerID;
 short       nRepairObjectCount;
 UCHAR       SavePal[768];
+bool g_bGrabMouse = true;	//Should use mouse input and grab the mouse to the center of the screen
 
 //MEH Ack wrapper class variable
 AckWrapper* g_Ack3D;
@@ -83,37 +83,37 @@ int main(int argc, char* argv[])
     atexit(SDL_Quit);
 
     //Grab the maximum supported screen resolution
-    SDL_Rect **modes;
-    modes=SDL_ListModes(NULL, SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_FULLSCREEN);
+    //SDL_Rect **modes;
+    //modes=SDL_ListModes(NULL, SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_FULLSCREEN);
 
-    if(modes == (SDL_Rect **)0){
-      printf("No modes available for fullscreen\n");
-      return -1;
-    }
+    //if(modes == (SDL_Rect **)0){
+    //  printf("No modes available for fullscreen\n");
+    //  return -1;
+    //}
 
-    rcResolution.w = 800;
-    rcResolution.h = 600;     //800x600 is reasonable default
+    rcResolution.w = 320;
+    rcResolution.h = 200;     //800x600 is reasonable default
 
-    if(modes != (SDL_Rect **)-1)    //And if it supports all resolutions, use 800x600
-    {
+    //if(modes != (SDL_Rect **)-1)    //And if it supports all resolutions, use 800x600
+    //{
         //Find the lowest resolution above or at 320x200
-        int iNumModes = 0;
-        for(int i = 0; modes[i]; i++)
-            iNumModes++;
-        for(int i = iNumModes-1; i >= 0; i--)
-        {
-            if(modes[i]->w >= 320 && modes[i]->h >= 200)
-            {
-                rcResolution.w = modes[i]->w;
-                rcResolution.h = modes[i]->h;
-                break;  //Done, found one larger than or equal to 320x200
-            }
-        }
-    }
+     //   int iNumModes = 0;
+     //   for(int i = 0; modes[i]; i++)
+     //       iNumModes++;
+     //   for(int i = iNumModes-1; i >= 0; i--)
+     //   {
+     ////       if(modes[i]->w >= 320 && modes[i]->h >= 200)
+      //      {
+      //          rcResolution.w = modes[i]->w;
+      //          rcResolution.h = modes[i]->h;
+      //          break;  //Done, found one larger than or equal to 320x200
+      //      }
+      //  }
+   // }
 
     //printf("Resolution: %dx%d\n", rcResolution.w, rcResolution.h);
     //Create our handle to the screen
-    MainScreen = SDL_SetVideoMode(rcResolution.w, rcResolution.h, 32, SDL_HWSURFACE|SDL_DOUBLEBUF|SDL_FULLSCREEN);
+    MainScreen = SDL_SetVideoMode(rcResolution.w, rcResolution.h, 32, SDL_HWSURFACE|SDL_DOUBLEBUF);
     if ( !MainScreen )
     {
         printf("Unable to set video resolution: %s\n", SDL_GetError());
@@ -475,26 +475,26 @@ void AckPaint()
     }
 
     //Draw the rectangle, 5 pixels tall
-    boxRGBA(tempSurface, 0, 195, g_iHealth, 200, r, g, b, 128);
+    //boxRGBA(tempSurface, 0, 195, g_iHealth, 200, r, g, b, 128);
 
     //If we've been hit, flash screen red for a sort of visual cue
-    if(bHurtThisCycle)
-    {
-        boxRGBA(tempSurface, 0, 0, rcResolution.w, rcResolution.h, 255, 0, 0, 128);
-    }
+    //if(bHurtThisCycle)
+    //{
+    //    boxRGBA(tempSurface, 0, 0, rcResolution.w, rcResolution.h, 255, 0, 0, 128);
+    //}
 
     //Use SDL_rotozoom to fill screen
-    SDL_Surface* tempZoomed = zoomSurface(tempSurface,
-                                          (float)(rcResolution.w) / (float)(ACK3D_SCREENWIDTH),
-                                          (float)(rcResolution.h) / (float)(ACK3D_SCREENHEIGHT),
-                                          SMOOTHING_OFF);   //Pixellated rather than blurry
+    //SDL_Surface* tempZoomed = zoomSurface(tempSurface,
+    //                                      (float)(rcResolution.w) / (float)(ACK3D_SCREENWIDTH),
+    //                                      (float)(rcResolution.h) / (float)(ACK3D_SCREENHEIGHT),
+    //                                      SMOOTHING_OFF);   //Pixellated rather than blurry
 
     // draw bitmap starting at 0,0
     SDL_Rect dstrect;
     dstrect.x = 0;
     dstrect.y = 0;
 
-    SDL_BlitSurface(tempZoomed, 0, MainScreen, &dstrect);  //draw the temp surface to the screen
+    SDL_BlitSurface(tempSurface, 0, MainScreen, &dstrect);  //draw the temp surface to the screen
 
     //Print time left... no simple way to do it without SDL_TTF or a lot of extra work
   /*nHours = (short)(nSecondsLeft / 3600);
@@ -505,7 +505,7 @@ void AckPaint()
 
 SDL_Flip(MainScreen);   //Flip the double-buffered window to the screen
 SDL_FreeSurface(tempSurface);
-SDL_FreeSurface(tempZoomed);    //Free up our memory
+//SDL_FreeSurface(tempZoomed);    //Free up our memory
 }
 
 //****************************************************************************
@@ -578,13 +578,16 @@ void DoCycle(void)
     //AckCheckDoorOpen(ae->xPlayer,ae->yPlayer,ae->PlayerAngle);
 
     //MEH Make moving the mouse pan the view
-    int xCursor, yCursor;
-    SDL_GetMouseState(&xCursor, &yCursor);
-    int iDistMoved = xCursor - rcResolution.w / 2;
-    //Of course, we can multiply this by a scaling factor if we want to, but one ACK-3D 0.2-degree increment per pixel seems to work fine
-    if(iDistMoved != 0)
-        g_Ack3D->AddToPlayerAngle(iDistMoved);
-    SDL_WarpMouse(rcResolution.w / 2, rcResolution.h / 2);
+	if(g_bGrabMouse) {
+		int xCursor, yCursor;
+		SDL_GetMouseState(&xCursor, &yCursor);
+		int iDistMoved = xCursor - rcResolution.w / 2;
+		//Of course, we can multiply this by a scaling factor if we want to, but one ACK-3D 0.2-degree increment per pixel seems to work fine
+		if(iDistMoved != 0)
+			g_Ack3D->AddToPlayerAngle(iDistMoved);
+	
+		SDL_WarpMouse(rcResolution.w / 2, rcResolution.h / 2);
+	}
 
     bHurtThisCycle = false; //Haven't been hit this cycle yet
     //Update the objects and such
@@ -673,6 +676,9 @@ switch (event.type)
             case SDLK_TAB:
                 kbPressed[kbAlt] = 1;
                 break;
+			case SDLK_g:
+				g_bGrabMouse = !g_bGrabMouse;
+				break;
             default:
                 break;
             }
@@ -718,7 +724,7 @@ switch (event.type)
 
 void HurtPlayer(int iAmount)
 {
-    g_iHealth -= iAmount;
+    //g_iHealth -= iAmount;
     bHurtThisCycle = true;      //Ouch! Flash screen red
 }
 
