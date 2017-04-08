@@ -445,7 +445,7 @@ class AckWrapper
 {
 protected:
     unsigned char*  m_OffscreenBuffer;  //Used to hold the data for the screen.
-    //MEH buffer for holding our pallette data. Read in from "pallette.txt"
+    //MEH buffer for holding our palette data. Read in from "pallette.txt"
     PalletteSlot m_pallette[256]; //256 entries for 256 colors
 
     AckWrapper() {};    //No default constructor

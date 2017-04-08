@@ -43,10 +43,6 @@ short   nMoveObjectList[] = {
   18,19,
   0}; // Denotes end of table
 
-   #define  ACK3D_SCREENWIDTH   320
-   #define  ACK3D_SCREENHEIGHT  200
-   #define  BYTES_PER_PIXEL     4
-
    #define  START_REPAIR_OBJECT 20
    #define  END_REPAIR_OBJECT   22
 
@@ -91,8 +87,8 @@ int main(int argc, char* argv[])
     //  return -1;
     //}
 
-    rcResolution.w = 320;
-    rcResolution.h = 200;     //800x600 is reasonable default
+    rcResolution.w = ACK_VIEWWIDTH;
+    rcResolution.h = ACK_VIEWHEIGHT;     //800x600 is reasonable default
 
     //if(modes != (SDL_Rect **)-1)    //And if it supports all resolutions, use 800x600
     //{
@@ -437,12 +433,12 @@ void AckPaint()
         bmask = 0x00ff0000;
         amask = 0xff000000;
     #endif
-    SDL_Surface* tempSurface = SDL_CreateRGBSurface(MainScreen->flags, 320, 200, 32, rmask, gmask, bmask, amask);
+    SDL_Surface* tempSurface = SDL_CreateRGBSurface(MainScreen->flags, ACK_VIEWWIDTH, ACK_VIEWHEIGHT, 32, rmask, gmask, bmask, amask);
 
     SDL_LockSurface(tempSurface);
 
     //Copy over
-    for(int r = 0; r < 320 * 200 * 4; r++)
+    for(int r = 0; r < ACK_VIEWWIDTH * ACK_VIEWHEIGHT * 4; r++)
     {
         ((unsigned char*)tempSurface->pixels)[r] = pBufferData[r];
         if(g_bMotionBlur && r % 4 == 3)
@@ -485,8 +481,8 @@ void AckPaint()
 
     //Use SDL_rotozoom to fill screen
     //SDL_Surface* tempZoomed = zoomSurface(tempSurface,
-    //                                      (float)(rcResolution.w) / (float)(ACK3D_SCREENWIDTH),
-    //                                      (float)(rcResolution.h) / (float)(ACK3D_SCREENHEIGHT),
+    //                                      (float)(rcResolution.w) / (float)(ACK_VIEWWIDTH),
+    //                                      (float)(rcResolution.h) / (float)(ACK_VIEWHEIGHT),
     //                                      SMOOTHING_OFF);   //Pixellated rather than blurry
 
     // draw bitmap starting at 0,0

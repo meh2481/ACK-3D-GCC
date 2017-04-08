@@ -96,13 +96,13 @@ const unsigned char* AckWrapper::RenderView()
 {
     AckBuildView();             // Render the 3D view
     unsigned char* pBufferData = m_OffscreenBuffer;
-    for(int r = 0; r < 320; r++)
+    for(int r = 0; r < ACK_VIEWWIDTH; r++)
     {
-        for(int c = 0; c < 200; c++) //AHAHA JOKE
+        for(int c = 0; c < ACK_VIEWHEIGHT; c++) //AHAHA JOKE
         {
-            *pBufferData++ = m_pallette[ae->ScreenBuffer[c+200*r]].r;
-            *pBufferData++ = m_pallette[ae->ScreenBuffer[c+200*r]].g;
-            *pBufferData++ = m_pallette[ae->ScreenBuffer[c+200*r]].b;
+            *pBufferData++ = m_pallette[ae->ScreenBuffer[c+ACK_VIEWHEIGHT*r]].r;
+            *pBufferData++ = m_pallette[ae->ScreenBuffer[c+ACK_VIEWHEIGHT*r]].g;
+            *pBufferData++ = m_pallette[ae->ScreenBuffer[c+ACK_VIEWHEIGHT*r]].b;
             *pBufferData++ = 255; //Alpha = 255 by default. You could probably do crazy stuff with this, but I'm not going to.
         }
     }
@@ -274,7 +274,7 @@ extern  short   Resolution;
 };
 
 static int     ResScrollBack;
-static char    LineBuffer[200];
+static char    LineBuffer[ACK_VIEWHEIGHT];
 static short   LastObjectIndex;
 static int     MapResource;
 
@@ -529,7 +529,7 @@ int AckWrapper::ReadLine(void)
     char    ch;
 
 len = 0;
-while (len < 200)
+while (len < ACK_VIEWHEIGHT)
     {
     if (LREAD(rsHandle,&LineBuffer[len],1) != 1)
         break;
@@ -549,9 +549,9 @@ LineBuffer[len] = '\0';
 return(len);
 }
 
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//----------------------------------------------------------------------------
 // Skips to the next parameter in a text line
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//----------------------------------------------------------------------------
 char *AckWrapper::GetNextParm(char *s)
 {
     char    ch;
@@ -576,9 +576,9 @@ while (*s)
 return(NULL);
 }
 
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//----------------------------------------------------------------------------
 // Loads a wall bitmap specified in info file
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//----------------------------------------------------------------------------
 int AckWrapper::LoadWall(void)
 {
     int     wnum,rnum,result;
@@ -604,9 +604,9 @@ return(result);
 }
 
 
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//----------------------------------------------------------------------------
 // Loads an object bitmap specified in info file
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//----------------------------------------------------------------------------
 int AckWrapper::LoadObject(void)
 {
     int     onum,rnum,result;
@@ -630,10 +630,10 @@ return(result);
 }
 
 
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//----------------------------------------------------------------------------
 // Skip any leading spaces in the string
 // NOTE: Actually modifies the string passed!
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//----------------------------------------------------------------------------
 char *AckWrapper::SkipSpaces(char *s)
 {
 
@@ -644,9 +644,9 @@ return(s);
 }
 
 
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//----------------------------------------------------------------------------
 // Creates and object of the desired style
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//----------------------------------------------------------------------------
 int AckWrapper::CreateObject(void)
 {
     short   onum,vnum;
@@ -805,7 +805,7 @@ void AckWrapper::ProcessBackDrop(UCHAR *bPtr)
 {
         int     i,j,pos;
         UCHAR   *aPtr;
-for (i = 0; i < 320; i++)
+for (i = 0; i < ACK_VIEWWIDTH; i++)
     {
     pos = i + 4;
     aPtr = BackArray[i];
@@ -818,13 +818,13 @@ for (i = 0; i < 320; i++)
     for (j = 0; j < 100; j++)
         {
         *aPtr++ = bPtr[pos];
-        pos += 320;
+        pos += ACK_VIEWWIDTH;
         }
     }
 
-for (i = 320; i < 640; i++)
+for (i = ACK_VIEWWIDTH; i < 640; i++)
     {
-    pos = (i - 320) + 32004;
+    pos = (i - ACK_VIEWWIDTH) + 32004;
     aPtr = BackArray[i];
     if (aPtr == NULL)
         {
@@ -835,7 +835,7 @@ for (i = 320; i < 640; i++)
     for (j = 0; j < 100; j++)
         {
         *aPtr++ = bPtr[pos];
-        pos += 320;
+        pos += ACK_VIEWWIDTH;
         }
     }
 
