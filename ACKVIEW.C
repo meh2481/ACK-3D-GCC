@@ -127,14 +127,14 @@ void DrawSolidFloorAndCeil(void);
 void DrawSolidFloorAndCeilNS(void);
 void DrawSolidCeilSolidFloor(void);
 
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±?
 // Transfers certain variables from the interface structure to global
 // variables that can be accessed faster by the drawing functions. The
 // interface structure is kept by the application and more than one of
 // them can be used for different views. Each time a new view needs to
 // be processed, this function MUST be called before calling the
 // drawing routines.
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±?
 void AckRegisterStructure(ACKENG *ae)
 {
     int mode,i;
@@ -229,9 +229,9 @@ else                    // Light shading is used
 
 // Test to see if viewport is full width (320 units)
 gWinStartOffset = ae->WinStartOffset;           // Offset to viewport
-gBottomOff  = (gWinEndY * 320);
+gBottomOff  = (gWinEndY * VIEW_WIDTH);
 gWinFullWidth = 0;                      // Set flag to indicate viewport is not full width
-if (gWinStartX == 0 && gWinEndX == 319) // Viewport is full size
+if (gWinStartX == 0 && gWinEndX == VIEW_WIDTH-1) // Viewport is full size
     {
     gWinFullWidth = 1;                          // Indicates viewport is full size
     gWinDWORDS = (gWinEndY - gWinStartY) * 80;  // Calculate number of double
@@ -249,12 +249,12 @@ for (i = 0; i < GRID_MAX; i++)
     }
 }
 
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±?
 // Render the current scene into the off-screen buffer based on the POV
 // coordinates and angle. This function does NOT display the scene once
 // it is rendered so the application can overlay graphics into the buffer
 // before it is actually displayed.
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±?
 void AckBuildView(void)
 {
 // Set up global variables to be used with assembly language routines
@@ -271,18 +271,18 @@ BuildUpView();          // Assembly routine defined in ACKRTN3.ASM. This routine
                         // kicks off the ray casting process.
 }
 
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±?
 // Stub function for drawing slices that do not contain walls.
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±?
 void ShowNone(void)
 {
 return;
 }
 
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±?
 // Internal function to cast the x and y rays and build a slice structure
 // for each column of the viewing window.
-//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±
+//±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±±?
 void BuildSlice(void)
 {
     short   j,index,wFound;

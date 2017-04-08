@@ -11,11 +11,11 @@ void BuildUpView(void)
     //Clear out the screen buffer to start our next pass (Just so we avoid issues with uninitialized stuff when the map isn't
                                                        // built fully yet or something)
     int j,k; // j/k. Seewhatididthere?
-    for(j = 0; j < 320; j++)
+    for(j = 0; j < VIEW_WIDTH; j++)
     {
-        for(k = 0; k < 200; k++)
+        for(k = 0; k < VIEW_HEIGHT; k++)
         {
-            gScrnBuffer[j*200+k] = 0;
+            gScrnBuffer[j*VIEW_HEIGHT+k] = 0;
         }
     }
 
@@ -44,7 +44,7 @@ void BuildUpView(void)
     //buv010
     //Get the right side of the viewport and make sure it's 320
     unsigned int iRightSide = gWinEndX;
-    if(iRightSide < 320)
+    if(iRightSide < VIEW_WIDTH)
         iRightSide++;
 
     //buv020
@@ -90,7 +90,11 @@ void BuildUpView(void)
         //buv080
         //Increment view column and angle
         ViewColumn++;
-        ViewAngle++;
+		
+		//MEH: Resolution of 96x means 320x is 3.33x too small
+        ViewAngle+=3;
+		if(ViewAngle%3==0)
+			ViewAngle++;
         //I'm not sure about this. RES_LOW causes us to increment twice? Because the assembly makes it look vice versa
         if(Resolution == RES_LOW)
         {

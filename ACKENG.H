@@ -18,7 +18,8 @@
 #define FP_MULT         65536
 #define FP_HALF         32768
 
-#define VIEW_WIDTH      320     // The number of columns in a view (screen)
+#define VIEW_WIDTH      96     // The number of columns in a view (screen)
+#define VIEW_HEIGHT		200
 #define MAX_DISTANCE    2048	// The max distance from the POV to a wall slice
 
 #define TYPE_WALL       0
@@ -39,9 +40,9 @@
 #define ST_OBJECT       2
 
 #define COLS_PER_BYTE   1	// Use 1 for normal mode 13h, 4 for modeX
-#define BYTES_PER_ROW	320	// Use 320 for normal mode 13h, 80 for modeX
+#define BYTES_PER_ROW	VIEW_WIDTH	// Use 320 for normal mode 13h, 80 for modeX
 #define DWORDS_PER_ROW	(BYTES_PER_ROW / 4)
-#define SCREEN_SIZE     64000
+#define SCREEN_SIZE     VIEW_HEIGHT*VIEW_WIDTH
 
 // Holds information for the current wall section found during the raycasting process.
 // During the raycasting process, ACK-3D casts out rays, looks for a wall at a

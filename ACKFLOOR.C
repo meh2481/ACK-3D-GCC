@@ -150,7 +150,7 @@ RwPtr = &WallDistTable[Rcol];
 // row of the floor and ceiling. The value 89 was arrived at based on a
 // reasonable height above the floor that the player is standing. By
 // experimenting with this value, the effect of jumping up and down can
-// be achieved, (as int32_t as the walls and objects are made to jump by the
+// be achieved, (as long as the walls and objects are made to jump by the
 // same amount).
 Scale_Fac = (ae->PlayerHeight - ViewHeight) * 5;
 ScaleHt = ae->PlayerHeight - ViewHeight;
@@ -253,8 +253,8 @@ for (col = BegCol; col < EndCol; col ++)//= 2)
 #endif
             }
 
-        fscr += 320;        // Advance our screen position for the floor
-        cscr -= 320;        // and the ceiling
+        fscr += VIEW_WIDTH;        // Advance our screen position for the floor
+        cscr -= VIEW_WIDTH;        // and the ceiling
 
 #if DRAW_BACK
 // Advance the pointers to the background image for the next pass
@@ -264,7 +264,9 @@ for (col = BegCol; col < EndCol; col ++)//= 2)
         }
 
 // Advance our current viewing angle by 2 since we are in low resolution
-    va ++;//= 2;
+    va +=3;//= 2;
+	if(va%3==0)
+		va++;
 // and check for wrap-around
     if (va >= INT_ANGLE_360) va -= INT_ANGLE_360;
     }
@@ -642,7 +644,7 @@ scrCeil = scr;// - 1600;
 // Start 6 video rows below the center row
 //scr += 320;
 // Initial right side of view
-Rcol = 319;
+Rcol = VIEW_WIDTH-1;
 wPtr = &WallDistTable[BegCol];      // Get pointers to avoid indexing
 RwPtr = &WallDistTable[Rcol];
 
@@ -757,8 +759,8 @@ for (col = BegCol; col < EndCol; col ++)//= 2) //MEH For higher resolution, only
 #endif
             }
 
-        fscr += 320;        // Advance our screen position for the floor
-        cscr -= 320;        // and the ceiling
+        fscr += VIEW_WIDTH;        // Advance our screen position for the floor
+        cscr -= VIEW_WIDTH;        // and the ceiling
 
 #if DRAW_BACK
 // Advance the pointers to the background image for the next pass
@@ -768,7 +770,9 @@ for (col = BegCol; col < EndCol; col ++)//= 2) //MEH For higher resolution, only
         }
 
 // Advance our current viewing angle by 2 since we are in low resolution
-    va ++;//= 2; //MEH NOT ANYMORES!
+    va +=3;//= 2; //MEH NOT ANYMORES!
+	if(va%3==0)
+		va++;
 // and check for wrap-around
     if (va >= INT_ANGLE_360) va -= INT_ANGLE_360;
     }
@@ -1229,12 +1233,14 @@ for (col = BegCol; col < EndCol; col ++)//= 2)
             //cscr[1] = ch;
             }
 
-        fscr += 320;        // Advance our screen position for the floor
-        cscr -= 320;        // and the ceiling
+        fscr += VIEW_WIDTH;        // Advance our screen position for the floor
+        cscr -= VIEW_WIDTH;        // and the ceiling
         }
 
 // Advance our current viewing angle by 2 since we are in low resolution
-    va ++;//= 2;
+    va +=3;//= 2;
+	if(va%3==0)
+		va++;
 // and check for wrap-around
     if (va >= INT_ANGLE_360) va -= INT_ANGLE_360;
     }
